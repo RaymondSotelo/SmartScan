@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartScan")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2ff421dc5379d554fa439fa8d2a4bd3ce24947e7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55ddbadfa83960375cecddb20c6e6a3dd03520d8")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartScan")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartScan")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

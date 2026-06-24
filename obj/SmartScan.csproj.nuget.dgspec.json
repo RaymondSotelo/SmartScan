@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\JHANDY\\Downloads\\Capstone Project\\SmartScan\\SmartScan.csproj": {}
+    "C:\\SmartScan\\SmartScan.csproj": {}
   },
   "projects": {
-    "C:\\Users\\JHANDY\\Downloads\\Capstone Project\\SmartScan\\SmartScan.csproj": {
+    "C:\\SmartScan\\SmartScan.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\JHANDY\\Downloads\\Capstone Project\\SmartScan\\SmartScan.csproj",
+        "projectUniqueName": "C:\\SmartScan\\SmartScan.csproj",
         "projectName": "SmartScan",
-        "projectPath": "C:\\Users\\JHANDY\\Downloads\\Capstone Project\\SmartScan\\SmartScan.csproj",
-        "packagesPath": "C:\\Users\\JHANDY\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\JHANDY\\Downloads\\Capstone Project\\SmartScan\\obj\\",
+        "projectPath": "C:\\SmartScan\\SmartScan.csproj",
+        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
+        "outputPath": "C:\\SmartScan\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\JHANDY\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -99,7 +99,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.313/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

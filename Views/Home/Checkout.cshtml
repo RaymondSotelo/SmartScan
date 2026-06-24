@@ -19,12 +19,12 @@
         <div class="col-md-7 d-flex flex-column h-100">
             <div class="card shadow border-0 bg-dark text-white flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden rounded-3">
 
-                <video id="webcamFeed" autoplay playsinline class="w-100 h-100" style="object-fit: cover; display: none;"></video>
+                <img id="webcamFeed" class="w-100 h-100" style="object-fit: cover; display: none;" alt="Live AI Scanner" />
 
                 <div id="cameraPlaceholder" class="text-center p-4">
                     <i class="fa-solid fa-video-slash fa-4x text-secondary mb-3"></i>
                     <h4 class="text-secondary fw-semibold">Webcam Disabled</h4>
-                    <p class="text-muted small">Click the action button below to grant permission and initiate feed.</p>
+                    <p class="text-muted small">Click the action button below to connect to the YOLO scanner.</p>
                 </div>
 
                 <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 z-3">
@@ -45,14 +45,10 @@
                 </div>
 
                 <div class="card-body overflow-y-auto flex-grow-1 p-0" style="max-height: 100%;">
-                    <div class="list-group list-group-flush" id="logListItems">
-
-                        <ul> <!--Place here if the items are identified -->
-                            <li>
-                                <p>Kape</p>
-                            </li>
+                    <div class="list-group list-group-flush p-3" id="logListItems">
+                        <ul id="identifiedItemsList" class="list-unstyled m-0">
+                            <li class="text-muted text-center py-3">Waiting for scanner to start...</li>
                         </ul>
-
                     </div>
                 </div>
             </div>
@@ -64,49 +60,74 @@
 @section Scripts {
     <script type="text/javascript">
         document.addEventListener("DOMContentLoaded", function () {
-            const video = document.getElementById("webcamFeed");
+            const videoImg = document.getElementById("webcamFeed");
             const placeholder = document.getElementById("cameraPlaceholder");
             const startBtn = document.getElementById("startCamBtn");
             const stopBtn = document.getElementById("stopCamBtn");
-            let streamInstance = null;
+
+            // Variable to hold our scanning timer
+            let scannerInterval = null;
 
             // 1. START WEBCAM ACTION HANDLER
-            startBtn.addEventListener("click", async function () {
-                try {
-                    // Requests camera-only media permission hook natively
-                    streamInstance = await navigator.mediaDevices.getUserMedia({
-                        video: { width: 1280, height: 720, facingMode: "user" },
-                        audio: false
-                    });
+            startBtn.addEventListener("click", function () {
+                // Point the image source to your Python server stream
+               videoImg.src = "http://localhost:5050/video_feed";
 
-                    // Bind the raw stream array to the video viewport container
-                    video.srcObject = streamInstance;
+                // Toggle visibility states cleanly
+                placeholder.style.display = "none";
+                videoImg.style.display = "block";
+                startBtn.classList.add("d-none");
+                stopBtn.classList.remove("d-none");
 
-                    // Toggle visibility states cleanly
-                    placeholder.style.display = "none";
-                    video.style.display = "block";
-                    startBtn.classList.add("d-none");
-                    stopBtn.classList.remove("d-none");
-                } catch (err) {
-                    console.error("Error accessing webcam: ", err);
-                    alert("Unable to access local hardware camera device. Ensure permission is allowed in your browser address bar properties control.");
-                }
+                // Start asking Python for the item list every 1 second
+                scannerInterval = setInterval(fetchScannedItems, 1000);
             });
 
             // 2. STOP WEBCAM ACTION HANDLER
             stopBtn.addEventListener("click", function () {
-                if (streamInstance) {
-                    // Turn off all individual camera tracks explicitly to stop hardware indicator lights
-                    streamInstance.getTracks().forEach(track => track.stop());
-                    video.srcObject = null;
-                }
+                // Disconnect from the Python server
+                videoImg.src = "";
+
+                // Stop asking for items
+                clearInterval(scannerInterval);
 
                 // Reset layouts back to placeholder states
-                video.style.display = "none";
+                videoImg.style.display = "none";
                 placeholder.style.display = "block";
                 stopBtn.classList.add("d-none");
                 startBtn.classList.remove("d-none");
+
+                // Clear the list
+                document.getElementById("identifiedItemsList").innerHTML = "<li class='text-muted text-center py-3'>Scanner stopped.</li>";
             });
+
+            // 3. FETCH DATA FROM PYTHON
+            async function fetchScannedItems() {
+                try {
+                    // Call the Python API
+                    const response = await fetch("http://localhost:5050/get_detections");
+                    const items = await response.json();
+
+                    const list = document.getElementById("identifiedItemsList");
+                    list.innerHTML = ""; // Clear the old list
+
+                    if (items.length === 0) {
+                        list.innerHTML = "<li class='text-muted text-center py-3'>No items detected on tray...</li>";
+                    } else {
+                        // Create a clean list item for every product YOLO sees
+                        items.forEach(item => {
+                            list.innerHTML += `
+                                <li class="p-2 border-bottom">
+                                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-box text-success me-2"></i>${item}</h6>
+                                </li>`;
+                        });
+                    }
+                } catch (error) {
+                    console.error("Cannot connect to Python Server: ", error);
+                    document.getElementById("identifiedItemsList").innerHTML =
+                        "<li class='text-danger text-center py-3'>Lost connection to AI Scanner!</li>";
+                }
+            }
         });
     </script>
 }
