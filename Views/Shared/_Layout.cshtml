@@ -38,11 +38,33 @@
                                 <span class="menu-text ms-3">User Manager</span>
                             </a>
                         </li>
-                        <li class="mb-2 bg-danger rounded-2"> <!--Currently NOT Working-->
-                            <a asp-area="" asp-controller="" asp-action="" class="disabled nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
-                                <i class="fa-solid fa-box sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Manage</span>
-                            </a>
+                        <li class="mb-2 rounded-2">
+                            <div class="dropdown d-flex align-items-center w-100 p-1">
+
+                                <button type="button"
+                                        class="btn border-0 d-flex align-items-center w-100 text-start p-2"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        style="color: #ffcc00; background: transparent; box-shadow: none;">
+
+                                    <i class="fa-solid fa-box sidebar-icon fs-5 text-center"></i>
+
+                                    <span class="menu-text ms-3 flex-grow-1">Product Management</span>
+
+                                    <i class="fa-solid fa-chevron-down menu-text small opacity-75 ms-auto"></i>
+                                </button>
+
+                                <ul class="dropdown-menu dropdown-menu-dark shadow border-0" style="z-index: 1050; width: 36vh;">
+                                    <li><a class="dropdown-item py-2" asp-area="" asp-controller="Products" asp-action="Index">
+                                            <i class="fa-solid fa-boxes-stacked"></i> Products
+                                        </a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" asp-area="" asp-controller="Categories" asp-action="Index">
+                                            <i class="fa-solid fa-tag"></i> Categories
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                     }
                     @if (User.IsInRole("Cashier"))
