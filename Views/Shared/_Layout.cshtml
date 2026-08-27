@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SmartScan</title>
+    <script type="importmap"></script>
+    @RenderSection("Styles", required: false)
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/SmartScan.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="d-flex" id="wrapper">
+        @if(User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <nav id="sidebar" class="collapsed" style="background-color:#151717;">
+                <div class="sidebar-header d-flex align-items-center p-3" style="min-height: 60px;">
+                    <i class="fa-solid fa-bars menu-toggle-icon me-3" id="menuToggle" style="cursor: pointer; font-size: 1.3rem; color:#ffcc00"></i>
+                    <a class="navbar-brand fw-semibold project-name text-truncate" asp-area="" asp-controller="Home" asp-action="Index" style="font-size: 22px; color:#ffcc00; font-family:Tahoma; text-decoration: none;">
+                        <i class="fa-solid fa-basket-shopping" style="color: #ffcc00"></i> SmartScan
+                    </a>
+                </div>
+
+                <ul class="list-unstyled components px-2 mt-3">
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="mb-2">
+                            <a asp-area="" asp-controller="Users" asp-action="Admin_Approval" class="nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-user-tie sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Admin Approval</span>
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-area="" asp-controller="Users" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-users-gear sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">User Manager</span>
+                            </a>
+                        </li>
+                        <li class="mb-2 rounded-2">
+                            <div class="dropdown d-flex align-items-center w-100 p-1">
+
+                                <button type="button"
+                                        class="btn border-0 d-flex align-items-center w-100 text-start p-2"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        style="color: #ffcc00; background: transparent; box-shadow: none;">
+
+                                    <i class="fa-solid fa-box sidebar-icon fs-5 text-center"></i>
+
+                                    <span class="menu-text ms-3 flex-grow-1">Product Management</span>
+
+                                    <i class="fa-solid fa-chevron-down menu-text small opacity-75 ms-auto"></i>
+                                </button>
+
+                                <ul class="dropdown-menu dropdown-menu-dark shadow border-0" style="z-index: 1050; width: 36vh;">
+                                    <li><a class="dropdown-item py-2" asp-area="" asp-controller="Products" asp-action="Index">
+                                            <i class="fa-solid fa-boxes-stacked"></i> Products
+                                        </a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" asp-area="" asp-controller="Categories" asp-action="Index">
+                                            <i class="fa-solid fa-tag"></i> Categories
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    }
+                    @if (User.IsInRole("Cashier"))
+                    {
+                        <li class="mb-2">
+                            <a asp-area="" asp-controller="Home" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-house sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a asp-area="" asp-controller="Home" asp-action="Checkout" class="nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-basket-shopping sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3 fs-6">Checkout</span>
+                            </a>
+                        </li>
+                        <!--Currently NOT Working-->
+                        <li class="mb-2 bg-danger rounded-2">
+                            <a asp-area="" asp-controller="" asp-action="" class="disabled nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-receipt sidebar-icon fs-5 text-center" style="padding-left:2.5px"></i>
+                                <span class="menu-text ms-3 fs-6">History</span>
+                            </a>
+                        </li>
+                        <li class="mb-2 bg-danger rounded-2">
+                            <a asp-area="" asp-controller="" asp-action="" class="disabled nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-chart-line sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3 fs-6">Analytics</span>
+                            </a>
+                        </li>
+                        <li class="mb-2 bg-danger rounded-2">
+                            <a asp-area="" asp-controller="" asp-action="" class="disabled nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-warehouse sidebar-icon fs-6 text-center"></i>
+                                <span class="menu-text ms-3 fs-6">Inventory</span>
+                            </a>
+                        </li>
+                        <li class="mb-2 bg-danger rounded-2">
+                            <a asp-area="" asp-controller="" asp-action="" class="disabled nav-link d-flex align-items-center p-2 rounded" style="color:#ffcc00">
+                                <i class="fa-solid fa-hand sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3 fs-6">Request</span>
+                            </a>
+                        </li>
+                    }            
+                </ul>
+            </nav>
+        }
+        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column">
+
+            <header>
+                <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light border-0 mb-3" style="min-height: 60px; height:60px; background-color:#151717;">
+                    <div class="container-fluid">
+                        @if (User.Identity == null || !User.Identity.IsAuthenticated)
+                        {
+                            <a class="navbar-brand fw-semibold me-auto fs-3" asp-area="" asp-controller="Home" asp-action="Index" style="font-size: 22px; color:#1f2128; font-family:'Microsoft Sans Serif'; text-decoration: none; color:#ffcc00">
+                                <i class="fa-solid fa-basket-shopping" style="color: #ffcc00"></i>
+                                SmartScan
+                                <span class="fs-6 text-secondary">
+                                    A Vision-Based Automated Checkout For Retail Counters
+                                </span>
+                            </a>
+                        }
+                        else
+                        {
+                            <p class="navbar-brand fw-semibold project-name text-truncate mb-0" style="font-size: 22px; font-family:Tahoma; color:#ffcc00">
+                                @(ViewData["HeaderTitle"] ?? ViewData["Title"] ?? "SmartScan")
+                            </p>
+                        }
+                        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                                aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between pb-3">
+                            <ul class="navbar-nav flex-grow-1">
+                            </ul>
+                            <partial name="_LoginPartial" />
+                        </div>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="content-scroll-container">
+                <div class="container-fluid px-4">
+                    <main role="main" class="pb-3">
+                        @RenderBody()
+                    </main>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        <script type="text/javascript">
+            document.addEventListener("DOMContentLoaded", function () {
+                const menuToggle = document.getElementById("menuToggle");
+                const sidebar = document.getElementById("sidebar");
+
+                menuToggle.addEventListener("click", function () {
+                    sidebar.classList.toggle("collapsed");
+                });
+            });
+        </script>
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,18 @@
+[
+  {
+    "ContainingType": "SmartScan.Controllers.ScanController",
+    "Method": "ReceiveScanData",
+    "RelativePath": "api/Scan/receive",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "items",
+        "Type": "System.Collections.Generic.List\u00601[[SmartScan.Models.ScannedItem, SmartScan, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

@@ -1,0 +1,107 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+.custom-button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Set the wrapper to match the exact window dimensions */
+#wrapper {
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+}
+
+/* Lock the sidebar to the left screen height perfectly */
+#sidebar {
+    min-width: 240px;
+    max-width: 240px;
+    height: 100vh; /* Takes up full screen height */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 1000;
+}
+
+/* Force ONLY the main view frame to handle scrolling */
+#page-content-wrapper {
+    height: 100vh;
+    display: flex;
+    flex-column: column; /* Stacks the top yellow navbar above your content view */
+    overflow: hidden; /* Keeps the navbar from scrolling away */
+}
+
+/* Scroll container for the actual page data content */
+.content-scroll-container {
+    flex-grow: 1;
+    overflow-y: auto; /* Adds a scrollbar ONLY to your Product list area when needed */
+    padding-bottom: 2rem;
+}
+
+/* --- COLLAPSED RULES CONTAINER STATE --- */
+#sidebar.collapsed {
+    min-width: 55px;
+    max-width: 55px;
+}
+
+    #sidebar.collapsed .project-name {
+        opacity: 0;
+        max-width: 0;
+        display: none;
+    }
+
+    #sidebar.collapsed .menu-text {
+        opacity: 0;
+        max-width: 0;
+        display: inline-block;
+        overflow: hidden;
+    }
+
+    /* Smoothly hides section text labels when sidebar is collapsed */
+    #sidebar.collapsed .small.text-muted {
+        opacity: 0;
+        max-width: 0;
+        padding: 0 !important;
+        overflow: hidden;
+        margin: 0 !important;
+        height: 0;
+        transition: opacity 0.2s ease;
+    }

@@ -1,0 +1,83 @@
+﻿@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Log in";
+}
+
+@section Styles {
+    <style>
+        body{
+            background: linear-gradient(346deg, #0052D4 0%, #65C7F7 50%, #9CECFB 100%);
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+    </style>
+}
+
+<div class="con bg-white col-md-5 position-absolute top-50 start-50 translate-middle mt-4 border border-0 rounded-4 shadow-lg">
+    <div class="p-4">
+        <section>
+            <form id="account" method="post">
+                <h2 class="text-center fw-bold" style="color:#387bd6;">Login</h2>
+                <br />
+                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                <div class="form-floating mb-3 text-secondary">
+                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <label asp-for="Input.Email" class="form-label">Email</label>
+                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                </div>
+                <div class="mb-3 text-secondary">
+                    <div class="form-floating position-relative">
+                        <input asp-for="Input.Password" id="passwordInput" class="form-control pe-5" autocomplete="current-password" aria-required="true" placeholder="password" />
+                        <label asp-for="Input.Password" class="form-label">Password</label>
+                        <i class="fa-solid fa-eye position-absolute top-50 end-0 translate-middle-y me-3 text-secondary fs-5"
+                           id="togglePasswordIcon"
+                           style="cursor: pointer; z-index: 10; font-size: 1.15rem;"></i>
+                    </div>
+                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                </div>
+                <div class="row align-items-start">
+                    <div class="checkbox mb-2 col">
+                        <label asp-for="Input.RememberMe" class="form-label fw-medium text-secondary">
+                            <input class="form-check-input" asp-for="Input.RememberMe" />
+                            @Html.DisplayNameFor(m => m.Input.RememberMe)
+                        </label>
+                    </div>
+                    <div class="col text-end">
+                        <p>
+                            <a style="color: #387bd6;" class="fw-medium link-underline link-underline-opacity-0" id="forgot-password" asp-page="./ForgotPassword">Forgot password</a>
+                        </p>
+                    </div>
+                </div>
+                <br />
+                <div class="p-2">
+                    <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary fw-semibold border border-0 rounded-3" style="background-color:#387bd6;">Sign In</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function () {
+            const passwordInput = document.getElementById("passwordInput");
+            const toggleIcon = document.getElementById("togglePasswordIcon");
+
+            toggleIcon.addEventListener("click", function () {
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    this.classList.remove("fa-eye");
+                    this.classList.add("fa-eye-slash");
+                } else {
+                    passwordInput.type = "password";
+                    this.classList.remove("fa-eye-slash");
+                    this.classList.add("fa-eye");
+                }
+            });
+        });
+    </script>
+}
