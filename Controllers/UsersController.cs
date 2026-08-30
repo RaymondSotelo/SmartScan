@@ -70,7 +70,7 @@ namespace SmartScan.Controllers
                 TempData["UserMessage"] = $"Successfully approved {user.UserName}!";
             }
 
-            return RedirectToAction(nameof(Admin_Approval));
+            return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Disable(string id)

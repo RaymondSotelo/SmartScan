@@ -1,13 +1,45 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\JHANDY\\source\\repos\\SmartScan\\",
+  "WorkspaceRootPath": "C:\\Users\\User\\source\\repos\\SmartScan\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\jhandy\\source\\repos\\smartscan\\controllers\\categoriescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\controllers\\categoriescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:controllers\\categoriescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\jhandy\\source\\repos\\smartscan\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\views\\home\\checkout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:views\\home\\checkout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\views\\categories\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:views\\categories\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\views\\categories\\edit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:views\\categories\\edit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\views\\categories\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:views\\categories\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\views\\products\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:views\\products\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|c:\\users\\user\\source\\repos\\smartscan\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{FCB697AE-5F5C-4E49-8573-38381A33AC4F}|SmartScan.csproj|solutionrelative:views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
   ],
@@ -18,11 +50,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 10,
           "Children": [
             {
               "$type": "Bookmark",
-              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             },
             {
               "$type": "Bookmark",
@@ -30,7 +62,7 @@
             },
             {
               "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
             },
             {
               "$type": "Bookmark",
@@ -38,13 +70,85 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Checkout.cshtml",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Home\\Checkout.cshtml",
+              "RelativeDocumentMoniker": "Views\\Home\\Checkout.cshtml",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Home\\Checkout.cshtml",
+              "RelativeToolTip": "Views\\Home\\Checkout.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACYAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-07-03T12:57:57.465Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-06-26T12:28:19.472Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Create.cshtml",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Categories\\Create.cshtml",
+              "RelativeDocumentMoniker": "Views\\Categories\\Create.cshtml",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Categories\\Create.cshtml",
+              "RelativeToolTip": "Views\\Categories\\Create.cshtml",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABUAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-06-26T04:32:43.216Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Edit.cshtml",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Categories\\Edit.cshtml",
+              "RelativeDocumentMoniker": "Views\\Categories\\Edit.cshtml",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Categories\\Edit.cshtml",
+              "RelativeToolTip": "Views\\Categories\\Edit.cshtml",
+              "ViewState": "AgIAABIAAAAAAAAAAAAiwCoAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-06-26T04:32:42.619Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Categories\\Index.cshtml",
+              "RelativeDocumentMoniker": "Views\\Categories\\Index.cshtml",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Categories\\Index.cshtml",
+              "RelativeToolTip": "Views\\Categories\\Index.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-06-26T04:32:41.316Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Products\\Index.cshtml",
+              "RelativeDocumentMoniker": "Views\\Products\\Index.cshtml",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Products\\Index.cshtml",
+              "RelativeToolTip": "Views\\Products\\Index.cshtml",
+              "ViewState": "AgIAAEIAAAAAAAAAAAAAAEwAAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-06-26T04:32:46.899Z"
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
               "Title": "CategoriesController.cs",
-              "DocumentMoniker": "C:\\Users\\JHANDY\\source\\repos\\SmartScan\\Controllers\\CategoriesController.cs",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Controllers\\CategoriesController.cs",
               "RelativeDocumentMoniker": "Controllers\\CategoriesController.cs",
-              "ToolTip": "C:\\Users\\JHANDY\\source\\repos\\SmartScan\\Controllers\\CategoriesController.cs*",
-              "RelativeToolTip": "Controllers\\CategoriesController.cs*",
-              "ViewState": "AgIAABIAAAAAAAAAAAA5wBUAAAAFAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Controllers\\CategoriesController.cs",
+              "RelativeToolTip": "Controllers\\CategoriesController.cs",
+              "ViewState": "AgIAAHoAAAAAAAAAAAAowH8AAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-26T04:31:05.156Z",
               "EditorCaption": ""
@@ -52,15 +156,38 @@
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "UsersController.cs",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Controllers\\UsersController.cs",
+              "RelativeDocumentMoniker": "Controllers\\UsersController.cs",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Controllers\\UsersController.cs",
+              "RelativeToolTip": "Controllers\\UsersController.cs",
+              "ViewState": "AgIAAD0AAAAAAAAAAAAkwEcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-04T05:33:42.353Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "HomeController.cs",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Controllers\\HomeController.cs",
+              "RelativeDocumentMoniker": "Controllers\\HomeController.cs",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Controllers\\HomeController.cs",
+              "RelativeToolTip": "Controllers\\HomeController.cs",
+              "ViewState": "AgIAADkAAAAAAAAAAAAowEEAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-03T12:54:23.811Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
               "Title": "_Layout.cshtml",
-              "DocumentMoniker": "C:\\Users\\JHANDY\\source\\repos\\SmartScan\\Views\\Shared\\_Layout.cshtml",
+              "DocumentMoniker": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Shared\\_Layout.cshtml",
               "RelativeDocumentMoniker": "Views\\Shared\\_Layout.cshtml",
-              "ToolTip": "C:\\Users\\JHANDY\\source\\repos\\SmartScan\\Views\\Shared\\_Layout.cshtml",
+              "ToolTip": "C:\\Users\\User\\source\\repos\\SmartScan\\Views\\Shared\\_Layout.cshtml",
               "RelativeToolTip": "Views\\Shared\\_Layout.cshtml",
               "ViewState": "AgIAAAwAAAAAAAAAAAAAADkAAABqAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-06-25T15:03:28.423Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-25T15:03:28.423Z"
             }
           ]
         },

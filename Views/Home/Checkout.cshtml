@@ -71,7 +71,7 @@
             // 1. START WEBCAM ACTION HANDLER
             startBtn.addEventListener("click", function () {
                 // Point the image source to your Python server stream
-               videoImg.src = "http://localhost:5050/video_feed";
+                videoImg.src = "http://localhost:5050/video_feed";
 
                 // Toggle visibility states cleanly
                 placeholder.style.display = "none";
@@ -101,10 +101,10 @@
                 document.getElementById("identifiedItemsList").innerHTML = "<li class='text-muted text-center py-3'>Scanner stopped.</li>";
             });
 
-            // 3. FETCH DATA FROM PYTHON
+            // 3. FETCH DATA FROM PYTHON & DATABASE (INDIVIDUAL ROWS)
             async function fetchScannedItems() {
                 try {
-                    // Call the Python API
+                    // Call the Python API to get YOLO detections
                     const response = await fetch("http://localhost:5050/get_detections");
                     const items = await response.json();
 
@@ -114,13 +114,36 @@
                     if (items.length === 0) {
                         list.innerHTML = "<li class='text-muted text-center py-3'>No items detected on tray...</li>";
                     } else {
-                        // Create a clean list item for every product YOLO sees
-                        items.forEach(item => {
-                            list.innerHTML += `
-                                <li class="p-2 border-bottom">
-                                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-box text-success me-2"></i>${item}</h6>
-                                </li>`;
-                        });
+                        // Loop through each item YOLO detected individually
+                        for (const item of items) {
+                            try {
+                                // 1. Format the string to match the DB exactly (e.g., "Nescafe Stick" -> "nescafe_stick")
+                                let formattedItemName = item.toLowerCase().replaceAll(" ", "_");
+
+                                // 2. Ask the C# backend for the price of this formatted item
+                                let dbResponse = await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
+
+                                if (dbResponse.ok) {
+                                    let product = await dbResponse.json();
+
+                                    // Item found in DB: Print Name and Price for this specific instance
+                                    list.innerHTML += `
+                                        <li class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-box text-success me-2"></i>${product.name}</h6>
+                                            <span class="text-success fw-bold fs-5">PHP ${product.price.toFixed(2)}</span>
+                                        </li>`;
+                                } else {
+                                    // Item scanned by YOLO but NOT found in SQL Database
+                                    list.innerHTML += `
+                                        <li class="p-3 border-bottom d-flex justify-content-between align-items-center text-muted">
+                                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>${item}</h6>
+                                            <span class="small text-danger">Not in DB</span>
+                                        </li>`;
+                                }
+                            } catch (dbError) {
+                                console.error("Database connection error for item: " + item, dbError);
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error("Cannot connect to Python Server: ", error);
