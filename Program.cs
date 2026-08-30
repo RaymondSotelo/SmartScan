@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using SmartScan.Services;
 using SmartScan.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,10 +12,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 

@@ -54,8 +54,8 @@ html, body {
 
 /* Lock the sidebar to the left screen height perfectly */
 #sidebar {
-    min-width: 240px;
-    max-width: 240px;
+    min-width: 285px;
+    max-width: 285px;
     height: 100vh; /* Takes up full screen height */
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     z-index: 1000;
@@ -78,30 +78,37 @@ html, body {
 
 /* --- COLLAPSED RULES CONTAINER STATE --- */
 #sidebar.collapsed {
-    min-width: 55px;
-    max-width: 55px;
+    min-width: 65px;
+    max-width: 65px;
 }
 
-    #sidebar.collapsed .project-name {
-        opacity: 0;
-        max-width: 0;
-        display: none;
-    }
+#sidebar.collapsed .sidebar-header{
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
 
-    #sidebar.collapsed .menu-text {
-        opacity: 0;
-        max-width: 0;
-        display: inline-block;
-        overflow: hidden;
-    }
+#sidebar.collapsed .menu-toggle-icon{
+    margin: 0 !important;
+}
 
-    /* Smoothly hides section text labels when sidebar is collapsed */
-    #sidebar.collapsed .small.text-muted {
-        opacity: 0;
-        max-width: 0;
-        padding: 0 !important;
-        overflow: hidden;
-        margin: 0 !important;
-        height: 0;
-        transition: opacity 0.2s ease;
-    }
+#sidebar.collapsed .project-name,
+#sidebar.collapsed .menu-text {
+    display: none !important;
+}
+
+#sidebar.collapsed li:has(.menu-text:only-child){
+    display: none !important;
+}
+
+#sidebar.collapsed ul.components{
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+}
+
+#sidebar.collapsed .nav-link,
+#sidebar.collapsed .dropdown > button {
+    justify-content: center !important;
+    padding: 0.5rem 0 !important;
+    wdith: 100% !important;
+}
