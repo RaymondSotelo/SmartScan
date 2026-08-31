@@ -443,4 +443,16 @@ C:\Users\JHANDY\Source\Repos\SmartScan\obj\Debug\net9.0\ref\SmartScan.dll
 C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
 C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\MailKit.dll
 C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\MimeKit.dll
-C:\Users\JHANDY\Source\Repos\SmartScan\obj\Debug\net9.0\compressed\z0x10cxo6a-26xgdxmwxt.gz
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\ApiEndpoints.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\rbcswa.dswa.cache.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\rjimswa.dswa.cache.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\rjsmcshtml.dswa.cache.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\rjsmrazor.dswa.cache.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\rpswa.dswa.cache.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\SmartScan.sourcelink.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\staticwebassets.build.endpoints.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\staticwebassets.build.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\Debug\net9.0\staticwebassets.development.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\project.assets.json
+C:\Users\JHANDY\Source\Repos\SmartScan\bin\Debug\net9.0\SmartScan.csproj.nuget.dgspec.json
+C:\Users\JHANDY\Source\Repos\SmartScan\obj\Debug\net9.0\compressed\z0x10cxo6a-g3k2m0ab62.gz

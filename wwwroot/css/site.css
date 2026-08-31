@@ -57,15 +57,50 @@ html, body {
     min-width: 285px;
     max-width: 285px;
     height: 100vh; /* Takes up full screen height */
+    display: flex;
+    flex-direction: column;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     z-index: 1000;
+}
+
+#sidebar .sidebar-header{
+    flex-shrink: 0;
+}
+
+#sidebar ul.components {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom slim scrollbar */
+#sidebar ul.components::-webkit-scrollbar {
+    width: 5px;
+}
+
+#sidebar ul.components::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#sidebar ul.components::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+}
+
+#sidebar ul.components::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Optional: hide scrollbar completely when collapsed */
+#sidebar.collapsed ul.components::-webkit-scrollbar {
+    display: none;
 }
 
 /* Force ONLY the main view frame to handle scrolling */
 #page-content-wrapper {
     height: 100vh;
     display: flex;
-    flex-column: column; /* Stacks the top yellow navbar above your content view */
+    flex-direction: column; /* Stacks the top yellow navbar above your content view */
     overflow: hidden; /* Keeps the navbar from scrolling away */
 }
 
@@ -110,5 +145,5 @@ html, body {
 #sidebar.collapsed .dropdown > button {
     justify-content: center !important;
     padding: 0.5rem 0 !important;
-    wdith: 100% !important;
+    width: 100% !important;
 }
