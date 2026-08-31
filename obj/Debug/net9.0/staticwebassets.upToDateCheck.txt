@@ -1,4 +1,5 @@
 wwwroot\favicon.ico
+wwwroot\images\SmartScanLogo.png
 wwwroot\js\site.js
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map

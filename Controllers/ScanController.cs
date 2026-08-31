@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SmartScan.Models;
 // Make sure to include your Models namespace if ScannedItem is in the Models folder
 // using SmartScan.Models; 
 
 namespace SmartScan.Controllers
 {
+    [Authorize(Roles = "Cashier")]
     [Route("api/[controller]")]
     [ApiController]
     public class ScanController : ControllerBase

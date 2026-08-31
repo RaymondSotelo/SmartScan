@@ -30,6 +30,13 @@
                 <ul class="list-unstyled components px-2">
                     @if (User.IsInRole("Admin"))
                     {
+                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
+                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-border-all sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Dashboard</span>
+                            </a>
+                        </li>
+                        <hr />
                         <li style="padding-bottom:6px"> <!-- [ACCOUNT MAMANGERMENT Header] -->
                             <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">ACCOUNT MANAGEMENT</span
                         </li>
@@ -61,6 +68,49 @@
                                 <span class="menu-text ms-3">Categories</span>
                             </a>
                         </li>
+                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
+                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-shop sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Enroll Retail</span>
+                            </a>
+                        </li>
+                        <hr />
+                        <li style="padding-bottom:6px"> <!-- [STATISTICS Header] -->
+                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">STATISTICS</span
+                        </li>
+                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
+                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-chart-line sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Sales Analysis</span>
+                            </a>
+                        </li>
+                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
+                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-receipt sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Transaction Log</span>
+                            </a>
+                        </li>
+                        <hr />
+                        <li style="padding-bottom:6px"> <!-- [MISCELLANEOUS Header] -->
+                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">MISCELLANEOUS</span
+                        </li>
+                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
+                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-id-badge sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Enroll Customer</span>
+                            </a>
+                        </li>
+                        <hr />
+                        <li style="padding-bottom:6px"> <!-- [SETTINGS Header] -->
+                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">SETTINGS</span
+                        </li>
+                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
+                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-circle-user sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Account</span>
+                            </a>
+                        </li>
+
                     }
                     @if (User.IsInRole("Cashier"))
                     {
@@ -82,13 +132,14 @@
         }
         <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column">
 
-            <header>
+            <header> 
                 <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-0 mb-3" style="min-height: 60px; height:60px; background-color:@(User.Identity != null && User.Identity.IsAuthenticated ? "#1162a3" : "transparent");">
                     <div class="container-fluid">
                         @if (User.Identity == null || !User.Identity.IsAuthenticated)
                         {
-                            <a class="navbar-brand fw-semibold me-auto fs-3" asp-area="" asp-controller="Home" asp-action="Index" style="font-size: 22px; font-family:'Microsoft Sans Serif'; text-decoration: none; color:#387bd6">
-                                <i class="fa-solid fa-basket-shopping" style="color:#387bd6"></i>
+                            <img src="~/images/SmartScanLogo.png" alt="Smart Scan Logo" wdith="75" height="75" />
+                            <a class="navbar-brand fw-semibold me-auto" asp-area="" asp-controller="Home" asp-action="Index" style="font-size: 28px; font-family:'Microsoft Sans Serif'; text-decoration: none; color:#387bd6;">
+                                <!--<i class="fa-solid fa-basket-shopping" style="color:#387bd6"></i>-->
                                 SmartScan
                                 <span class="fs-6" style="color:#387bd6">
                                     A Vision-Based Automated Checkout For Retail Counters

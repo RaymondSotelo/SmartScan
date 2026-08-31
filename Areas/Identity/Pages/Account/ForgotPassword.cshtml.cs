@@ -56,6 +56,7 @@ public class ForgotPasswordModel : PageModel
         if (ModelState.IsValid)
         {
             var user = await _userManager.FindByEmailAsync(Input.Email);
+
             if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
             {
                 // Stay on the page once its confirmed
