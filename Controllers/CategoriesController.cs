@@ -16,9 +16,20 @@ public class CategoriesController : Controller
     }
 
     // GET: CATEGORYS
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string search)
     {
-        return View(await _context.Categories.ToListAsync());
+        ViewData["CurrentFilter"] = search;
+
+        var category = _context.Categories
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            category = category.Where(c =>
+                c.CategoryName.Contains(search));
+        }
+
+        return View(await category.ToListAsync());
     }
 
     // GET: CATEGORYS/Create

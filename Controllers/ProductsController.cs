@@ -17,12 +17,24 @@ public class ProductsController : Controller
     }
 
     // GET: PRODUCTS
-    public async Task<IActionResult> Index()    
+    public async Task<IActionResult> Index(string search)    
     {
-        var products = await _context.Products
+        ViewData["CurrentFilter"] = search;
+
+        var productsQuery = _context.Products
             .Include(p => p.Category)
             .Include(p => p.Status)
-            .ToListAsync();
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            productsQuery = productsQuery.Where(p =>
+                p.ProductName.Contains(search) ||
+               (p.Category != null && p.Category.CategoryName.Contains(search)));
+        }
+
+        var products = await productsQuery.ToListAsync();
+
         return View(products);
     }
 
