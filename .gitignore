@@ -427,3 +427,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Added this to prevent bin/obj from appearing to github
+[Bb]in/
+[Oo]bj/
