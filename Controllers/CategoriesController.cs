@@ -1,4 +1,5 @@
 
+using System.Data.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,9 +17,20 @@ public class CategoriesController : Controller
     }
 
     // GET: CATEGORYS
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string search)
     {
-        return View(await _context.Categories.ToListAsync());
+        ViewData["CurrentFilter"] = search;
+
+        var category = _context.Categories
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            category = category.Where(c =>
+                c.CategoryName.Contains(search));
+        }
+
+        return View(await category.ToListAsync());
     }
 
     // GET: CATEGORYS/Create
@@ -122,12 +134,22 @@ public class CategoriesController : Controller
     public async Task<IActionResult> DeleteConfirmed(int? categoryid)
     {
         var category = await _context.Categories.FindAsync(categoryid);
-        if (category != null)
+        if (category == null)
         {
-            _context.Categories.Remove(category);
+            return NotFound();
         }
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Category deleted successfully.";
+        }
+        catch (DbUpdateException)
+        {
+            TempData["ErrorMessage"] = "Cannot delete this category because products are assigned to it.";
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
