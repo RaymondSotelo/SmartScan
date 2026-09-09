@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -28,9 +27,13 @@ public class ProductsController : Controller
 
         if (!string.IsNullOrWhiteSpace(search))
         {
+            search = search.Trim();
+            bool isNumeric = decimal.TryParse(search, out decimal parsedPrice);
+
             productsQuery = productsQuery.Where(p =>
                 p.ProductName.Contains(search) ||
-               (p.Category != null && p.Category.CategoryName.Contains(search)));
+               (p.Category != null && p.Category.CategoryName.Contains(search)) ||
+               (isNumeric && p.Price == parsedPrice));
         }
 
         var products = await productsQuery.ToListAsync();
@@ -96,7 +99,7 @@ public class ProductsController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? productid, [Bind("ProductId,ProductName,CategoryId,Price,ProductImage,StatusId,Category,Status")] Product product)
+    public async Task<IActionResult> Edit(int? productid, [Bind("ProductId,ProductName,CategoryId,Price,ProductImage,StatusId")] Product product)
     {
         if (productid != product.ProductId)
         {
@@ -105,9 +108,20 @@ public class ProductsController : Controller
 
         if (ModelState.IsValid)
         {
+            var existProduct = await _context.Products.FindAsync(productid);
+            if (existProduct == null)
+            {
+                return NotFound();
+            }
+
+            existProduct.ProductName = product.ProductName;
+            existProduct.CategoryId = product.CategoryId;
+            existProduct.Price = product.Price;
+            existProduct.ProductImage = product.ProductImage;
+            existProduct.StatusId = product.StatusId;
+
             try
             {
-                _context.Update(product);
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
@@ -123,6 +137,8 @@ public class ProductsController : Controller
             }
             return RedirectToAction(nameof(Index));
         }
+
+        ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryName", product.CategoryId);
         return View(product);
     }
 
@@ -150,12 +166,23 @@ public class ProductsController : Controller
     public async Task<IActionResult> DeleteConfirmed(int? productid)
     {
         var product = await _context.Products.FindAsync(productid);
-        if (product != null)
+
+        if (product == null)
         {
-            _context.Products.Remove(product);
+            return NotFound();
         }
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Product deleted successfully.";
+        }
+        catch (DbUpdateException)
+        {
+            TempData["ErrorMessage"] = "Cannot delete this product because inventories are assigned to it.";
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
