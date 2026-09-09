@@ -30,7 +30,7 @@
                     <i class="fa-solid fa-magnifying-glass text-muted"></i>
                 </span>
                 <input type="text" name="search" value="@ViewData["CurrentFilter"]" class="form-control border-start-0 ps-0 fw-semibold"
-                       placeholder="Search..." aria-label="Search products" />
+                       placeholder="Search..." aria-label="Search retail" />
             </div>
             <button type="submit" class="btn btn-outline-primary fw-semibold">Search</button>
 
@@ -55,10 +55,13 @@
                 <thead class="table-light">
                     <tr>
                         <th>
-                            @Html.DisplayNameFor(model => model.RetailName)
+                            Retail Name
                         </th>
                         <th>
-                            @Html.DisplayNameFor(model => model.AdminOwner)
+                            @Html.DisplayNameFor(model => model.Address)
+                        </th>
+                        <th>
+                            Admin Owner
                         </th>
                         <th>
                             @Html.DisplayNameFor(model => model.Status)
@@ -72,6 +75,9 @@
                         <tr>
                             <td>
                                 @Html.DisplayFor(model => item.RetailName)
+                            </td>
+                            <td class="text-truncate" style="max-width: 180px;" title="@item.Address">
+                                @Html.DisplayFor(model => item.Address)
                             </td>
                             <td>
                                 @Html.DisplayFor(model => item.AdminOwnerNavigation.UserName)
@@ -87,7 +93,7 @@
                                 }
                             </td>
                             <td>
-                                <a class="btn btn-info fw-medium" asp-action="Details" asp-route-retailid="@item.RetailId"><i class="fa-solid fa-eye"></i> View</a>
+                                <a class="btn btn-info fw-medium" asp-controller="Inventories" asp-action="Index" asp-route-retailId="@item.RetailId"><i class="fa-solid fa-eye"></i> View</a>
                                 <a class="btn btn-primary fw-medium" asp-action="Edit" asp-route-retailid="@item.RetailId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
                                 <form asp-controller="Retails" asp-action="Delete" asp-route-retailid="@item.RetailId" method="post" id="deleteForm-@item.RetailId" class="d-inline">
 
@@ -112,14 +118,14 @@
     <script>
         @if (TempData["ErrorMessage"] != null)
         {
-                    <text>
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Action Blocked',
-                        text: '@TempData["ErrorMessage"]',
-                        confirmButtonColor: '#1162a3'
-                    });
-                    </text>
+            <text>
+            Swal.fire({
+                icon: 'error',
+                title: 'Action Blocked',
+                text: '@TempData["ErrorMessage"]',
+                confirmButtonColor: '#1162a3'
+            });
+            </text>
         }
     </script>
 }

@@ -32,33 +32,11 @@ public class RetailsController : Controller
         {
             retailQuery = retailQuery.Where(r =>
                 r.RetailName.Contains(search) ||
+                r.Address.Contains(search) ||
                (r.AdminOwnerNavigation != null && r.AdminOwnerNavigation.UserName.Contains(search)));
         }
 
         return View(await retailQuery.ToListAsync());
-    }
-
-    // GET: RETAILS/Details/5
-    public async Task<IActionResult> Details(int? retailid)
-    {
-        if (retailid == null)
-        {
-            return NotFound();
-        }
-
-        var retail = await _context.Retails
-            .Include(r => r.Status)
-            .Include(r => r.AdminOwnerNavigation)
-            .FirstOrDefaultAsync(m => m.RetailId == retailid);
-
-        if (retail == null)
-        {
-            return NotFound();
-        }
-
-        ViewData["StatusId"] = new SelectList(_context.Statuses, "StatusId", "StatusName");
-        ViewData["AdminOwner"] = new SelectList(_context.Users, "Id", "UserName");
-        return View(retail);
     }
 
     // GET: RETAILS/Create
