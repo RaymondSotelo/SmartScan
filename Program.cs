@@ -3,8 +3,31 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using SmartScan.Services;
 using SmartScan.Data;
+using System.Diagnostics;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- AUTOMATIC LOCAL YOLO LAUNCHER ---
+try
+{
+    var projectRoot = Directory.GetCurrentDirectory();
+    var yoloFolder = Path.Combine(projectRoot, "PythonScanner");
+    var scriptPath = Path.Combine(yoloFolder, "live_scan.py");
+
+    if (File.Exists(scriptPath))
+    {
+        var pythonProcess = new Process();
+        pythonProcess.StartInfo.FileName = "cmd.exe";
+        pythonProcess.StartInfo.Arguments = $"/k CALL \"C:\\Users\\User\\anaconda3\\Scripts\\activate.bat\" && cd /d \"{yoloFolder}\" && python live_scan.py"; pythonProcess.StartInfo.UseShellExecute = true;
+        pythonProcess.Start();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Auto-launch failed: " + ex.Message);
+}
+// -------------------------------------
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
