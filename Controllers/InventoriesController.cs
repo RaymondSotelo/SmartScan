@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartScan.Models;
 using SmartScan.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Threading.Tasks;
 
 public class InventoriesController : Controller
 {
@@ -53,31 +55,27 @@ public class InventoriesController : Controller
         }
 
         ViewBag.RetailName = storeName;
+        ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName");
 
         return View(await InvQuery.ToListAsync());
     }
 
-    // GET: INVENTORYS/Details/5
-    public async Task<IActionResult> Details(int? inventoryid)
-    {
-        if (inventoryid == null)
-        {
-            return NotFound();
-        }
-
-        var inventory = await _context.Inventories
-            .FirstOrDefaultAsync(m => m.InventoryId == inventoryid);
-        if (inventory == null)
-        {
-            return NotFound();
-        }
-
-        return View(inventory);
-    }
-
     // GET: INVENTORYS/Create
-    public IActionResult Create()
+    public async Task<IActionResult> Create(int? retailId)
     {
+        if (retailId == null)
+        {
+            return NotFound();
+        }
+
+        ViewBag.RetailId = retailId;
+        ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName");
+
+        ViewBag.ProductList = await _context.Products
+            .Include(p => p.Category)
+            .Where(p => p.StatusId == 1)
+            .ToListAsync();
+
         return View();
     }
 
@@ -86,14 +84,41 @@ public class InventoriesController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("InventoryId,ProductId,LocalPrice,Stock,Barcode,RetailId,Product,Retail")] Inventory inventory)
+    public async Task<IActionResult> Create([Bind("ProductId,LocalPrice,Stock,Barcode,RetailId")] Inventory inventory)
     {
+        ModelState.Remove("Product");
+        ModelState.Remove("Retail");
+
+        // Checks if the product is already exist in the inventory
+        bool productExist = await _context.Inventories
+            .AnyAsync(i => i.RetailId == inventory.RetailId && i.ProductId == inventory.ProductId);
+
+        if (productExist)
+        {
+            // Fetch for product name for cleaner error message
+            var product = await _context.Products.FindAsync(inventory.ProductId);
+            string productName = product?.ProductName ?? "This product";
+
+            ModelState.AddModelError("ProductId", $"{productName} is already in your inventory.");
+        }
+
         if (ModelState.IsValid)
         {
             _context.Add(inventory);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            TempData["SuccessMessage"] = "Product successfully added to inventory!";
+
+            //Redirect back of the same retailId
+            return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId});
         }
+
+        ViewBag.RetailId = inventory.RetailId;
+        ViewBag.ProductList = await _context.Products
+            .Include(p => p.Category)
+            .ToListAsync();
+
+        ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName", inventory.ProductId);
         return View(inventory);
     }
 

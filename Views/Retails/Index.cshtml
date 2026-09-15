@@ -93,7 +93,7 @@
                                 }
                             </td>
                             <td>
-                                <a class="btn btn-info fw-medium" asp-controller="Inventories" asp-action="Index" asp-route-retailId="@item.RetailId"><i class="fa-solid fa-eye"></i> View</a>
+                                <a class="btn btn-info fw-medium" asp-controller="Inventories" asp-action="Index" asp-route-retailId="@item.RetailId" title="View Invetory"><i class="fa-solid fa-eye"></i> View</a>
                                 <a class="btn btn-primary fw-medium" asp-action="Edit" asp-route-retailid="@item.RetailId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
                                 <form asp-controller="Retails" asp-action="Delete" asp-route-retailid="@item.RetailId" method="post" id="deleteForm-@item.RetailId" class="d-inline">
 

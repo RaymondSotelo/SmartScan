@@ -79,11 +79,15 @@ if (app.Environment.IsDevelopment())
                     {
                         if (!pythonProcess.HasExited)
                         {
+                            Console.WriteLine("[SmartScan] Stopping YOLO Scanner process tree...");
+                            // Kills cmd.exe, activate.bat, python.exe, and the Flask server
                             pythonProcess.Kill(entireProcessTree: true);
                             pythonProcess.Dispose();
                         }
                     }
-                    catch { }
+                    catch (Exception ex) {
+                        Console.WriteLine($"[SmartScan] Error terminating Python process: {ex.Message}");
+                    }
                 });
             }
         }

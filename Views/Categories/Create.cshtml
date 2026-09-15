@@ -24,12 +24,15 @@
             <div class="col-md-4">
                 <form asp-action="Create">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
+                    
+                    <!-- Category Name -->
                     <div class="form-group">
                         <label asp-for="CategoryName" class="control-label fw-medium" style="color:#1162a3">Category Name</label>
                         <input asp-for="CategoryName" class="form-control" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
                         <span asp-validation-for="CategoryName" class="text-danger"></span>
                     </div>
+
+                    <!-- Button Placement-->
                     <div class="row row-cols-2 pt-5">
                         <div class="text-start">
                             <a asp-action="Index" class="btn btn-outline-secondary fw-medium">Back to List</a>

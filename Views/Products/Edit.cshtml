@@ -26,36 +26,43 @@
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                     <input type="hidden" asp-for="ProductId" />
 
+                    <!-- Product Name  -->
                     <div class="form-group">
                         <label asp-for="ProductName" class="control-label fw-medium" style="color:#1162a3">Product Name</label>
                         <input asp-for="ProductName" class="form-control" oninput="this.value = this.value.replace(/[0-9]/g, '')"/>
                         <span asp-validation-for="ProductName" class="text-danger"></span>
                     </div>
 
+                    <!-- Category Id -->
                     <div class="form-group">
                         <label asp-for="CategoryId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Category</label>
                         <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.CategoryId"></select>
                         <span asp-validation-for="CategoryId" class="text-danger"></span>
                     </div>
 
+                    <!-- Status Id -->
                     <div class="form-group">
                         <label asp-for="StatusId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Status</label>
                         <select asp-for="StatusId" class="form-control" asp-items="ViewBag.StatusId"></select>
                         <span asp-validation-for="StatusId" class="text-danger"></span>
                     </div>
 
+                    <!-- Market Price -->
                     <div class="form-group">
                         <label asp-for="Price" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
-                        <input asp-for="Price" class="form-control" />
+                        <input asp-for="Price" class="form-control no-spin" type="number" step="0.01" min="0.01" onwheel="this.blur()" />
                         <span asp-validation-for="Price" class="text-danger"></span>
                     </div>
 
+                    <!-- Product Image -->
                     <div class="form-group">
                         <!--IMG URL so far! Copy Image Adress!-->
                         <label asp-for="ProductImage" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Product Image</label>
                         <input asp-for="ProductImage" class="form-control" placeholder="https://sample.photos/200/300" />
                         <span asp-validation-for="ProductImage" class="text-danger"></span>
                     </div>
+
+                    <!-- Button Placement -->
                     <div class="row row-cols-2 pt-4">
                         <div class="text-start">
                             <a asp-action="Index" class="btn btn-outline-secondary fw-medium">Back to List</a>

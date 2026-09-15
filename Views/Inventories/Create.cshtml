@@ -1,66 +1,205 @@
 @model SmartScan.Models.Inventory
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Modify Inventory";
+    ViewData["HeaderTitle"] = "Retail Management";
+    var productList = ViewBag.ProductList as IEnumerable<SmartScan.Models.Product> ?? new List<SmartScan.Models.Product>();
 }
 
-<h1>Create</h1>
+@section Styles {
+    <style>
+        body {
+            background: linear-gradient(0deg, #95CCDD 0%);
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+    </style>
+}
 
-<h4>Inventory</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<div class="card shadow border-0 mt-4">
+    <div class="card-header text-white p-3" style="background-color:#1162a3">
+        <h5 class="mb-0"><i class="fa-solid fa-boxes"></i> Modifying Inventory</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+            <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
 
-            <div class="form-group">
-                <label asp-for="ProductId" class="control-label"></label>
-                <input asp-for="ProductId" class="form-control" />
-                <span asp-validation-for="ProductId" class="text-danger"></span>
-            </div>
+            <input type="hidden" asp-for="ProductId" id="SelectedProductId" />
 
-            <div class="form-group">
-                <label asp-for="LocalPrice" class="control-label"></label>
-                <input asp-for="LocalPrice" class="form-control" />
-                <span asp-validation-for="LocalPrice" class="text-danger"></span>
-            </div>
+            <div class="row g-3 p-2">
+                <!-- Product that acts as search bar -->
+                <div class="col-md-3 position-relative">
+                    <label class="form-label fw-medium" style="color:#1162a3;">Search Product</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" id="productSearchInput"
+                               class="form-control border-start-0 @(ViewData.ModelState.ContainsKey("ProductId") && ViewData.ModelState["ProductId"].Errors.Count > 0 ? "is-invalid" : "")" 
+                               placeholder="Type to search..." 
+                               value="@((ViewBag.ProductList as IEnumerable<SmartScan.Models.Product>)?.FirstOrDefault(p => p.ProductId == Model?.ProductId)?.ProductName)"
+                               autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                </div>
 
-            <div class="form-group">
-                <label asp-for="Stock" class="control-label"></label>
-                <input asp-for="Stock" class="form-control" />
-                <span asp-validation-for="Stock" class="text-danger"></span>
-            </div>
+                <!-- Local Price -->
+                <div class="col-md-2 position-relative">
+                    <label asp-for="LocalPrice" class="form-label fw-medium" style="color:#1162a3;">Local Price</label>
+                    <input asp-for="LocalPrice" class="form-control no-spin" id="LocalPriceInput" type="number" step="0.01" min="0.01" onwheel="this.blur()" />
+                    <div class="invalid-tooltip">
+                        <span asp-validation-for="LocalPrice" class="text-danger"></span>
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label asp-for="Barcode" class="control-label"></label>
-                <input asp-for="Barcode" class="form-control" />
-                <span asp-validation-for="Barcode" class="text-danger"></span>
-            </div>
+                <!-- Stock -->
+                <div class="col-md-2 position-relative">
+                    <label asp-for="Stock" class="form-label fw-medium" style="color:#1162a3;">Stock</label>
+                    <input asp-for="Stock" class="form-control no-spin" type="number" step="1" min="0" onwheel="this.blur()" />
+                    <div class="invalid-tooltip">
+                        <span asp-validation-for="Stock" class="text-danger"></span>
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label asp-for="RetailId" class="control-label"></label>
-                <input asp-for="RetailId" class="form-control" />
-                <span asp-validation-for="RetailId" class="text-danger"></span>
-            </div>
+                <!-- Barcode: User manually types or scans here -->
+                <div class="col-md-3 position-relative">
+                    <label asp-for="Barcode" class="form-label fw-medium" style="color:#1162a3;">Barcode</label>
+                    <input asp-for="Barcode" class="form-control" placeholder="Scan or type barcode" />
+                    <div class="invalid-tooltip">
+                        <span asp-validation-for="Barcode" class="text-danger"></span>
+                    </div>
+                </div>
 
-            <div class="form-group">
-                <label asp-for="Product" class="control-label"></label>
-                <input asp-for="Product" class="form-control" />
-                <span asp-validation-for="Product" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Retail" class="control-label"></label>
-                <input asp-for="Retail" class="form-control" />
-                <span asp-validation-for="Retail" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <!-- Submit Button -->
+                <div class="col-md-2 position-relative">
+                    <label class="form-label d-block">&nbsp;</label>
+                    <input type="submit" value="Add" class="btn btn-primary fw-medium w-100" />
+                </div>
             </div>
         </form>
+
+        <!-- Product Table Filter (Moved outside the form) -->
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="bg-light py-2 p-2" style="color:#1162a3;">
+                <h4 class="mb-0 fw-semibold"><i class="fa-solid fa-cart-flatbed me-1"></i> Available Products</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                    <table class="table table-striped table-hover align-middle mb-0" id="productTable">
+                        <!-- Corrected tag from thread to thead -->
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Market Price</th>
+                                <th>Image</th>
+                                <th class="text-center" style="width: 100px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in productList)
+                            {
+                                <tr class="product-row" data-name="@item.ProductName.ToLower()" data-category="@item.Category?.CategoryName?.ToLower()">
+                                    <td class="fw-medium text-dark product-name">@item.ProductName</td>
+                                    <td>@item.Category?.CategoryName</td>
+                                    <td>@item.Price.ToString("N2")</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(item.ProductImage))
+                                        {
+                                            <img src="@item.ProductImage" alt="@item.ProductName" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 50px; height: 50px; border-radius: 4px;">
+                                                <i class="fa-solid fa-image"></i>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary select-product-btn fw-medium"
+                                                data-id="@item.ProductId"
+                                                data-name="@item.ProductName"
+                                                data-price="@item.Price">
+                                                <i class="fa-regular fa-hand-pointer"></i>
+                                                Select
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-start pt-3">
+            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary fw-medium">Back to List</a>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+<!-- Product Search Filter Function -->
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById("productSearchInput");
+            const hiddenProductId = document.getElementById("SelectedProductId");
+            const localPriceInput = document.getElementById("LocalPriceInput");
+            const productRows = document.querySelectorAll(".product-row");
+            const selectButtons = document.querySelectorAll(".select-product-btn");
+
+            // Live Filter Table by Product Name or Category
+            searchInput.addEventListener("input", function () {
+                const query = this.value.trim().toLowerCase();
+
+                productRows.forEach(row => {
+                    const name = row.getAttribute("data-name") || "";
+                    const category = row.getAttribute("data-category") || "";
+
+                    if (name.includes(query) || category.includes(query)) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+
+                // Clear hidden ID if user is typing manually to avoid sending stale selection
+                hiddenProductId.value = "";
+            });
+
+            // Select Button Click: Autofill inputs and sync ProductId
+            selectButtons.forEach(button => {
+                button.addEventListener("click", function () {
+                    const id = this.getAttribute("data-id");
+                    const name = this.getAttribute("data-name");
+                    const price = this.getAttribute("data-price");
+
+                    // Set field values
+                    hiddenProductId.value = id;
+                    searchInput.value = name;
+
+                    if (localPriceInput && price) {
+                        localPriceInput.value = parseFloat(price).toFixed(2);
+                         // Trigger input/change event to clear validation errors if any
+                        localPriceInput.dispatchEvent(new Event('input'));
+                    }
+
+                    // Highlight selected row visually
+                    productRows.forEach(r => r.classList.remove("table-primary"));
+                    this.closest("tr").classList.add("table-primary");
+
+                    // Filter table to selected name
+                    const query = name.trim().toLowerCase();
+                    productRows.forEach(row => {
+                        const rowName = row.getAttribute("data-name") || "";
+                        row.style.display = rowName.includes(query) ? "" : "none";
+                    });
+                });
+            });
+        });
+    </script>
+}

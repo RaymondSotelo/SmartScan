@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace SmartScan.Models;
@@ -13,7 +14,9 @@ public partial class Product
     public string ProductName { get; set; } = null!;
 
     public int CategoryId { get; set; }
-
+    [Required(ErrorMessage = "Local price is required.")]
+    [Range(0.01, 999999.99, ErrorMessage = "Price must be a positive number greater than 0.")]
+    [Column(TypeName = "decimal(18,2)")]
     public decimal Price { get; set; }
 
     public string ProductImage { get; set; } = null!;

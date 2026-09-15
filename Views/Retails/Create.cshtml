@@ -25,13 +25,14 @@
                 <form asp-action="Create">
                     <div asp-validation-summary="All" class="text-danger"></div>
 
+                    <!-- Retail Name -->
                     <div class="form-group">
                         <label asp-for="RetailName" class="control-label fw-medium" style="color:#1162a3">Retail Name</label>
                         <input asp-for="RetailName" class="form-control" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
                         <span asp-validation-for="RetailName" class="text-danger"></span>
                     </div>
 
-
+                    <!-- Retail Passcode -->
                     <div class="form-group">
                         <label asp-for="Passcode" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
 
@@ -52,12 +53,14 @@
                         <span asp-validation-for="Passcode" class="text-danger small"></span>
                     </div>
 
+                    <!-- Address -->
                     <div class="form-group">
                         <label asp-for="Address" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
                         <input asp-for="Address" class="form-control" />
                         <span asp-validation-for="Address" class="text-danger"></span>
                     </div>
 
+                    <!-- Button Placement -->
                     <div class="row row-cols-2 pt-4">
                         <div class="text-start">
                             <a asp-action="Index" class="btn btn-outline-secondary fw-medium">Back to List</a>
@@ -72,6 +75,7 @@
     </div>
 </div>
 
+<!-- Show/Hide Password Function -->
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
