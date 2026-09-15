@@ -73,7 +73,7 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td>
+                            <td class="text-truncate" style="max-width: 180px;" title="@item.RetailName">
                                 @Html.DisplayFor(model => item.RetailName)
                             </td>
                             <td class="text-truncate" style="max-width: 180px;" title="@item.Address">

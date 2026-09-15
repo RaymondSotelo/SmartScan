@@ -34,6 +34,7 @@ public class InventoriesController : Controller
         //Fetch Inv data
         var InvQuery = _context.Inventories
             .Include(i => i.Product)
+                .ThenInclude(p => p.Category)
             .Include(i => i.Retail)
             .Where(i => i.RetailId == retailId)
             .AsQueryable();
@@ -48,7 +49,6 @@ public class InventoriesController : Controller
             bool isNumeric = int.TryParse(search, out int parsedNumeric);
 
             InvQuery = InvQuery.Where(i =>
-                i.Barcode.Contains(search) ||
                (i.Product != null && i.Product.ProductName.Contains(search)) ||
                (isPrice && i.LocalPrice == parsedPrice) ||
                (isNumeric && i.Stock == parsedNumeric));
@@ -84,7 +84,7 @@ public class InventoriesController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("ProductId,LocalPrice,Stock,Barcode,RetailId")] Inventory inventory)
+    public async Task<IActionResult> Create([Bind("ProductId,LocalPrice,Stock,RetailId")] Inventory inventory)
     {
         ModelState.Remove("Product");
         ModelState.Remove("Retail");
@@ -107,8 +107,6 @@ public class InventoriesController : Controller
             _context.Add(inventory);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Product successfully added to inventory!";
-
             //Redirect back of the same retailId
             return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId});
         }
@@ -123,18 +121,27 @@ public class InventoriesController : Controller
     }
 
     // GET: INVENTORYS/Edit/5
-    public async Task<IActionResult> Edit(int? inventoryid)
+    public async Task<IActionResult> Edit(int? inventoryid, int? retailId)
     {
         if (inventoryid == null)
         {
             return NotFound();
         }
 
-        var inventory = await _context.Inventories.FindAsync(inventoryid);
+        var inventory = await _context.Inventories
+            .Include(i => i.Product)
+            .FirstOrDefaultAsync(i => i.InventoryId == inventoryid);
+
         if (inventory == null)
         {
             return NotFound();
         }
+
+        ViewBag.BarcodeList = await _context.Barcodes
+            .Where(p => p.InventoryId == inventoryid)
+            .ToListAsync();
+
+        ViewBag.RetailId = retailId ?? inventory.RetailId;
         return View(inventory);
     }
 
@@ -143,19 +150,35 @@ public class InventoriesController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? inventoryid, [Bind("InventoryId,ProductId,LocalPrice,Stock,Barcode,RetailId,Product,Retail")] Inventory inventory)
+    public async Task<IActionResult> Edit(int? inventoryid, [Bind("InventoryId,ProductId,LocalPrice,Stock,BarcodeId,RetailId")] Inventory inventory)
     {
         if (inventoryid != inventory.InventoryId)
         {
             return NotFound();
         }
 
+        var updInv = await _context.Inventories
+            .Include(i => i.Product)
+            .FirstOrDefaultAsync(i => i.InventoryId == inventoryid);
+
+        if (updInv == null)
+        {
+            return NotFound();
+        }
+
+        ModelState.Remove("Product");
+        ModelState.Remove("Retail");
+
         if (ModelState.IsValid)
         {
             try
             {
-                _context.Update(inventory);
+                updInv.LocalPrice = inventory.LocalPrice;
+                updInv.Stock = inventory.Stock;
+
                 await _context.SaveChangesAsync();
+                
+                return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId });
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -168,8 +191,14 @@ public class InventoriesController : Controller
                     throw;
                 }
             }
-            return RedirectToAction(nameof(Index));
         }
+
+        ViewBag.RetailId = inventory.RetailId;
+        ViewBag.ProductList = await _context.Products
+            .Include(p => p.Category)
+            .ToListAsync();
+
+        ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName", inventory.ProductId);
         return View(inventory);
     }
 
@@ -196,18 +225,88 @@ public class InventoriesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int? inventoryid)
     {
-        var inventory = await _context.Inventories.FindAsync(inventoryid);
-        if (inventory != null)
+        if (inventoryid == null)
         {
-            _context.Inventories.Remove(inventory);
+            return NotFound();
         }
 
+        var inventory = await _context.Inventories.FindAsync(inventoryid);
+
+        if (inventory == null)
+        {
+            return NotFound();
+        }
+
+        int retailId = inventory.RetailId;
+
+        _context.Inventories.Remove(inventory);
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index));
+
+        TempData["SuccessMessage"] = "Item removed from inventory.";
+
+        return RedirectToAction(nameof(Index), new { retailId = retailId });
     }
 
     private bool InventoryExists(int? inventoryid)
     {
         return _context.Inventories.Any(e => e.InventoryId == inventoryid);
+    }
+
+    //POST: Add Barcode
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddBarcode(int? retailId, int? inventoryid, [Bind("BarcodeLine")] Barcode barcode)
+    {
+        var inventory = await _context.Inventories
+        .Include(i => i.Product)
+            .ThenInclude(p => p.Category)
+        .FirstOrDefaultAsync(i => i.InventoryId == inventoryid);
+
+        if (inventory == null)
+        {
+            return NotFound();
+        }
+
+        barcode.InventoryId = inventory.InventoryId;
+
+        ModelState.Remove("Inventory");
+
+        // Ensure if barcode is not just white line
+        if (string.IsNullOrWhiteSpace(barcode.BarcodeLine))
+        {
+            ModelState.AddModelError("Barcode", "Barcode cannot be empty.");
+        }
+        else
+        {
+            barcode.BarcodeLine = barcode.BarcodeLine.Trim();
+            if (barcode.BarcodeLine.Length > 13)
+            {
+                ModelState.AddModelError("BarcodeLine", "Barcode cannot exceed 13 characters.");
+            }
+
+            bool barcodeExists = await _context.Barcodes
+                .AnyAsync(b => b.BarcodeLine == barcode.BarcodeLine.Trim());
+            if (barcodeExists)
+            {
+                ModelState.AddModelError("Barcode", $"Barcode '{barcode.BarcodeLine}' is already registered.");
+            }
+        }
+
+        if (ModelState.IsValid)
+        {
+            _context.Barcodes.Add(barcode);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Barcode successfully added!";
+            return RedirectToAction(nameof(Edit), new { inventoryid = barcode.InventoryId, retailId = retailId });
+        }
+
+        ViewBag.BarcodeList = await _context.Barcodes
+        .Where(b => b.InventoryId == barcode.InventoryId)
+        .ToListAsync();
+
+        ViewBag.RetailId = retailId ?? inventory.RetailId;
+
+        return View("Edit", inventory);
     }
 }

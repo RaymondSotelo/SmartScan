@@ -68,13 +68,16 @@
                             Product
                         </th>
                         <th>
+                            Category
+                        </th>
+                        <th>
                             Local Price
                         </th>
                         <th>
                             @Html.DisplayNameFor(model => model.Stock)
                         </th>
                         <th>
-                            @Html.DisplayNameFor(model => model.Barcode)
+                            Product Image
                         </th>
                         <th></th>
                     </tr>
@@ -83,8 +86,11 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td>
+                            <td class="text-truncate" style="max-width: 180px;" title="@item.Product.ProductName">
                                 @Html.DisplayFor(model => item.Product.ProductName)
+                            </td>
+                            <td>
+                                @(item.Product?.Category?.CategoryName ?? "Uncategorized")
                             </td>
                             <td>
                                 @Html.DisplayFor(model => item.LocalPrice)
@@ -93,12 +99,15 @@
                                 @Html.DisplayFor(model => item.Stock)
                             </td>
                             <td>
-                                @Html.DisplayFor(model => item.Barcode)
+                                <img src="@item.Product.ProductImage" alt="@item.Product.ProductName" style="width: 90px; height: 90px; object-fit: cover; border-radius: 4px;" />
                             </td>
                             <td>
-                                <a asp-action="Edit" asp-route-id="@item.InventoryId">Edit</a> |
-                                <a asp-action="Details" asp-route-id="@item.InventoryId">Details</a> |
-                                <a asp-action="Delete" asp-route-id="@item.InventoryId">Delete</a>
+                                <a class="btn btn-primary" asp-action="Edit" asp-route-inventoryId="@item.InventoryId" asp-route-retailId="@item.RetailId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
+                                <form asp-action="Delete" asp-route-inventoryId="@item.InventoryId" method="post" onsubmit="return confirm('Are you sure you want to remove @item.Product?.ProductName from this inventory?');" style="display:inline;">
+                                    <button type="submit" class="btn btn-secondary">
+                                        <i class="fa-solid fa-xmark"></i> Remove
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     }

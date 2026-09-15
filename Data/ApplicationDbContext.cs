@@ -36,6 +36,8 @@ namespace SmartScan.Data
 
         public virtual DbSet<UserProfile> UserProfiles { get; set; }
 
+        public virtual DbSet<Barcode> Barcodes { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

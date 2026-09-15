@@ -63,7 +63,7 @@
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td>
+                            <td class ="text-truncate" style="max-width: 180px;" title="@item.CategoryName">
                                 <i class="fa-solid fa-tag text-secondary"></i> @Html.DisplayFor(model => item.CategoryName)
                             </td>
                             <td>
