@@ -23,6 +23,7 @@
         <p>
             <a class="btn btn-success fw-semibold" asp-action="Create" asp-route-retailId="@ViewBag.RetailId">Add Product</a>
         </p>
+
         <!--SEARCH Feature-->
         <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 450px; padding-bottom: 11px; width:100%;">
             <input type="hidden" name="retailId" value="@ViewBag.RetailId" />

@@ -121,7 +121,7 @@ public class InventoriesController : Controller
     }
 
     // GET: INVENTORYS/Edit/5
-    public async Task<IActionResult> Edit(int? inventoryid, int? retailId)
+    public async Task<IActionResult> Edit(int? inventoryid, int? retailId, string? barcodeSearch)
     {
         if (inventoryid == null)
         {
@@ -137,10 +137,17 @@ public class InventoriesController : Controller
             return NotFound();
         }
 
-        ViewBag.BarcodeList = await _context.Barcodes
-            .Where(p => p.InventoryId == inventoryid)
-            .ToListAsync();
+        var barcodeQuery = _context.Barcodes
+            .Where(b => b.InventoryId == inventoryid);
 
+        if (!string.IsNullOrWhiteSpace(barcodeSearch))
+        {
+            string term = barcodeSearch.Trim();
+            barcodeQuery = barcodeQuery.Where(b => b.BarcodeLine.Contains(term));
+        }
+
+        ViewBag.BarcodeList = await barcodeQuery.ToListAsync();
+        ViewBag.BarcodeSearch = barcodeSearch;
         ViewBag.RetailId = retailId ?? inventory.RetailId;
         return View(inventory);
     }
@@ -308,5 +315,21 @@ public class InventoriesController : Controller
         ViewBag.RetailId = retailId ?? inventory.RetailId;
 
         return View("Edit", inventory);
+    }
+
+    //POST: Delete Barcode
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteBarcode(int barcodeId, int inventoryId, int? retailId, string? barcodeSearch)
+    {
+        var barcode = await _context.Barcodes.FindAsync(barcodeId);
+
+        if (barcode != null)
+        {
+            _context.Barcodes.Remove(barcode);
+            await _context.SaveChangesAsync();
+        }
+
+        return RedirectToAction(nameof(Edit), new { inventoryid = inventoryId, retailId = retailId, barcodeSearch = barcodeSearch });
     }
 }
