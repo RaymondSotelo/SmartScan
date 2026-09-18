@@ -1,122 +1,132 @@
 @model SmartScan.Models.Transaction
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Transaction Info";
+    ViewData["HeaderTitle"] = "Statistics";
+
+    var staffNames = ViewData["StaffNames"] as Dictionary<int, string>;
 }
 
-<h1>Details</h1>
+@section Styles {
+    <style>
+        body {
+            background: linear-gradient(0deg, #95CCDD 0%);
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+    </style>
+}
 
-<div>
-    <h4>Transaction</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.RetailStaffId)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.RetailStaffId)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CustomerId)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CustomerId)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.RetailId)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.RetailId)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.TotalAmount)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.TotalAmount)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PaymentMethodId)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PaymentMethodId)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.StatusId)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.StatusId)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CreatedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedAt)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ReceiptNumber)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ReceiptNumber)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Customer)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Customer)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PaymentMethod)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PaymentMethod)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Retail)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Retail)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.RetailStaff)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.RetailStaff)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SecurityAlerts)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SecurityAlerts)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Status)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Status)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.TransactionItems)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.TransactionItems)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.TransactionId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+<div class="card shadow border-0 mt-4">
+    <div class="card-header text-white p-3" style="background-color:#1162a3">
+        <h5 class="mb-0"><i class="fa-solid fa-receipt"></i> Transaction Info</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Column 1 -->
+            <div class="col-md-4">
+                <dl class="row mb-2">
+                    <dt class="col-sm-5" style="color:#1162a3;">Receipt Number</dt> <!-- Reciept Number -->
+                    <dd class="col-sm-7 fw-semibold">@Html.DisplayFor(model => model.ReceiptNumber)</dd>
+                </dl>
+                <dl class="row mb-2"> 
+                    <dt class="col-sm-5" style="color:#1162a3;">Cashier</dt> <!-- Cashier -->
+                    <dd class="col-sm-7 fw-semibold">
+                        @(Model.RetailStaffId.HasValue && staffNames != null && staffNames.TryGetValue(Model.RetailStaffId.Value, out var name)
+                                                ? name
+                                                : "N/A")
+                    </dd>
+                </dl>
+                <dl class="row mb-2">
+                    <dt class="col-sm-5" style="color:#1162a3;">Customer</dt> <!-- Reciept Number -->
+                    <dd class="col-sm-7 fw-semibold">@Html.DisplayFor(model => model.Customer.FullName)</dd>
+                </dl>
+            </div>
+
+            <!-- Column 2 -->
+            <div class="col-md-4">
+                <dl class="row mb-2">
+                    <dt class="col-sm-5" style="color:#1162a3;">Retail</dt> <!-- Retail -->
+                    <dd class="col-sm-7 fw-semibold">@Html.DisplayFor(model => model.Retail.RetailName)</dd>
+                </dl>
+                <dl class="row mb-2">
+                    <dt class="col-sm-5" style="color:#1162a3;">Total Amount</dt> <!-- Total Amount -->
+                    <dd class="col-sm-7 fw-semibold">@Html.DisplayFor(model => model.TotalAmount)</dd>
+                </dl>
+                <dl class="row mb-2">
+                    <dt class="col-sm-5" style="color:#1162a3;">Payment Method</dt> <!-- Payment Method -->
+                    <dd class="col-sm-7 fw-semibold">@Html.DisplayFor(model => model.PaymentMethod.PaymentMethodName)</dd>
+                </dl>
+            </div>
+
+            <!-- Column 3 -->
+            <div class="col-md-4">
+                <dl class="row mb-2">
+                    <dt class="col-sm-5" style="color:#1162a3;">Transaction Date</dt> <!-- Transaction Date -->
+                    <dd class="col-sm-7 fw-semibold">@Html.DisplayFor(model => model.CreatedAt)</dd>
+                </dl>
+                <dl class="row mb-2">
+                    <dt class="col-sm-5" style="color:#1162a3;">Status</dt> <!-- Status -->
+                    <dd class="col-sm-7 fw-semibold">
+                        @if (Model.Status?.StatusName?.Equals("Active", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            <span class="badge bg-success rounded-pill px-3">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary text-light rounded-pill px-3">
+                                @(Model.Status?.StatusName ?? "Inactive")
+                            </span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+        <hr />
+        <!-- Decorator -->
+        <div class="bg-light py-2 p-2" style="color:#1162a3;">
+            <h3 class="mb-0 fw-semibold"><i class="fa-solid fa-cart-flatbed me-1"></i> List of Transaction Items</h3>
+            <p class="fw-medium pt-1 text-secondary">These are the items included in this transaction.</p>
+        </div>
+
+        <!-- Transaction Item Table -->
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle" id="cashierTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Product Image</th>
+                    </tr>
+                </thead>
+                @if (ViewBag.ItemList != null)
+                {
+                    <tbody>
+                        @foreach (var items in ViewBag.ItemList)
+                        {
+                            <tr>
+                                <td>@items.Product.ProductName</td>
+                                <td>@items.Quantity</td>
+                                <td>@items.UnitPrice</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(items.Product.ProductImage))
+                                    {
+                                        <img src="@items.Product.ProductImage" alt="@items.Product.ProductName" style="width: 90px; height: 90px; object-fit: cover; border-radius: 4px;" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                }
+            </table>
+        </div>
+
+        <!-- Return Button -->
+        <div class="row row-cols-2 pt-4">
+            <div class="text-start">
+                <a asp-action="Index" class="btn btn-outline-secondary fw-medium">Back to List</a>
+            </div>
+        </div>
+    </div>
 </div>

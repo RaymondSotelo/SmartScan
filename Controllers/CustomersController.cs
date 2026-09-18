@@ -1,6 +1,7 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SmartScan.Data;
 using SmartScan.Models;
@@ -16,9 +17,25 @@ public class CustomersController : Controller
     }
 
     // GET: CUSTOMERS
-    public async Task<IActionResult> Index()    
+    public async Task<IActionResult> Index(string search)    
     {
-        return View(await _context.Customers.ToListAsync());
+        ViewData["CurrentFilter"] = search;
+
+        var customerQuery = _context.Customers
+            .Include(p => p.Status)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.Trim();
+            bool isNumeric = int.TryParse(search, out int parsedContactNum);
+
+            customerQuery = customerQuery.Where(c =>
+                c.FullName.Contains(search) ||
+                c.ContactNumber.Contains(search));
+        }
+
+        return View(await customerQuery.ToListAsync());
     }
 
     // GET: CUSTOMERS/Details/5
@@ -50,8 +67,23 @@ public class CustomersController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("CustomerId,FullName,DigitalIdNumber,FaceEmbedding,StatusId,CreditLimit,CurrentDebt,Status,Transactions")] Customer customer)
+    public async Task<IActionResult> Create([Bind("FullName,ContactNumber")] Customer customer)
     {
+        // Digital ID and Facial Recognition are disabled for now
+        customer.DigitalIdNumber = null;
+        customer.DigitalIdHash = null;
+        customer.FaceEmbedding = null;
+        customer.HasFaceRegistered = false;
+
+        // Default account & store credit rules
+        customer.CreditLimit = 300.00m;
+        customer.CurrentDebt = 0.00m;
+        customer.StatusId = 1; // Active status
+        customer.CreatedAt = DateTime.UtcNow;
+
+        ModelState.Clear();
+        TryValidateModel(customer);
+
         if (ModelState.IsValid)
         {
             _context.Add(customer);
@@ -74,6 +106,8 @@ public class CustomersController : Controller
         {
             return NotFound();
         }
+
+        ViewData["StatusId"] = new SelectList(_context.Statuses, "StatusId", "StatusName");
         return View(customer);
     }
 
@@ -82,9 +116,15 @@ public class CustomersController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? customerid, [Bind("CustomerId,FullName,DigitalIdNumber,FaceEmbedding,StatusId,CreditLimit,CurrentDebt,Status,Transactions")] Customer customer)
+    public async Task<IActionResult> Edit(int? customerid, [Bind("CustomerId,FullName,ContactNumber,CreditLimit,StatusId")] Customer customer)
     {
         if (customerid != customer.CustomerId)
+        {
+            return NotFound();
+        }
+
+        var existingCustomer = await _context.Customers.FindAsync(customerid);
+        if (existingCustomer == null)
         {
             return NotFound();
         }
@@ -93,7 +133,12 @@ public class CustomersController : Controller
         {
             try
             {
-                _context.Update(customer);
+                // Update only those fields
+                existingCustomer.FullName = customer.FullName.Trim();
+                existingCustomer.ContactNumber = customer.ContactNumber?.Trim();
+                existingCustomer.CreditLimit = customer.CreditLimit;
+                existingCustomer.StatusId = customer.StatusId;
+
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
@@ -109,6 +154,7 @@ public class CustomersController : Controller
             }
             return RedirectToAction(nameof(Index));
         }
+
         return View(customer);
     }
 

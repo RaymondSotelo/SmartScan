@@ -19,24 +19,35 @@
     <div class="card-header text-white p-3" style="background-color:#1162a3">
         <h5 class="mb-0"><i class="fa-solid fa-receipt"></i> Transaction Logs</h5>
     </div>
-    <div class="p-3 d-flex justify-content-end align-items-end mb-3">
-        <form asp-action="Index" method="get" class="d-flex gap-2 w-100" style="max-width: 480px;">
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0">
-                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                </span>
-                <input type="text" name="search" value="@ViewData["CurrentFilter"]" class="form-control border-start-0 ps-0 fw-semibold"
-                       placeholder="Search..." aria-label="Search transaction" />
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <!-- Decorator -->
+            <div class="bg-light py-2 p-2" style="color:#1162a3;">
+                <h3 class="mb-0 fw-semibold"><i class="fa-solid fa-receipt me-1"></i> Active Transaction History</h3>
+                <p class="fw-medium pt-1 text-secondary">Select and view a transaction's information from the catalog below.</p>
             </div>
-            <button type="submit" class="btn btn-outline-primary fw-semibold">Search</button>
 
-            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <a asp-action="Index" class="btn btn-outline-secondary" title="Clear Search">
-                    <i class="fa-solid fa-xmark"></i>
-                </a>
-            }
-        </form>
+            <!-- Transaction Search Bar -->
+            <form asp-action="Index" method="get" class="p-2 d-flex align-items-center gap-2 w-100" style="max-width: 500px;">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                    </span>
+                    <input type="text" name="search" value="@ViewData["CurrentFilter"]"
+                           class="form-control border-start-0 ps-0 fw-semibold"
+                           placeholder="Search..." aria-label="Search transaction" />
+                </div>
+
+                <button type="submit" class="btn btn-outline-primary fw-semibold text-nowrap">Search</button>
+
+                @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary text-nowrap" title="Clear Search">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                }
+            </form>
+        </div>
     </div>
     @if (!Model.Any())
     {
@@ -55,12 +66,6 @@
                         </th>
                         <th>
                             Retail Name
-                        </th>
-                        <th>
-                            Cashier
-                        </th>
-                        <th>
-                            Customer
                         </th>
                         <th>
                             Total Amount
@@ -84,14 +89,8 @@
                             <td>
                                 @Html.DisplayFor(model => item.ReceiptNumber)
                             </td>
-                            <td>
+                            <td class="text-truncate" style="max-width: 180px;" title="@item.Retail.RetailName">
                                 @Html.DisplayFor(model => item.Retail.RetailName)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.RetailStaff.Cashier.UserName)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.Customer.FullName)
                             </td>
                             <td>
                                 @Html.DisplayFor(model => item.TotalAmount)
@@ -100,12 +99,20 @@
                                 @Html.DisplayFor(model => item.PaymentMethod.PaymentMethodName)
                             </td>
                             <td>
+                                @if (item.Status.StatusName == "Active")
+                                {
+                                    <span class="badge bg-success rounded-pill px-3">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary text-light rounded-pill px-3">Inactive</span>
+                                }
+                            </td>
+                            <td>
                                 @Html.DisplayFor(model => item.CreatedAt)
                             </td>
                             <td>
-                                <a asp-action="Edit" asp-route-id="@item.TransactionId">Edit</a> |
-                                <a asp-action="Details" asp-route-id="@item.TransactionId">Details</a> |
-                                <a asp-action="Delete" asp-route-id="@item.TransactionId">Delete</a>
+                                <a class="btn btn-info fw-medium" asp-action="Details" asp-route-transactionid="@item.TransactionId"><i class="fa-solid fa-eye"></i> View</a>
                             </td>
                         </tr>
                     }

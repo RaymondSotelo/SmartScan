@@ -1,72 +1,83 @@
 @model SmartScan.Models.Customer
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Add Customers Info";
+    ViewData["HeaderTitle"] = "Miscellaneous";
 }
 
-<h1>Create</h1>
+@section Styles {
+    <style>
+        body {
+            background: linear-gradient(0deg, #95CCDD 0%);
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+    </style>
+}
 
-<h4>Customer</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-group">
-                <label asp-for="FullName" class="control-label"></label>
-                <input asp-for="FullName" class="form-control" />
-                <span asp-validation-for="FullName" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="DigitalIdNumber" class="control-label"></label>
-                <input asp-for="DigitalIdNumber" class="form-control" />
-                <span asp-validation-for="DigitalIdNumber" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="FaceEmbedding" class="control-label"></label>
-                <input asp-for="FaceEmbedding" class="form-control" />
-                <span asp-validation-for="FaceEmbedding" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="StatusId" class="control-label"></label>
-                <input asp-for="StatusId" class="form-control" />
-                <span asp-validation-for="StatusId" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="CreditLimit" class="control-label"></label>
-                <input asp-for="CreditLimit" class="form-control" />
-                <span asp-validation-for="CreditLimit" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="CurrentDebt" class="control-label"></label>
-                <input asp-for="CurrentDebt" class="form-control" />
-                <span asp-validation-for="CurrentDebt" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <input asp-for="Status" class="form-control" />
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Transactions" class="control-label"></label>
-                <input asp-for="Transactions" class="form-control" />
-                <span asp-validation-for="Transactions" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<div class="card shadow border-0 mt-4">
+    <div class="card-header text-white p-3" style="background-color:#1162a3">
+        <h5 class="mb-0"><i class="fa-solid fa-id-badge"></i> Adding Customer Info</h5>
     </div>
-</div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
+                    <!-- Full Name -->
+                    <div class="form-group">
+                        <label asp-for="FullName" class="control-label fw-medium" style="color:#1162a3"></label>
+                        <input asp-for="FullName" class="form-control" />
+                        <span asp-validation-for="FullName" class="text-danger"></span>
+                    </div>
+
+                    <!-- Contact Number -->
+                    <div class="form-group">
+                        <label asp-for="ContactNumber" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
+                        <input asp-for="ContactNumber"
+                               type="tel"
+                               class="form-control"
+                               maxlength="11"
+                               minlength="11"
+                               pattern="[0-9]{11}"
+                               inputmode="numeric"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
+                               placeholder="e.g., 09123456789" />
+                        <span asp-validation-for="ContactNumber" class="text-danger"></span>
+                    </div>
+
+                    <!-- Information Alert on Defaults -->
+                    <div class="alert alert-light border small text-muted mt-4">
+                        <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                        Registered customer automatically start with a <strong>PHP 300.00</strong> credit limit. Digital ID & Face enrollment are currently disabled.
+                    </div>
+
+                    <!-- Button Submit -->
+                    <div class="row row-cols-2 pt-4">
+                        <div class="text-start">
+                            <a asp-action="Index" class="btn btn-outline-secondary fw-medium">Back to List</a>
+                        </div>
+                        <div class="form-group text-end">
+                            <input type="submit" value="Add Customer" class="btn btn-primary fw-medium" />
+                        </div>
+                    </div>
+
+                    <!-- [DISABLE Facial and DigitalId for now!]
+                    <div class="form-group">
+                        <label asp-for="DigitalIdNumber" class="control-label"></label>
+                        <input asp-for="DigitalIdNumber" class="form-control" />
+                        <span asp-validation-for="DigitalIdNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="FaceEmbedding" class="control-label"></label>
+                        <input asp-for="FaceEmbedding" class="form-control" />
+                        <span asp-validation-for="FaceEmbedding" class="text-danger"></span>
+                    </div>
+                    -->
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

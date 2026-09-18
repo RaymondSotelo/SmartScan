@@ -54,22 +54,19 @@
                 <thead class="table-light">
                     <tr>
                         <th>
-                            @Html.DisplayNameFor(model => model.FullName)
+                            Full Name
                         </th>
                         <th>
-                            @Html.DisplayNameFor(model => model.DigitalIdNumber)
+                            Contact Number
                         </th>
                         <th>
-                            @Html.DisplayNameFor(model => model.FaceEmbedding)
+                            Credit Limit
                         </th>
                         <th>
-                            @Html.DisplayNameFor(model => model.StatusId)
+                            Credit Debt
                         </th>
                         <th>
-                            @Html.DisplayNameFor(model => model.CreditLimit)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.CurrentDebt)
+                            Status
                         </th>
                         <th></th>
                     </tr>
@@ -82,13 +79,7 @@
                                 @Html.DisplayFor(model => item.FullName)
                             </td>
                             <td>
-                                @Html.DisplayFor(model => item.DigitalIdNumber)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.FaceEmbedding)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.StatusId)
+                                @Html.DisplayFor(model => item.ContactNumber)
                             </td>
                             <td>
                                 @Html.DisplayFor(model => item.CreditLimit)
@@ -97,15 +88,22 @@
                                 @Html.DisplayFor(model => item.CurrentDebt)
                             </td>
                             <td>
-                                @Html.DisplayFor(model => item.Status)
+                                @if (item.Status.StatusName == "Active")
+                                {
+                                    <span class="badge bg-success rounded-pill px-3">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary text-light rounded-pill px-3">Inactive</span>
+                                }
                             </td>
                             <td>
-                                @Html.DisplayFor(model => item.Transactions)
-                            </td>
-                            <td>
-                                <a asp-action="Edit" asp-route-id="@item.CustomerId">Edit</a> |
-                                <a asp-action="Details" asp-route-id="@item.CustomerId">Details</a> |
-                                <a asp-action="Delete" asp-route-id="@item.CustomerId">Delete</a>
+                                <a class="btn btn-primary fw-medium" asp-action="Edit" asp-route-customerid="@item.CustomerId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
+                                <form asp-action="Delete" asp-route-customerid="@item.CustomerId" method="post" onsubmit="return confirm('Are you sure you want to delete @item.FullName?');" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger fw-medium">
+                                        <i class="fa-solid fa-trash"></i> Delete
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     }

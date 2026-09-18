@@ -22,6 +22,7 @@ public partial class Transaction
 
     public int? StatusId { get; set; }
 
+    [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}", ApplyFormatInEditMode = false)]
     public DateTime? CreatedAt { get; set; }
 
     public string? ReceiptNumber { get; set; }
