@@ -93,12 +93,13 @@
                                 }
                             </td>
                             <td>
-                                <a class="btn btn-info fw-medium" asp-controller="Inventories" asp-action="Index" asp-route-retailId="@item.RetailId" title="View Invetory"><i class="fa-solid fa-eye"></i> View</a>
-                                <a class="btn btn-primary fw-medium" asp-action="Edit" asp-route-retailid="@item.RetailId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
-                                <form asp-controller="Retails" asp-action="Delete" asp-route-retailid="@item.RetailId" method="post" id="deleteForm-@item.RetailId" class="d-inline">
+                                <a class="btn btn-info fw-medium p-2 text-dark" asp-controller="Inventories" asp-action="Index" asp-route-retailId="@item.RetailId" title="View Inventory"><i class="fa-solid fa-boxes"></i> View</a>
+                                <a class="btn btn-warning fw-medium p-2" asp-controller="RetailStaffs" asp-action="Index" asp-route-retailId="@item.RetailId" title="Assign Staff"><i class="fa-solid fa-user-tie"></i> Assign</a>
+                                <a class="btn btn-primary fw-medium p-2" asp-action="Edit" asp-route-retailid="@item.RetailId" title="Edit"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
+                                <form asp-controller="Retails" asp-action="Delete" asp-route-retailid="@item.RetailId" title="Delete" method="post" id="deleteForm-@item.RetailId" class="d-inline">
 
                                     <a href="javascript:void(0);"
-                                       class="btn btn-sm btn-danger p-2"
+                                       class="btn btn-danger fw-medium p-2"
                                        onclick="if(confirm('Are you sure you want to delete this product instantly?')) { document.getElementById('deleteForm-@item.RetailId').submit(); }">
                                         <i class="fa-solid fa-trash"></i> Delete
                                     </a>

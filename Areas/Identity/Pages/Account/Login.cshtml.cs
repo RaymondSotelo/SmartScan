@@ -123,11 +123,21 @@ namespace SmartScan.Areas.Identity.Pages.Account
                    
                     if(user != null)
                     {
-                        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-                        
-                        if (isAdmin)
+                        // If user was intentionally redirected here from an internal page, honor that URL first
+                        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
                         {
-                            return RedirectToAction("Index", "Users", new { area = ""});
+                            return LocalRedirect(returnUrl);
+                        }
+
+                        // Role-based routing
+                        if (await _userManager.IsInRoleAsync(user, "Admin"))
+                        {
+                            return RedirectToAction("Index", "Users", new { area = "" });
+                        }
+
+                        if (await _userManager.IsInRoleAsync(user, "Cashier"))
+                        {
+                            return RedirectToAction("Index", "Checkout", new { area = "" }); // Adjust controller/action name as needed
                         }
                     }
 

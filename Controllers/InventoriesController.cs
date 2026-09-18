@@ -1,11 +1,13 @@
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SmartScan.Models;
-using SmartScan.Data;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using SmartScan.Data;
+using SmartScan.Models;
 
+[Authorize(Roles = "Admin")]
 public class InventoriesController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -248,8 +250,6 @@ public class InventoriesController : Controller
 
         _context.Inventories.Remove(inventory);
         await _context.SaveChangesAsync();
-
-        TempData["SuccessMessage"] = "Item removed from inventory.";
 
         return RedirectToAction(nameof(Index), new { retailId = retailId });
     }

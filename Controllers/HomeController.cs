@@ -22,18 +22,22 @@ namespace SmartScan.Controllers
 
         public IActionResult Index()
         {
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                if (User.IsInRole("Admin"))
-                {
-                    return RedirectToAction("Index", "Users", new { area = "" });
-                }
 
-                if (User.IsInRole("Cashier"))
-                {
-                    return View();
-                }
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return RedirectToAction("/Account/Login", new { area = "Identity" });
             }
+
+            if (User.IsInRole("Admin"))
+            {
+                return RedirectToAction("Index", "Users");
+            }
+
+            if (User.IsInRole("Cashier"))
+            {
+                return RedirectToAction("Checkout", "Home");
+            }
+
             return View();
         }
 
