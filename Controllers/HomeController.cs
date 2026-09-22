@@ -13,7 +13,7 @@ namespace SmartScan.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context; // 1. Added the database context variable
 
-        // 2. Updated constructor to receive the database context
+        // constructor to receive the database context
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
             _logger = logger;
@@ -46,13 +46,20 @@ namespace SmartScan.Controllers
             return View();
         }
 
+       
+        public IActionResult Payment()
+        {
+            return View();
+        }
+        // ------------------------------------
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        // 3. ADDED YOUR NEW CHECKOUT SCANNER ENDPOINT HERE
+        // ADDED YOUR NEW CHECKOUT SCANNER ENDPOINT HERE
         [HttpGet]
         public async Task<IActionResult> GetProductDetails(string productName)
         {

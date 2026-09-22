@@ -21,8 +21,4 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.12" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="PythonScanner\" />
-  </ItemGroup>
-
 </Project>
