@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // Added for Database queries
-using SmartScan.Data;                // Added to access ApplicationDbContext
+using Microsoft.EntityFrameworkCore;
+using SmartScan.Data;
 using SmartScan.Models;
 
 namespace SmartScan.Controllers
@@ -11,10 +11,12 @@ namespace SmartScan.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly ApplicationDbContext _context; // 1. Added the database context variable
+        private readonly ApplicationDbContext _context;
 
-        // constructor to receive the database context
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+        // Constructor to receive the database context
+        public HomeController(
+            ILogger<HomeController> logger,
+            ApplicationDbContext context)
         {
             _logger = logger;
             _context = context;
@@ -22,56 +24,89 @@ namespace SmartScan.Controllers
 
         public IActionResult Index()
         {
-
             if (!User.Identity?.IsAuthenticated ?? true)
             {
-                return RedirectToAction("/Account/Login", new { area = "Identity" });
+                return RedirectToAction(
+                    "/Account/Login",
+                    new { area = "Identity" }
+                );
             }
 
             if (User.IsInRole("Admin"))
             {
-                return RedirectToAction("Index", "Users");
+                return RedirectToAction(
+                    "Index",
+                    "Users"
+                );
             }
 
             if (User.IsInRole("Cashier"))
             {
-                return RedirectToAction("Checkout", "Home");
+                return RedirectToAction(
+                    "Checkout",
+                    "Home"
+                );
             }
 
             return View();
         }
 
+        // Allows both /Home/Checkout and /Checkout
+        [HttpGet("/Checkout")]
         public IActionResult Checkout()
         {
             return View();
         }
 
-       
         public IActionResult Payment()
         {
             return View();
         }
+
+        // ------------------------------------
+        // Get product details for the scanner
         // ------------------------------------
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
-
-        // ADDED YOUR NEW CHECKOUT SCANNER ENDPOINT HERE
         [HttpGet]
-        public async Task<IActionResult> GetProductDetails(string productName)
+        public async Task<IActionResult> GetProductDetails(
+            string productName)
         {
             var product = await _context.Products
-                .FirstOrDefaultAsync(p => p.ProductName == productName);
+                .FirstOrDefaultAsync(
+                    p => p.ProductName == productName
+                );
 
             if (product == null)
             {
                 return NotFound();
             }
 
-            return Json(new { name = product.ProductName, price = product.Price });
+            return Json(new
+            {
+                name = product.ProductName,
+                price = product.Price
+            });
+        }
+
+        // ------------------------------------
+        // Error
+        // ------------------------------------
+
+        [ResponseCache(
+            Duration = 0,
+            Location = ResponseCacheLocation.None,
+            NoStore = true
+        )]
+        public IActionResult Error()
+        {
+            return View(
+                new ErrorViewModel
+                {
+                    RequestId =
+                        Activity.Current?.Id
+                        ?? HttpContext.TraceIdentifier
+                }
+            );
         }
     }
 }

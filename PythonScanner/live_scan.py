@@ -1,6 +1,8 @@
 ﻿import cv2
 import time
 import base64
+import os
+import threading
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -26,21 +28,45 @@ print(" SmartScan AI Scanner")
 print(" YOLOv8s - 512 CPU Test")
 print("==========================================")
 
+# Get the folder where this live_scan.py file is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+# ============================================================
+# OLD MODEL
+# ============================================================
+
 print("Loading OLD model...")
 
-model_old = YOLO(
-    r"C:\YOLO\my_model\my_model.pt"
+OLD_MODEL_PATH = os.path.join(
+    BASE_DIR,
+    "my_model",
+    "my_model.pt"
 )
 
+model_old = YOLO(OLD_MODEL_PATH)
+
 print("OLD model loaded.")
+print("OLD model path:", OLD_MODEL_PATH)
+
+
+# ============================================================
+# NEW MODEL
+# ============================================================
 
 print("Loading NEW model...")
 
-model_new = YOLO(
-    r"C:\YOLO\my_model_v2\my_model.pt"
+NEW_MODEL_PATH = os.path.join(
+    BASE_DIR,
+    "my_model_v2",
+    "my_model.pt"
 )
 
+model_new = YOLO(NEW_MODEL_PATH)
+
 print("NEW model loaded.")
+print("NEW model path:", NEW_MODEL_PATH)
+
 
 print("Both models are ready.")
 
@@ -52,6 +78,47 @@ print("Both models are ready.")
 CONFIDENCE_THRESHOLD = 0.80
 
 IMAGE_SIZE = 512
+
+# Run one model per request, alternating so both models still contribute
+# while each camera frame takes roughly half the inference work.
+_inference_lock = threading.Lock()
+_next_model = "OLD"
+_latest_old_detections = []
+_latest_new_detections = []
+
+
+def _box_iou(box_a, box_b):
+    """Return intersection-over-union for two [x1, y1, x2, y2] boxes."""
+    left = max(box_a[0], box_b[0])
+    top = max(box_a[1], box_b[1])
+    right = min(box_a[2], box_b[2])
+    bottom = min(box_a[3], box_b[3])
+
+    intersection = max(0, right - left) * max(0, bottom - top)
+    area_a = max(0, box_a[2] - box_a[0]) * max(0, box_a[3] - box_a[1])
+    area_b = max(0, box_b[2] - box_b[0]) * max(0, box_b[3] - box_b[1])
+    union = area_a + area_b - intersection
+
+    return intersection / union if union else 0
+
+
+def _combine_model_detections(old_detections, new_detections):
+    """Combine model results and suppress same-class overlapping duplicates."""
+    combined = list(old_detections)
+
+    for detection in new_detections:
+        duplicate_index = next((
+            index for index, existing in enumerate(combined)
+            if existing["name"] == detection["name"]
+            and _box_iou(existing["box"], detection["box"]) >= 0.5
+        ), None)
+
+        if duplicate_index is None:
+            combined.append(detection)
+        elif detection["confidence"] > combined[duplicate_index]["confidence"]:
+            combined[duplicate_index] = detection
+
+    return combined
 
 
 # ============================================================
@@ -405,58 +472,40 @@ def detect_frame():
         )
 
 
-        # ====================================================
-        # OLD MODEL
-        # ====================================================
+        # Run one model per frame and alternate between them. The lock protects
+        # both YOLO instances and the cached result if Flask serves concurrent
+        # requests.
+        global _next_model, _latest_old_detections, _latest_new_detections
+        old_time = 0.0
+        new_time = 0.0
 
-        old_start = time.perf_counter()
+        with _inference_lock:
+            if _next_model == "OLD":
+                model_start = time.perf_counter()
+                _latest_old_detections = run_model(
+                    model_old,
+                    img_for_yolo,
+                    "OLD",
+                    original_width,
+                    original_height
+                )
+                old_time = time.perf_counter() - model_start
+                _next_model = "NEW"
+            else:
+                model_start = time.perf_counter()
+                _latest_new_detections = run_model(
+                    model_new,
+                    img_for_yolo,
+                    "NEW",
+                    original_width,
+                    original_height
+                )
+                new_time = time.perf_counter() - model_start
+                _next_model = "OLD"
 
-
-        old_results = run_model(
-            model_old,
-            img_for_yolo,
-            "OLD",
-            original_width,
-            original_height
-        )
-
-
-        old_time = (
-            time.perf_counter()
-            - old_start
-        )
-
-
-        # ====================================================
-        # NEW MODEL
-        # ====================================================
-
-        new_start = time.perf_counter()
-
-
-        new_results = run_model(
-            model_new,
-            img_for_yolo,
-            "NEW",
-            original_width,
-            original_height
-        )
-
-
-        new_time = (
-            time.perf_counter()
-            - new_start
-        )
-
-
-        # ====================================================
-        # COMBINE
-        # ====================================================
-
-        detections = (
-            old_results +
-            new_results
-        )
+            old_results = list(_latest_old_detections)
+            new_results = list(_latest_new_detections)
+            detections = _combine_model_detections(old_results, new_results)
 
 
         # ====================================================
@@ -493,7 +542,12 @@ def detect_frame():
         )
 
         print(
-            f"TOTAL YOLO:       "
+            f"MODEL THIS FRAME: "
+            f"{'OLD' if old_time else 'NEW'}"
+        )
+
+        print(
+            f"YOLO THIS FRAME:  "
             f"{old_time + new_time:.4f} sec"
         )
 
@@ -535,9 +589,11 @@ def detect_frame():
 
         print("")
         print("!!!!!!!!!!!! ERROR !!!!!!!!!!!!")
+
         print(
             str(e)
         )
+
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 

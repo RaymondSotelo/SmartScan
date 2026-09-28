@@ -175,6 +175,8 @@
             let isScanningActive = false;
             let isProcessingFrame = false;
             let mediaStream = null;
+            const recentDetections = [];
+            const detectionHoldMs = 300;
 
             // CART & CACHE STATE
             const priceCache = {};
@@ -285,6 +287,7 @@
                 video.srcObject = null;
 
                 overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+                recentDetections.length = 0;
 
                 videoContainer.style.display = "none";
                 placeholder.style.display = "block";
@@ -310,8 +313,12 @@
         async function captureAndDetect() {
             captureCanvas.width = video.videoWidth;
             captureCanvas.height = video.videoHeight;
-            overlay.width = video.videoWidth;
-            overlay.height = video.videoHeight;
+            // Resizing a canvas clears it, so only update its backing size when
+            // the camera's actual resolution changes.
+            if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
+                overlay.width = video.videoWidth;
+                overlay.height = video.videoHeight;
+            }
 
             captureCtx.drawImage(
                 video,
@@ -336,47 +343,61 @@
 
                 const data = await response.json();
                 const detections = data.detections || [];
+                const now = Date.now();
+                const currentDetections = detections.filter(d => d.box);
 
-                // NOTE:
-                // We intentionally DO NOT clear the overlay here.
-                // This prevents the bounding boxes from disappearing
-                // when one frame temporarily has no detection.
+                // Keep a detection briefly through a single missed inference,
+                // while redrawing from a clean canvas to avoid label trails.
+                for (const detected of currentDetections) {
+                    const [x1, y1, x2, y2] = detected.box;
+                    let previous = recentDetections.find(item =>
+                        item.name === detected.name &&
+                        Math.abs(item.box[0] - x1) < video.videoWidth * 0.12 &&
+                        Math.abs(item.box[1] - y1) < video.videoHeight * 0.12
+                    );
+
+                    if (!previous) {
+                        previous = { name: detected.name, box: detected.box, confidence: detected.confidence };
+                        recentDetections.push(previous);
+                    }
+
+                    if (previous.lastSeen) {
+                        previous.box = detected.box.map((coordinate, index) =>
+                            Math.round(previous.box[index] * 0.65 + coordinate * 0.35)
+                        );
+                        previous.confidence = Math.round(
+                            (previous.confidence * 0.65 + detected.confidence * 0.35) / 5
+                        ) * 5;
+                    } else {
+                        previous.box = detected.box;
+                        previous.confidence = detected.confidence;
+                    }
+                    previous.lastSeen = now;
+                }
+
+                for (let i = recentDetections.length - 1; i >= 0; i--) {
+                    if (now - (recentDetections[i].lastSeen || 0) > detectionHoldMs) {
+                        recentDetections.splice(i, 1);
+                    }
+                }
+
+                overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+                for (const detected of recentDetections) {
+                    const [x1, y1, x2, y2] = detected.box;
+                    const boxColor = detected.confidence >= 80 ? "#00FF00" : "#FFA500";
+                    overlayCtx.lineWidth = 3;
+                    overlayCtx.strokeStyle = boxColor;
+                    overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                    overlayCtx.fillStyle = boxColor;
+                    overlayCtx.font = "bold 15px Arial";
+                    overlayCtx.fillText(`${detected.name} (${detected.confidence}%)`, x1, Math.max(18, y1 - 8));
+                }
 
                 const yoloCounts = {};
                 let hasLowConfidence = false;
 
                 for (const detected of detections) {
-
-                    if (detected.box) {
-                        const [x1, y1, x2, y2] = detected.box;
-
-                        const boxWidth = x2 - x1;
-                        const boxHeight = y2 - y1;
-
-                        const boxColor =
-                            detected.confidence >= 80
-                                ? "#00FF00"
-                                : "#FFA500";
-
-                        overlayCtx.lineWidth = 3;
-                        overlayCtx.strokeStyle = boxColor;
-
-                        overlayCtx.strokeRect(
-                            x1,
-                            y1,
-                            boxWidth,
-                            boxHeight
-                        );
-
-                        overlayCtx.fillStyle = boxColor;
-                        overlayCtx.font = "bold 15px Arial";
-
-                        overlayCtx.fillText(
-                            `${detected.name} (${detected.confidence}%)`,
-                            x1,
-                            Math.max(18, y1 - 8)
-                        );
-                    }
 
                     if (detected.confidence < 80) {
                         hasLowConfidence = true;
