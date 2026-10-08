@@ -16,13 +16,14 @@ public partial class Retail
 
     public int StatusId { get; set; }
 
-    [Required(ErrorMessage = "Passcode is required.")]
-    [RegularExpression(@"^\d{6}$", ErrorMessage = "The passcode must be exactly 6 digits.")]
-    public string Passcode { get; set; } = String.Empty;
-
     public string AdminOwner { get; set; } = null!;
 
     public string Address { get; set; } = null!;
+
+    public string? Description { get; set; }
+
+    public string? ImagePath { get; set; }
+
     [ValidateNever]
     [ForeignKey(nameof(AdminOwner))]
     public virtual IdentityUser? AdminOwnerNavigation { get; set; } = null!;

@@ -1,0 +1,255 @@
+﻿@{
+    ViewData["Title"] = "Customer Face Verification";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0" style="color:#1162a3;">
+                            <i class="fa-solid fa-user-shield me-2"></i>Live Face Verification
+                        </h5>
+                        <p class="text-muted small mb-0">Auto-scans continuously for 15 seconds.</p>
+                    </div>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </a>
+                </div>
+
+                <div class="card-body p-4 text-center">
+
+                    <!-- REAL-TIME MATCH BAR -->
+                    <div id="liveMatchBar" class="alert alert-secondary py-2 fw-bold mb-3 fs-5">
+                        <i class="fa-solid fa-video-slash me-1"></i> Camera off
+                    </div>
+
+                    <!-- Video Frame Container -->
+                    <div class="position-relative d-inline-block bg-dark rounded-3 overflow-hidden shadow-inner mb-4"
+                         style="width: 100%; max-width: 420px; height: 320px;">
+
+                        <video id="videoFeed" autoplay playsinline muted
+                               style="width: 100%; height: 100%; object-fit: cover;"></video>
+
+                        <!-- Hardcoded Canvas -->
+                        <canvas id="faceCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;"></canvas>
+
+                        <!-- Scanning Visual Overlay -->
+                        <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
+                             style="width: 200px; height: 240px; pointer-events: none; opacity: 0.6; transition: border-color 0.3s;">
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" id="btnToggleCamera" class="btn btn-outline-secondary fw-semibold px-4">
+                            <i class="fa-solid fa-video me-1"></i> Start Camera
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light py-2 text-center text-muted small">
+                    <i class="fa-solid fa-bolt me-1"></i> Automatically identifying... No click required.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
+
+    <script>
+        const video = document.getElementById('videoFeed');
+        const canvas = document.getElementById('faceCanvas'); // Grab from HTML
+        const btnToggleCamera = document.getElementById('btnToggleCamera');
+        const liveMatchBar = document.getElementById('liveMatchBar');
+        const scanGuide = document.getElementById('scanGuide');
+
+        let currentStream = null;
+        let isModelReady = false;
+        let isScanningActive = false;
+        let isAuthenticating = false;
+        let scanSessionTimeout = null;
+        let scanLoop = null;
+
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
+        const AUTO_STOP_MS = 15000;
+
+        // 1. Initialize Models
+        async function loadModels() {
+            liveMatchBar.className = 'alert alert-secondary py-2 fw-bold mb-3 fs-5 border-0';
+            liveMatchBar.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Loading models...';
+
+            try {
+                await Promise.all([
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                ]);
+                isModelReady = true;
+                liveMatchBar.innerHTML = '<i class="fa-solid fa-power-off me-1"></i> Ready. Start Camera.';
+            } catch (err) {
+                liveMatchBar.className = 'alert alert-danger py-2 fw-bold mb-3 fs-5 border-0';
+                liveMatchBar.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Engine failed to load.';
+            }
+        }
+        loadModels();
+
+        // 2. Stop Camera
+        function stopCamera() {
+            isScanningActive = false;
+            isAuthenticating = false;
+            if (scanSessionTimeout) clearTimeout(scanSessionTimeout);
+            if (scanLoop) cancelAnimationFrame(scanLoop);
+
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            video.srcObject = null;
+
+            // Clear canvas safely
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            btnToggleCamera.className = 'btn btn-outline-secondary fw-semibold px-4';
+            btnToggleCamera.innerHTML = '<i class="fa-solid fa-video me-1"></i> Start Camera';
+
+            scanGuide.classList.remove('border-success', 'border-danger', 'border-warning');
+            scanGuide.classList.add('border-primary');
+        }
+
+        // 3. Start Camera Toggle
+        btnToggleCamera.addEventListener('click', async () => {
+            if (currentStream) {
+                stopCamera();
+                liveMatchBar.className = 'alert alert-secondary py-2 fw-bold mb-3 fs-5 border-0';
+                liveMatchBar.innerHTML = '<i class="fa-solid fa-video-slash me-1"></i> Camera off';
+                return;
+            }
+
+            if (!isModelReady) return;
+
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                video.srcObject = currentStream;
+
+                btnToggleCamera.className = 'btn btn-danger fw-semibold px-4';
+                btnToggleCamera.innerHTML = '<i class="fa-solid fa-video-slash me-1"></i> Stop Camera';
+
+                isScanningActive = true;
+                isAuthenticating = false;
+
+                // IMPORTANT: Wait for the video to actually start playing frames!
+                video.onplay = () => {
+                    const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                    faceapi.matchDimensions(canvas, displaySize);
+
+                    // Start timeout countdown only after video plays
+                    scanSessionTimeout = setTimeout(() => {
+                        if (isScanningActive) {
+                            stopCamera();
+                            liveMatchBar.className = 'alert alert-warning py-2 fw-bold mb-3 fs-5 border-0 text-dark';
+                            liveMatchBar.innerHTML = '<i class="fa-solid fa-clock me-1"></i> Scan timed out. Try again.';
+                        }
+                    }, AUTO_STOP_MS);
+
+                    // Start loop
+                    runFastDetectionLoop();
+                };
+
+            } catch (err) {
+                liveMatchBar.className = 'alert alert-danger py-2 fw-bold mb-3 fs-5 border-0';
+                liveMatchBar.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Camera error';
+            }
+        });
+
+        // 4. Ultra-Fast Continuous Detection Loop
+        async function runFastDetectionLoop() {
+            if (!isScanningActive) return;
+
+            // Ensure video is actively rendering frames before scanning
+            if (video.readyState === 4) {
+                // Lowered minConfidence to 0.4 for faster pickup in varied lighting
+                const detection = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 }))
+                                               .withFaceLandmarks()
+                                               .withFaceDescriptor();
+
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (detection) {
+                    const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                    const resizedDetection = faceapi.resizeResults(detection, displaySize);
+                    faceapi.draw.drawFaceLandmarks(canvas, resizedDetection, { drawLines: true, color: '#00ff00', lineWidth: 1 });
+
+                    if (!isAuthenticating) {
+                        verifyWithServer(detection.descriptor);
+                    }
+                } else {
+                    if (!isAuthenticating) {
+                        liveMatchBar.className = 'alert alert-info py-2 fw-bold mb-3 fs-5 border-0 text-dark';
+                        liveMatchBar.innerHTML = '<i class="fa-solid fa-crosshairs fa-fade me-1"></i> Looking for face...';
+                        scanGuide.classList.replace('border-primary', 'border-warning');
+                        scanGuide.classList.replace('border-danger', 'border-warning');
+                    }
+                }
+            }
+
+            if (isScanningActive) {
+                scanLoop = requestAnimationFrame(runFastDetectionLoop);
+            }
+        }
+
+        // 5. Backend Verification Request
+        async function verifyWithServer(descriptorArray) {
+            isAuthenticating = true;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            liveMatchBar.className = 'alert alert-primary py-2 fw-bold mb-3 fs-5 border-0';
+            liveMatchBar.innerHTML = '<i class="fa-solid fa-microchip fa-spin me-1"></i> Verifying...';
+
+            const capturedVectorJson = JSON.stringify(Array.from(descriptorArray));
+
+            try {
+                const response = await fetch('/Customers/AuthenticateFace', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ capturedEmbeddingJson: capturedVectorJson })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    isScanningActive = false;
+                    clearTimeout(scanSessionTimeout);
+
+                    scanGuide.classList.remove('border-primary', 'border-warning', 'border-danger');
+                    scanGuide.classList.add('border-success');
+
+                    liveMatchBar.className = 'alert alert-success py-2 fw-bold mb-3 fs-5 border-0 shadow-sm';
+                    liveMatchBar.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${result.customerName}`;
+
+                    setTimeout(() => { window.location.href = result.redirectUrl; }, 1000);
+                } else {
+                    scanGuide.classList.replace('border-warning', 'border-danger');
+                    liveMatchBar.className = 'alert alert-danger py-2 fw-bold mb-3 fs-5 border-0';
+                    liveMatchBar.innerHTML = '<i class="fa-solid fa-user-xmark me-1"></i> Unregistered Face';
+
+                    setTimeout(() => { isAuthenticating = false; }, 800);
+                }
+            } catch (err) {
+                setTimeout(() => { isAuthenticating = false; }, 800);
+            }
+        }
+
+        window.addEventListener('beforeunload', stopCamera);
+    </script>
+}

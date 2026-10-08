@@ -8,15 +8,15 @@
 @section Styles {
     <style>
         body {
-            background: linear-gradient(0deg, #95CCDD 0%);
+            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
             background-repeat: no-repeat;
             background-size: cover;
         }
     </style>
 }
 
-<div class="card shadow border-0 mt-4">
-    <div class="card-header text-white p-3" style="background-color:#1162a3">
+<div class="card shadow border-0 rounded-4 mt-4">
+    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
         <h5 class="mb-0"><i class="fa-solid fa-id-badge"></i> Updating Customer Info</h5>
     </div>
     <div class="card-body">
@@ -53,13 +53,6 @@
                         <label asp-for="CreditLimit" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
                         <input asp-for="CreditLimit" class="form-control" />
                         <span asp-validation-for="CreditLimit" class="text-danger"></span>
-                    </div>
-
-                    <!-- Status Id -->
-                    <div class="form-group">
-                        <label asp-for="StatusId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Status</label>
-                        <select asp-for="StatusId" class="form-control" asp-items="ViewBag.StatusId"></select>
-                        <span asp-validation-for="StatusId" class="text-danger"></span>
                     </div>
 
                     <!-- Button Submit -->

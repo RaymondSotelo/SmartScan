@@ -10,22 +10,23 @@ public partial class Transaction
     [Key]
     public int TransactionId { get; set; }
 
-    public int? RetailStaffId { get; set; }
+    public int RetailStaffId { get; set; }
 
-    public int? CustomerId { get; set; }
+    public int CustomerId { get; set; }
 
-    public int? RetailId { get; set; }
+    public int RetailId { get; set; }
 
-    public decimal? TotalAmount { get; set; }
+    public decimal TotalAmount { get; set; }
 
-    public int? PaymentMethodId { get; set; }
+    public int PaymentMethodId { get; set; }
 
-    public int? StatusId { get; set; }
+    public int StatusId { get; set; }
 
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}", ApplyFormatInEditMode = false)]
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-    public string? ReceiptNumber { get; set; }
+    public string ReceiptNumber { get; set; } = null!;
+
     [ValidateNever]
     public virtual Customer? Customer { get; set; }
     [ValidateNever]
@@ -40,4 +41,5 @@ public partial class Transaction
     public virtual Status? Status { get; set; }
 
     public virtual ICollection<TransactionItem> TransactionItems { get; set; } = new List<TransactionItem>();
+
 }

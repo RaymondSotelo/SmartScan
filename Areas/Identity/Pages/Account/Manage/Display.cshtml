@@ -1,0 +1,94 @@
+﻿@page
+@model SmartScan.Areas.Identity.Pages.Account.Manage.DisplayModel
+@{
+	ViewData["Title"] = "Display";
+	ViewData["ActivePage"] = ManageNavPages.Display;
+}
+
+<div class="d-flex justify-content-center align-items-center w-100 py-4" style="min-height: 75vh;">
+    <div style="width: 100%; max-width: 580px;">
+        <h3 class="fw-medium mb-3" style="color:#1162a3;">@ViewData["Title"]</h3>
+        <partial name="_StatusMessage" for="StatusMessage" />
+
+        <form id="display-form" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+            <!-- Profile Picture | Header -->
+            <hr />
+            <p class="text-secondary fw-medium" style="font-size:18px;">Change Profile Picture</p>
+
+            <!-- Profile Picture Display and Upload -->
+            <div class="mb-4 text-center">
+                <div class="d-inline-block position-relative mb-2">
+                    <img id="avatarPreview"
+                         src="@(string.IsNullOrEmpty(Model.CurrentProfilePicture) ? "/images/default-avatar.png" : Model.CurrentProfilePicture)"
+                         onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                         alt="Profile Picture"
+                         class="rounded-circle border shadow-sm object-fit-cover border-2 border-primary"
+                         style="width: 180px; height: 180px;" />
+                </div>
+                <div>
+                    <label asp-for="Input.ProfileImageFile" class="form-label d-block small fw-medium" style="color:#1162a3;"><i class="fa-solid fa-pen-to-square" style="color:#1162a3;"></i> Edit Profile</label>
+                    <input asp-for="Input.ProfileImageFile" type="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" onchange="previewAvatar(this)" />
+                    <span asp-validation-for="Input.ProfileImageFile" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <!-- Display Name | Header -->
+            <hr />
+            <p class="text-secondary fw-medium mb-4" style="font-size:18px;">Add / Moddify your Display Name</p>
+
+            <!-- First Name -->
+            <div class="form-floating mb-3">
+                <input asp-for="Input.FirstName" class="form-control" placeholder="Enter first name" />
+                <label asp-for="Input.FirstName" class="form-label"></label>
+                <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
+            </div>
+
+            <!-- Last Name -->
+            <div class="form-floating mb-3">
+                <input asp-for="Input.LastName" class="form-control" placeholder="Enter last name" />
+                <label asp-for="Input.LastName" class="form-label"></label>
+                <span asp-validation-for="Input.LastName" class="text-danger small"></span>
+            </div>
+
+            <!-- Set Display Name | Switch Toggle -->
+            <div class="form-switch mb-4 d-flex justify-content-between align-items-center p-0">
+                <label class="form-check-label fw-medium text-primary mb-0 fs-5"
+                       for="setDisplayNameCheck"
+                       style="cursor: pointer; user-select: none;">
+                    Set this as the Display Name
+                </label>
+                <input asp-for="Input.SetAsDisplayName"
+                       class="form-check-input custom-toggle m-0 border-2 border-primary"
+                       type="checkbox"
+                       role="switch"
+                       id="setDisplayNameCheck"
+                       style="cursor: pointer; width: 3em; height: 1.6em;" />
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center mt-4">
+				<button id="update-display-button" type="submit" class="w-50 btn btn-lg btn-primary fw-semibold" style="font-size: 18px;">
+					Save Changes
+				</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('avatarPreview').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

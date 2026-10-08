@@ -9,17 +9,35 @@
     }
 }
 
-<h1>Manage your account</h1>
+@{
+    ViewData["Title"] = "Manage Account";
+    ViewData["HeaderTitle"] = "Account Settings";
+}
 
-<div>
-    <h2>Change your account settings</h2>
-    <hr />
-    <div class="row">
-        <div class="col-md-3">
-            <partial name="_ManageNav" />
-        </div>
-        <div class="col-md-9">
-            @RenderBody()
+@section Styles {
+    <style>
+        body {
+            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+    </style>
+}
+
+<div class="card shadow border-0 rounded-4 mt-4">
+    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
+        <h5 class="mb-0"><i class="fa-solid fa-circle-user"></i> Manage your Account</h5>
+    </div>
+    <div class="p-3">
+        <div>
+            <div class="row">
+                <div class="col-md-3">
+                    <partial name="_ManageNav" />
+                </div>
+                <div class="col-md-9">
+                    @RenderBody()
+                </div>
+            </div>
         </div>
     </div>
 </div>

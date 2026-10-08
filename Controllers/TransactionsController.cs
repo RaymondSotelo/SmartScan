@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -20,12 +21,19 @@ public class TransactionsController : Controller
     {
         ViewData["CurrentFilter"] = search;
 
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(currentUserId))
+        {
+            return Challenge();
+        }
+
         var transactionQuery = _context.Transactions
             .Include(t => t.RetailStaff)
             .Include(t => t.Customer)
             .Include(t => t.Retail)
             .Include(t => t.PaymentMethod)
             .Include(t => t.Status)
+            //.Where(t => t.Retail.RetailId == currentUserId)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -79,6 +87,7 @@ public class TransactionsController : Controller
         var transaction = await _context.Transactions
         .Include(t => t.Retail)
         .Include(t => t.Customer)
+        .Include(t => t.Status)
         .Include(t => t.PaymentMethod)
         .FirstOrDefaultAsync(m => m.TransactionId == transactionid);
 

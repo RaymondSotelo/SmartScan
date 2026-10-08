@@ -5,6 +5,8 @@ using SmartScan.Services;
 using SmartScan.Data;
 using System.Diagnostics;
 using System.IO;
+using SmartScan.Hubs;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,14 +18,24 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddClaimsPrincipalFactory<SmartScan.Services.ApplicationUserClaimsPrincipalFactory>();
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 
+// Service Configuration
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    // Check security stamp immediately rather than the default 30-minute delay
+    options.ValidationInterval = TimeSpan.Zero;
+});
+
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
-// --- AUTOMATIC LOCAL YOLO LAUNCHER ---
-// ==========================================
+
 // AUTOMATIC LOCAL YOLO SCANNER LAUNCHER
 // ==========================================
 if (app.Environment.IsDevelopment())
@@ -118,9 +130,12 @@ else
 }
 
 app.UseHttpsRedirection();
+
 app.UseRouting();
 
 app.UseAuthorization();
+
+app.MapHub<UserSessionHub>("/hubs/userSession");
 
 app.MapStaticAssets();
 
@@ -131,6 +146,8 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 using (var scope = app.Services.CreateScope())
 {

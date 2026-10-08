@@ -11,14 +11,20 @@ public partial class UserProfile
 {
     [Key]
     public int ProfileId { get; set; }
-
+    [Required]
+    [MaxLength(50)]
+    [Display(Name = "First Name")]
     public string FirstName { get; set; } = null!;
-
+    [Required]
+    [MaxLength(50)]
+    [Display(Name = "Last Name")]
     public string LastName { get; set; } = null!;
-
+    [MaxLength(260)]
     public string? ProfilePicture { get; set; } = null!;
 
     public string UserId { get; set; } = null!;
+
+    public bool UseAsDisplayName { get; set; } = false;
 
     [ValidateNever]
     [ForeignKey(nameof(UserId))]

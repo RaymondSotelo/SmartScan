@@ -1,0 +1,241 @@
+﻿@model SmartScan.Models.ViewModels.SalesAnalysisViewModel
+
+@{
+    ViewData["Title"] = "Sales Analysis";
+    Layout = "_RetailLayout"; // Uses your nested layout
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0" style="color: #1162a3;">
+        <i class="fa-solid fa-chart-line me-2"></i> Sales Analysis
+    </h4>
+
+    <!-- Export Dropdown Button -->
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-secondary dropdown-toggle fw-semibold shadow-sm" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa-solid fa-download me-1"></i> Export Report
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-1 p-0 overflow-hidden rounded-3">
+            <!-- Excel Export (GET) -->
+            <li>
+                <a class="dropdown-item d-flex align-items-center py-2 fw-medium text-success"
+                   asp-controller="Retails"
+                   asp-action="ExportExcel"
+                   asp-route-retailId="@ViewBag.RetailId">
+                    <i class="fa-solid fa-file-excel text-success me-2 fs-5"></i> Export to Excel (.xlsx)
+                </a>
+            </li>
+            <!-- PDF Export (POST Form) -->
+            <li>
+                <form id="pdfExportForm" method="post" asp-controller="Retails" asp-action="ExportPdf" target="_blank" class="m-0">
+                    <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
+                    <input type="hidden" name="revenueChartImg" id="revenueChartImg" />
+                    <input type="hidden" name="productsChartImg" id="productsChartImg" />
+                    <input type="hidden" name="paymentChartImg" id="paymentChartImg" />
+                    <button type="button" class="dropdown-item d-flex align-items-center py-2 w-100 fw-medium text-danger" onclick="exportPdfWithCharts()">
+                        <i class="fa-solid fa-file-pdf text-danger me-2 fs-5"></i> Export to PDF (.pdf)
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="row g-3 mb-4">
+    <!-- Today's Transactions -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="p-3 bg-primary bg-opacity-10 rounded-circle me-3 text-primary">
+                    <i class="fa-solid fa-receipt fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-bold mb-0">TODAY'S TRANSACTIONS</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.TodayTransactions</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Revenue -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="p-3 bg-success bg-opacity-10 rounded-circle me-3 text-success">
+                    <i class="fa-solid fa-peso-sign fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-bold mb-0">TOTAL REVENUE</p>
+                    <h3 class="fw-bold mb-0 text-dark">₱@Model.TotalRevenue.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Sold -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="p-3 bg-warning bg-opacity-10 rounded-circle me-3 text-warning">
+                    <i class="fa-solid fa-boxes-stacked fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-bold mb-0">TOTAL ITEMS SOLD</p>
+                    <h3 class="fw-bold mb-0 text-dark">@Model.TotalItemsSold</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Product -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="p-3 bg-info bg-opacity-10 rounded-circle me-3 text-info">
+                    <i class="fa-solid fa-trophy fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-bold mb-0">TOP PRODUCT</p>
+                    <h5 class="fw-bold mb-0 text-dark text-truncate" style="max-width: 130px;" title="@Model.TopSellingItemName">
+                        @Model.TopSellingItemName
+                    </h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphs Section -->
+<div class="row g-4">
+    <!-- Graph 1: Revenue Line Chart -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3">Revenue (Last 7 Days)</h6>
+                <div style="height: 300px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graph 3: Payment Methods Doughnut -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3">Transactions by Payment</h6>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="paymentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graph 2: Top Products Bar Chart -->
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body">
+                <h6 class="fw-bold text-muted mb-3">Top 5 Selling Products</h6>
+                <div style="height: 300px;">
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // Shared styling variables
+            const brandPrimary = '#1162a3';
+            const brandSuccess = '#198754';
+            const brandColors = ['#1162a3', '#0dcaf0', '#ffc107', '#198754', '#6c757d'];
+
+            // 1. Revenue Line Chart
+            new Chart(document.getElementById('revenueChart'), {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(Model.RevenueDatesJson),
+                    datasets: [{
+                        label: 'Revenue (₱)',
+                        data: @Html.Raw(Model.RevenueValuesJson),
+                        borderColor: brandPrimary,
+                        backgroundColor: 'rgba(17, 98, 163, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: brandPrimary,
+                        fill: true,
+                        tension: 0.3 // Adds smooth curves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // 2. Top Products Bar Chart
+            new Chart(document.getElementById('topProductsChart'), {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(Model.TopProductNamesJson),
+                    datasets: [{
+                        label: 'Quantity Sold',
+                        data: @Html.Raw(Model.TopProductQuantitiesJson),
+                        backgroundColor: brandPrimary,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // 3. Payment Methods Doughnut Chart
+            new Chart(document.getElementById('paymentChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: @Html.Raw(Model.PaymentMethodLabelsJson),
+                    datasets: [{
+                        data: @Html.Raw(Model.PaymentMethodCountsJson),
+                        backgroundColor: brandColors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        });
+
+        // Function to capture charts and submit the PDF form
+        function exportPdfWithCharts() {
+            // Grab the base64 image data directly from the Chart.js canvases
+            const revCanvas = document.getElementById('revenueChart');
+            const prodCanvas = document.getElementById('topProductsChart');
+            const payCanvas = document.getElementById('paymentChart');
+
+            if (revCanvas) document.getElementById('revenueChartImg').value = revCanvas.toDataURL('image/png', 1.0);
+            if (prodCanvas) document.getElementById('productsChartImg').value = prodCanvas.toDataURL('image/png', 1.0);
+            if (payCanvas) document.getElementById('paymentChartImg').value = payCanvas.toDataURL('image/png', 1.0);
+
+            // Submit the form to the server
+            document.getElementById('pdfExportForm').submit();
+        }
+    </script>
+}

@@ -10,15 +10,15 @@
 @section Styles {
     <style>
         body {
-            background: linear-gradient(0deg, #95CCDD 0%);
+            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
             background-repeat: no-repeat;
             background-size: cover;
         }
     </style>
 }
 
-<div class="card shadow border-0 mt-4">
-    <div class="card-header text-white p-3" style="background-color:#1162a3">
+<div class="card shadow border-0 rounded-4 mt-4">
+    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
         <h5 class="mb-0"><i class="fa-solid fa-receipt"></i> Transaction Info</h5>
     </div>
     <div class="card-body">
@@ -32,7 +32,7 @@
                 <dl class="row mb-2"> 
                     <dt class="col-sm-5" style="color:#1162a3;">Cashier</dt> <!-- Cashier -->
                     <dd class="col-sm-7 fw-semibold">
-                        @(Model.RetailStaffId.HasValue && staffNames != null && staffNames.TryGetValue(Model.RetailStaffId.Value, out var name)
+                        @(staffNames != null && staffNames.TryGetValue(Model.RetailStaffId, out var name)
                                                 ? name
                                                 : "N/A")
                     </dd>

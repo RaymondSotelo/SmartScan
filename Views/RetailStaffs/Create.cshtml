@@ -1,22 +1,33 @@
 @model SmartScan.Models.RetailStaff
+@using Microsoft.AspNetCore.Identity
+@inject SmartScan.Data.ApplicationDbContext DbContext
 
 @{
     ViewData["Title"] = "Assign Retail Staff";
     ViewData["HeaderTitle"] = "Retail Management";
+
+    // 1. Cast ViewBag.CashierList and extract user IDs
+    var cashierList = ViewBag.CashierList as IEnumerable<IdentityUser> ?? Enumerable.Empty<IdentityUser>();
+    var cashierIds = cashierList.Select(c => c.Id).Distinct().ToList();
+
+    // 2. Fetch all matching profile pictures in one single roundtrip query
+    var profileMap = DbContext.UserProfiles
+        .Where(up => cashierIds.Contains(up.UserId))
+        .ToDictionary(up => up.UserId, up => up.ProfilePicture);
 }
 
 @section Styles {
     <style>
         body {
-            background: linear-gradient(0deg, #95CCDD 0%);
+            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
             background-repeat: no-repeat;
             background-size: cover;
         }
     </style>
 }
 
-<div class="card shadow border-0 mt-4">
-    <div class="card-header text-white p-3" style="background-color:#1162a3">
+<div class="card shadow border-0 rounded-4 mt-4">
+    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
         <h5 class="mb-0"><i class="fa-solid fa-user-plus"></i> Assigning Staff</h5>
     </div>
     <div class="card-body">
@@ -46,16 +57,30 @@
                 <thead class="table-light">
                     <tr>
                         <th>Username</th>
-                        <th>Action</th>
+                        <th style="width: 150px;">Action</th>
                     </tr>
                 </thead>
-                @if (ViewBag.CashierList != null)
+                @if (cashierList.Any())
                 {
                     <tbody>
-                        @foreach (var cashier in ViewBag.CashierList)
+                        @foreach (var cashier in cashierList)
                         {
+                            profileMap.TryGetValue(cashier.Id, out var customPic);
+                            var avatarPath = string.IsNullOrWhiteSpace(customPic)
+                            ? "/images/default-pfp.jpg"
+                            : customPic;
+
                             <tr>
-                                <td class="searchable">@cashier.UserName</td>
+                                <td class="searchable">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="@avatarPath"
+                                             onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
+                                             alt="@cashier.UserName"
+                                             class="rounded-circle border border-1 object-fit-cover shadow-sm bg-white"
+                                             style="width: 34px; height: 34px; flex-shrink: 0;" />
+                                        <span class="fw-semibold text-dark">@cashier.UserName</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <form asp-action="Create" method="post" class="d-inline">
                                         <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
@@ -86,9 +111,9 @@
     </div>
 </div>
 
-@section Scripts{
+@section Scripts {
     <script>
-            document.getElementById('cashierSearchInput').addEventListener('input', function () {
+        document.getElementById('cashierSearchInput').addEventListener('input', function () {
             const query = this.value.trim().toLowerCase();
             const rows = document.querySelectorAll('#cashierTable tbody tr');
             const noResultsAlert = document.getElementById('noResultsAlert');
@@ -97,12 +122,10 @@
             let visibleCount = 0;
 
             rows.forEach(row => {
-                // Get text only from the searchable cells in this row
                 const searchableText = Array.from(row.querySelectorAll('.searchable'))
                     .map(td => td.textContent.toLowerCase())
                     .join(' ');
 
-                // Show the row if query matches, otherwise hide it
                 if (searchableText.includes(query)) {
                     row.style.display = '';
                     visibleCount++;
@@ -111,7 +134,6 @@
                 }
             });
 
-            // If no rows match and the user typed something, show the alert
             if (visibleCount === 0 && query !== '') {
                 searchQueryDisplay.textContent = this.value.trim();
                 noResultsAlert.style.display = '';

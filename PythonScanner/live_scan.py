@@ -28,7 +28,6 @@ print(" SmartScan AI Scanner")
 print(" YOLOv8s - 512 CPU Test")
 print("==========================================")
 
-# Get the folder where this live_scan.py file is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -67,7 +66,6 @@ model_new = YOLO(NEW_MODEL_PATH)
 print("NEW model loaded.")
 print("NEW model path:", NEW_MODEL_PATH)
 
-
 print("Both models are ready.")
 
 
@@ -75,69 +73,162 @@ print("Both models are ready.")
 # SETTINGS
 # ============================================================
 
+# IMPORTANT:
+# Anything 80% OR BELOW will NOT be accepted.
 CONFIDENCE_THRESHOLD = 0.80
+
+# Reject boxes covering more than 75% of the image.
+MAX_BOX_AREA_RATIO = 0.75
 
 IMAGE_SIZE = 512
 
-# Run one model per request, alternating so both models still contribute
-# while each camera frame takes roughly half the inference work.
-_inference_lock = threading.Lock()
-_next_model = "OLD"
-_latest_old_detections = []
-_latest_new_detections = []
 
+# ============================================================
+# INFERENCE LOCK
+# ============================================================
+
+_inference_lock = threading.Lock()
+
+
+# ============================================================
+# BOX IOU
+# ============================================================
 
 def _box_iou(box_a, box_b):
-    """Return intersection-over-union for two [x1, y1, x2, y2] boxes."""
-    left = max(box_a[0], box_b[0])
-    top = max(box_a[1], box_b[1])
-    right = min(box_a[2], box_b[2])
-    bottom = min(box_a[3], box_b[3])
 
-    intersection = max(0, right - left) * max(0, bottom - top)
-    area_a = max(0, box_a[2] - box_a[0]) * max(0, box_a[3] - box_a[1])
-    area_b = max(0, box_b[2] - box_b[0]) * max(0, box_b[3] - box_b[1])
-    union = area_a + area_b - intersection
+    left = max(
+        box_a[0],
+        box_b[0]
+    )
 
-    return intersection / union if union else 0
+    top = max(
+        box_a[1],
+        box_b[1]
+    )
+
+    right = min(
+        box_a[2],
+        box_b[2]
+    )
+
+    bottom = min(
+        box_a[3],
+        box_b[3]
+    )
+
+    intersection = (
+        max(0, right - left)
+        *
+        max(0, bottom - top)
+    )
+
+    area_a = (
+        max(0, box_a[2] - box_a[0])
+        *
+        max(0, box_a[3] - box_a[1])
+    )
+
+    area_b = (
+        max(0, box_b[2] - box_b[0])
+        *
+        max(0, box_b[3] - box_b[1])
+    )
+
+    union = (
+        area_a
+        +
+        area_b
+        -
+        intersection
+    )
+
+    return (
+        intersection / union
+        if union
+        else 0
+    )
 
 
-def _combine_model_detections(old_detections, new_detections):
-    """Combine model results and suppress same-class overlapping duplicates."""
-    combined = list(old_detections)
+# ============================================================
+# COMBINE MODEL DETECTIONS
+# ============================================================
+
+def _combine_model_detections(
+    old_detections,
+    new_detections
+):
+
+    combined = list(
+        old_detections
+    )
 
     for detection in new_detections:
-        duplicate_index = next((
-            index for index, existing in enumerate(combined)
-            if existing["name"] == detection["name"]
-            and _box_iou(existing["box"], detection["box"]) >= 0.5
-        ), None)
+
+        duplicate_index = next(
+            (
+                index
+                for index, existing
+                in enumerate(combined)
+
+                if (
+                    existing["name"]
+                    ==
+                    detection["name"]
+                )
+
+                and (
+                    _box_iou(
+                        existing["box"],
+                        detection["box"]
+                    )
+                    >= 0.5
+                )
+            ),
+            None
+        )
 
         if duplicate_index is None:
-            combined.append(detection)
-        elif detection["confidence"] > combined[duplicate_index]["confidence"]:
-            combined[duplicate_index] = detection
+
+            combined.append(
+                detection
+            )
+
+        elif (
+            detection["confidence"]
+            >
+            combined[
+                duplicate_index
+            ]["confidence"]
+        ):
+
+            combined[
+                duplicate_index
+            ] = detection
 
     return combined
 
 
 # ============================================================
-# DECODE BASE64
+# DECODE BASE64 IMAGE
 # ============================================================
 
-def decode_base64_image(base64_image):
+def decode_base64_image(
+    base64_image
+):
 
     try:
 
         if "," in base64_image:
 
-            base64_image = base64_image.split(
-                ",",
-                1
-            )[1]
+            base64_image = (
+                base64_image
+                .split(",", 1)[1]
+            )
 
-        image_bytes = base64.b64decode(
-            base64_image
+        image_bytes = (
+            base64.b64decode(
+                base64_image
+            )
         )
 
         np_array = np.frombuffer(
@@ -176,23 +267,25 @@ def run_model(
 
     detections = []
 
-
-    # --------------------------------------------------------
+    # ========================================================
     # YOLO INFERENCE
-    # --------------------------------------------------------
+    # ========================================================
 
     results = model.predict(
         source=image,
         imgsz=IMAGE_SIZE,
+
+        # We use 0.80 here as the initial YOLO filter.
         conf=CONFIDENCE_THRESHOLD,
+
         device="cpu",
         verbose=False
     )
 
 
-    # --------------------------------------------------------
-    # YOLO RESULT
-    # --------------------------------------------------------
+    # ========================================================
+    # PROCESS RESULTS
+    # ========================================================
 
     for result in results:
 
@@ -202,7 +295,28 @@ def run_model(
                 box.conf[0]
             )
 
-            if confidence < CONFIDENCE_THRESHOLD:
+
+            # =================================================
+            # CONFIDENCE FILTER
+            # =================================================
+            #
+            # 80% OR BELOW = REJECT
+            #
+            # 79%   -> reject
+            # 80%   -> reject
+            # 80.1% -> accept
+            # 90%   -> accept
+            #
+            # =================================================
+
+            if confidence <= CONFIDENCE_THRESHOLD:
+
+                print(
+                    f"{model_name}: "
+                    f"REJECTED LOW CONFIDENCE "
+                    f"{confidence * 100:.1f}%"
+                )
+
                 continue
 
 
@@ -215,10 +329,9 @@ def run_model(
             ]
 
 
-            # ------------------------------------------------
-            # YOLO gives coordinates relative to the image
-            # actually passed into YOLO.
-            # ------------------------------------------------
+            # =================================================
+            # BOX COORDINATES
+            # =================================================
 
             x1, y1, x2, y2 = map(
                 int,
@@ -226,28 +339,81 @@ def run_model(
             )
 
 
-            # ------------------------------------------------
-            # IMPORTANT:
-            #
-            # We resize the original image to 512x288 before
-            # sending it to YOLO.
-            #
-            # Therefore convert the coordinates back to
-            # the original 1280x720 image.
-            # ------------------------------------------------
+            # =================================================
+            # IMAGE SIZE USED BY YOLO
+            # =================================================
 
             processed_height, processed_width = (
                 image.shape[:2]
             )
 
 
+            # =================================================
+            # LARGE BOX FILTER
+            # =================================================
+
+            box_width = (
+                x2 - x1
+            )
+
+            box_height = (
+                y2 - y1
+            )
+
+            image_area = (
+                processed_width
+                *
+                processed_height
+            )
+
+            box_area = (
+                box_width
+                *
+                box_height
+            )
+
+            box_area_ratio = (
+                box_area / image_area
+                if image_area > 0
+                else 0
+            )
+
+
+            # =================================================
+            # REJECT HUGE FALSE DETECTIONS
+            # =================================================
+
+            if (
+                box_area_ratio
+                >
+                MAX_BOX_AREA_RATIO
+            ):
+
+                print(
+                    f"{model_name}: "
+                    f"REJECTED LARGE BOX "
+                    f"{name} "
+                    f"{confidence * 100:.1f}% "
+                    f"AREA="
+                    f"{box_area_ratio * 100:.1f}%"
+                )
+
+                continue
+
+
+            # =================================================
+            # SCALE BOX BACK TO ORIGINAL IMAGE
+            # =================================================
+
             scale_x = (
-                original_width /
+                original_width
+                /
                 processed_width
             )
 
             scale_y = (
-                original_height /
+                original_height
+                /
                 processed_height
             )
 
@@ -269,9 +435,9 @@ def run_model(
             )
 
 
-            # ------------------------------------------------
-            # LIMIT BOX TO ORIGINAL IMAGE
-            # ------------------------------------------------
+            # =================================================
+            # KEEP BOX INSIDE IMAGE
+            # =================================================
 
             x1 = max(
                 0,
@@ -306,13 +472,22 @@ def run_model(
             )
 
 
+            # =================================================
+            # PRINT VALID DETECTION
+            # =================================================
+
             print(
                 f"{model_name}: "
                 f"{name} "
                 f"{confidence * 100:.1f}% "
-                f"BOX=({x1},{y1},{x2},{y2})"
+                f"BOX="
+                f"({x1},{y1},{x2},{y2})"
             )
 
+
+            # =================================================
+            # SAVE DETECTION
+            # =================================================
 
             detections.append({
 
@@ -348,7 +523,9 @@ def run_model(
 )
 def detect_frame():
 
-    total_start = time.perf_counter()
+    total_start = (
+        time.perf_counter()
+    )
 
 
     try:
@@ -382,26 +559,33 @@ def detect_frame():
 
 
         # ====================================================
-        # DECODE
+        # DECODE IMAGE
         # ====================================================
 
-        decode_start = time.perf_counter()
+        decode_start = (
+            time.perf_counter()
+        )
 
-        img = decode_base64_image(
-            base64_image
+
+        img = (
+            decode_base64_image(
+                base64_image
+            )
         )
 
 
         decode_time = (
             time.perf_counter()
-            - decode_start
+            -
+            decode_start
         )
 
 
         if img is None:
 
             return jsonify({
-                "error": "Could not decode image"
+                "error":
+                "Could not decode image"
             }), 400
 
 
@@ -415,12 +599,18 @@ def detect_frame():
 
 
         print("")
-        print("==========================================")
-        print("NEW FRAME")
+        print(
+            "=========================================="
+        )
+
+        print(
+            "NEW FRAME"
+        )
 
         print(
             f"Original image: "
-            f"{original_width}x{original_height}"
+            f"{original_width}x"
+            f"{original_height}"
         )
 
 
@@ -428,20 +618,25 @@ def detect_frame():
         # RESIZE FOR YOLO
         # ====================================================
 
-        resize_start = time.perf_counter()
+        resize_start = (
+            time.perf_counter()
+        )
 
 
         if original_width > IMAGE_SIZE:
 
             scale = (
-                IMAGE_SIZE /
+                IMAGE_SIZE
+                /
                 original_width
             )
 
             new_width = IMAGE_SIZE
 
             new_height = int(
-                original_height * scale
+                original_height
+                *
+                scale
             )
 
 
@@ -461,7 +656,8 @@ def detect_frame():
 
         resize_time = (
             time.perf_counter()
-            - resize_start
+            -
+            resize_start
         )
 
 
@@ -472,40 +668,68 @@ def detect_frame():
         )
 
 
-        # Run one model per frame and alternate between them. The lock protects
-        # both YOLO instances and the cached result if Flask serves concurrent
-        # requests.
-        global _next_model, _latest_old_detections, _latest_new_detections
-        old_time = 0.0
-        new_time = 0.0
+        # ====================================================
+        # RUN BOTH MODELS ON SAME FRAME
+        # ====================================================
 
         with _inference_lock:
-            if _next_model == "OLD":
-                model_start = time.perf_counter()
-                _latest_old_detections = run_model(
-                    model_old,
-                    img_for_yolo,
-                    "OLD",
-                    original_width,
-                    original_height
-                )
-                old_time = time.perf_counter() - model_start
-                _next_model = "NEW"
-            else:
-                model_start = time.perf_counter()
-                _latest_new_detections = run_model(
-                    model_new,
-                    img_for_yolo,
-                    "NEW",
-                    original_width,
-                    original_height
-                )
-                new_time = time.perf_counter() - model_start
-                _next_model = "OLD"
 
-            old_results = list(_latest_old_detections)
-            new_results = list(_latest_new_detections)
-            detections = _combine_model_detections(old_results, new_results)
+            # ------------------------------------------------
+            # OLD MODEL
+            # ------------------------------------------------
+
+            old_start = (
+                time.perf_counter()
+            )
+
+            old_results = run_model(
+                model_old,
+                img_for_yolo,
+                "OLD",
+                original_width,
+                original_height
+            )
+
+            old_time = (
+                time.perf_counter()
+                -
+                old_start
+            )
+
+
+            # ------------------------------------------------
+            # NEW MODEL
+            # ------------------------------------------------
+
+            new_start = (
+                time.perf_counter()
+            )
+
+            new_results = run_model(
+                model_new,
+                img_for_yolo,
+                "NEW",
+                original_width,
+                original_height
+            )
+
+            new_time = (
+                time.perf_counter()
+                -
+                new_start
+            )
+
+
+            # ------------------------------------------------
+            # COMBINE RESULTS
+            # ------------------------------------------------
+
+            detections = (
+                _combine_model_detections(
+                    old_results,
+                    new_results
+                )
+            )
 
 
         # ====================================================
@@ -514,12 +738,20 @@ def detect_frame():
 
         total_time = (
             time.perf_counter()
-            - total_start
+            -
+            total_start
         )
 
 
+        # ====================================================
+        # PERFORMANCE OUTPUT
+        # ====================================================
+
         print("")
-        print("------------- PERFORMANCE ---------------")
+
+        print(
+            "------------- PERFORMANCE ---------------"
+        )
 
         print(
             f"Image decode:     "
@@ -542,12 +774,7 @@ def detect_frame():
         )
 
         print(
-            f"MODEL THIS FRAME: "
-            f"{'OLD' if old_time else 'NEW'}"
-        )
-
-        print(
-            f"YOLO THIS FRAME:  "
+            f"TOTAL YOLO:       "
             f"{old_time + new_time:.4f} sec"
         )
 
@@ -566,21 +793,30 @@ def detect_frame():
             f"{len(new_results)}"
         )
 
-        print("------------------------------------------")
+        print(
+            f"FINAL detections: "
+            f"{len(detections)}"
+        )
+
+        print(
+            "------------------------------------------"
+        )
 
 
         # ====================================================
-        # RETURN
+        # RETURN RESULTS
         # ====================================================
 
         return jsonify({
 
-            "detections": detections,
+            "detections":
+                detections,
 
-            "processing_time": round(
-                total_time,
-                4
-            )
+            "processing_time":
+                round(
+                    total_time,
+                    4
+                )
 
         })
 
@@ -588,13 +824,18 @@ def detect_frame():
     except Exception as e:
 
         print("")
-        print("!!!!!!!!!!!! ERROR !!!!!!!!!!!!")
+
+        print(
+            "!!!!!!!!!!!! ERROR !!!!!!!!!!!!"
+        )
 
         print(
             str(e)
         )
 
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(
+            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        )
 
 
         return jsonify({
@@ -613,7 +854,10 @@ def detect_frame():
 def home():
 
     return jsonify({
-        "status": "SmartScan AI Scanner is running"
+
+        "status":
+            "SmartScan AI Scanner is running"
+
     })
 
 
@@ -624,12 +868,39 @@ def home():
 if __name__ == "__main__":
 
     print("")
-    print("==========================================")
-    print(" SmartScan AI Scanner")
-    print(" YOLOv8s x2")
-    print(" 512 CPU Mode")
-    print(" Port 5000")
-    print("==========================================")
+
+    print(
+        "=========================================="
+    )
+
+    print(
+        " SmartScan AI Scanner"
+    )
+
+    print(
+        " YOLOv8s x2"
+    )
+
+    print(
+        " 512 CPU Mode"
+    )
+
+    print(
+        " Confidence > 80%"
+    )
+
+    print(
+        " Large Box Filter <= 75%"
+    )
+
+    print(
+        " Port 5000"
+    )
+
+    print(
+        "=========================================="
+    )
+
     print("")
 
 

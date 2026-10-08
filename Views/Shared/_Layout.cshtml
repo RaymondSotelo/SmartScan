@@ -30,8 +30,8 @@
                 <ul class="list-unstyled components px-2">
                     @if (User.IsInRole("Admin"))
                     {
-                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
-                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                        <li class="mb-2"> <!-- [DASHBOARD BUTTON] -->
+                            <a asp-area="" asp-controller="Users" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
                                 <i class="fa-solid fa-border-all sidebar-icon fs-5 text-center"></i>
                                 <span class="menu-text ms-3">Dashboard</span>
                             </a>
@@ -47,7 +47,7 @@
                             </a>
                         </li>
                         <li class="mb-2"> <!-- [USER MANAGER Button] -->
-                            <a asp-area="" asp-controller="Users" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <a asp-area="" asp-controller="Users" asp-action="User_Management" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
                                 <i class="fa-solid fa-users-gear sidebar-icon fs-5 text-center"></i>
                                 <span class="menu-text ms-3">User Manager</span>
                             </a>
@@ -100,33 +100,8 @@
                                 <span class="menu-text ms-3">Enroll Customer</span>
                             </a>
                         </li>
-                        <hr />
-                        <li style="padding-bottom:6px"> <!-- [SETTINGS Header] -->
-                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">SETTINGS</span>
-                        </li>
-                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
-                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-circle-user sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Account</span>
-                            </a>
-                        </li>
 
-                    }
-                    @if (User.IsInRole("Cashier"))
-                    {
-                        <li class="mb-2">
-                            <a asp-area="" asp-controller="Home" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded" style="color:white">
-                                <i class="fa-solid fa-house sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Dashboard</span>
-                            </a>
-                        </li>
-                        <li class="mb-2">
-                            <a asp-area="" asp-controller="Home" asp-action="Checkout" class="nav-link d-flex align-items-center p-2 rounded" style="color:white">
-                                <i class="fa-solid fa-basket-shopping sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3 fs-6">Checkout</span>
-                            </a>
-                        </li>
-                    }            
+                    }          
                 </ul>
             </nav>
         }
@@ -173,23 +148,67 @@
                 </div>
             </div>
         </div>
-
     </div>
 
+    <!-- Core Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     @if (User.Identity != null && User.Identity.IsAuthenticated)
     {
+        <!-- Hidden Form to Perform Clean POST Logout -->
+        <form id="signalRForceLogoutForm" 
+              asp-area="Identity" 
+              asp-page="/Account/Logout" 
+              asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" 
+              method="post" 
+              style="display:none;">
+            @Html.AntiForgeryToken()
+        </form>
+
+        <!-- SignalR & SweetAlert2 Libraries -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
         <script type="text/javascript">
             document.addEventListener("DOMContentLoaded", function () {
+                // Sidebar Toggle
                 const menuToggle = document.getElementById("menuToggle");
                 const sidebar = document.getElementById("sidebar");
 
-                menuToggle.addEventListener("click", function () {
-                    sidebar.classList.toggle("collapsed");
+                if (menuToggle && sidebar) {
+                    menuToggle.addEventListener("click", function () {
+                        sidebar.classList.toggle("collapsed");
+                    });
+                }
+
+                // SignalR Session Kick-out Listener
+                const sessionConnection = new signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/userSession")
+                    .withAutomaticReconnect()
+                    .build();
+
+                sessionConnection.on("ForceLogout", function (message) {
+                    Swal.fire({
+                        title: "Session Terminated",
+                        text: message,
+                        icon: "warning",
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        confirmButtonColor: "#1162a3",
+                        confirmButtonText: "Log In Again"
+                    }).then(() => {
+                        const logoutForm = document.getElementById("signalRForceLogoutForm");
+                        if (logoutForm) {
+                            logoutForm.submit();
+                        } else {
+                            window.location.href = "/Identity/Account/Login";
+                        }
+                    });
                 });
+
+                sessionConnection.start().catch(err => console.error("SignalR Session error:", err));
             });
         </script>
     }

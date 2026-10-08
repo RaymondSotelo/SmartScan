@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
+using SmartScan.Data;
 
 namespace SmartScan.Controllers
 {
@@ -10,15 +12,37 @@ namespace SmartScan.Controllers
     public class UsersController : Controller
     {
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly ApplicationDbContext _context;
 
-        public UsersController(UserManager<IdentityUser> userManager)
+        public UsersController(UserManager<IdentityUser> userManager, ApplicationDbContext context)
         {
             _userManager = userManager;
+            _context = context;
+        }
+
+
+        public async Task<IActionResult> Index()
+        {
+            // Retrieve the current logged in admin
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Challenge(); // Prompts login if session is invalid
+            }
+
+            // Query only the retail records that belong to this admin
+            var adminRetail = await _context.Retails
+                .Include(r => r.Status)
+                .Where(r => r.AdminOwner == currentUserId)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return View(adminRetail);
         }
 
         // [UPDATE THIS LATER TO MANAGE ADMIN ROLE] <<--
         // Currently managing Cashier Role <--
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> User_Management()
         {
             var users = _userManager.Users.ToListAsync();
             var currentUsers = new List<IdentityUser>();
@@ -70,7 +94,7 @@ namespace SmartScan.Controllers
                 TempData["UserMessage"] = $"Successfully approved {user.UserName}!";
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(User_Management));
         }
 
         public async Task<IActionResult> Disable(string id)
@@ -95,7 +119,7 @@ namespace SmartScan.Controllers
                 TempData["UserMessage2"] = $"Successfully disables {user.UserName}!";
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(User_Management));
         }
     }
 }

@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
+using SmartScan.Hubs;
 
 namespace SmartScan.Areas.Identity.Pages.Account
 {
@@ -22,12 +24,17 @@ namespace SmartScan.Areas.Identity.Pages.Account
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly IHubContext<UserSessionHub> _hubContext;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger, UserManager<IdentityUser> userManager)
+        public LoginModel(SignInManager<IdentityUser> signInManager,
+                          ILogger<LoginModel> logger,
+                          UserManager<IdentityUser> userManager,
+                          IHubContext<UserSessionHub> hubContext)
         {
             _signInManager = signInManager;
             _logger = logger;
             _userManager = userManager;
+            _hubContext = hubContext;
         }
 
         /// <summary>
@@ -114,6 +121,7 @@ namespace SmartScan.Areas.Identity.Pages.Account
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
                 var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+                
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
@@ -123,6 +131,22 @@ namespace SmartScan.Areas.Identity.Pages.Account
                    
                     if(user != null)
                     {
+                        // ----[ HANDLES MULTIPLE LOGINS WITH THE SAME ACCOUNT ]----
+
+                            // --> Notify any currently connected active sessions to disconnect
+                            await _hubContext.Clients.User(user.Id).SendAsync(
+                                "ForceLogout",
+                                "Your account was logged in from another device."
+                            );
+
+                            // --> Invalidate old authentication cookies in the database
+                            await _userManager.UpdateSecurityStampAsync(user);
+
+                            // --> Give THIS device a fresh cookie with the updated stamp
+                            await _signInManager.SignInAsync(user, isPersistent: Input.RememberMe);
+
+                        // ----[ LOGIN LOGIC ]----
+
                         // If user was intentionally redirected here from an internal page, honor that URL first
                         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
                         {
@@ -137,12 +161,13 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
                         if (await _userManager.IsInRoleAsync(user, "Cashier"))
                         {
-                            return RedirectToAction("Index", "Checkout", new { area = "" }); // Adjust controller/action name as needed
+                            return RedirectToAction("Checkout", "Home", new { area = "" });
                         }
                     }
 
                     return LocalRedirect(returnUrl);
                 }
+
                 if (result.RequiresTwoFactor)
                 {
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });

@@ -8,101 +8,102 @@
 @section Styles {
     <style>
         body {
-            background: linear-gradient(0deg, #95CCDD 0%);
+            min-height: 100vh;
+            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
             background-repeat: no-repeat;
             background-size: cover;
         }
     </style>
 }
 
-<div class="card shadow border-0 mt-4">
-    <div class="card-header text-white p-3" style="background-color:#1162a3">
+<div class="card shadow border-0 rounded-4 mt-4">
+    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
         <h5 class="mb-0"><i class="fa-solid fa-shop"></i> Updating Retail Information</h5>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-4">
-                <form asp-action="Edit">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    <input type="hidden" asp-for="RetailId" />
+    <div class="d-flex justify-content-center align-items-center w-100 py-4" style="min-height: 75vh;">
+        <div style="width: 100%; max-width: 540px;">
+			<form asp-action="Edit" asp-route-id="@Model.RetailId" method="post" enctype="multipart/form-data">
+				<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+				<input type="hidden" asp-for="RetailId" />
 
-                    <!-- Retail Name -->
-                    <div class="form-group">
-                        <label asp-for="RetailName" class="control-label fw-medium" style="color:#1162a3">Retail Name</label>
-                        <input asp-for="RetailName" class="form-control" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
-                        <span asp-validation-for="RetailName" class="text-danger"></span>
-                    </div>
+				<!-- Store Image Preview & Upload -->
+				<div class="mb-4 text-center">
+					<div class="d-inline-block position-relative mb-2">
+						<img id="retailPreview"
+							 src="@(string.IsNullOrEmpty(Model.ImagePath) ? "/images/default-store.png" : Model.ImagePath)"
+							 onerror="this.onerror=null; this.src='/images/default-store.png';"
+							 alt="Store Preview"
+							 class="rounded-3 border shadow-sm object-fit-cover"
+							 style="width: 480px; height: 320px;" />
+					</div>
+					<div>
+						<label class="form-label d-block small fw-medium" style="color:#1162a3;">
+							<i class="fa-solid fa-camera me-1"></i> Change Store Image
+						</label>
+						<input name="RetailImageFile" type="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" onchange="previewImage(this)" />
+						<span asp-validation-for="ImagePath" class="text-danger small"></span>
+					</div>
+				</div>
 
-                    <!-- Passcode -->
-                    <div class="form-group">
-                        <label asp-for="Passcode" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
-                        <div class="position-relative">
-                            <input asp-for="Passcode"
-                                   value="@Model.Passcode"
-                                   class="form-control pe-5"
-                                   maxlength="6"
-                                   minlength="6"
-                                   autocomplete="off"
-                                   placeholder="6-character passcode"
-                                   id="passwordInput"
-                                   type="password" />
-                            <i class="fa-solid fa-eye position-absolute top-50 end-0 translate-middle-y me-3 text-secondary"
-                               id="togglePasswordIcon"
-                               style="cursor: pointer; z-index: 5; font-size: 1.15rem;"></i>
-                        </div>
-                        <span asp-validation-for="Passcode" class="text-danger"></span>
-                    </div>
+				<hr />
 
-                    <!-- Status Id -->
-                    <div class="form-group">
-                        <label asp-for="StatusId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Status</label>
-                        <select asp-for="StatusId" class="form-control" asp-items="ViewBag.StatusId"></select>
-                        <span asp-validation-for="StatusId" class="text-danger"></span>
-                    </div>
+				<!-- Retail Name -->
+				<div class="form-group mb-3">
+					<label asp-for="RetailName" class="control-label fw-medium" style="color:#1162a3">Retail Name</label>
+					<input asp-for="RetailName" class="form-control" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+					<span asp-validation-for="RetailName" class="text-danger"></span>
+				</div>
 
-                    <!-- Address -->
-                    <div class="form-group">
-                        <label asp-for="Address" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
-                        <input asp-for="Address" class="form-control" />
-                        <span asp-validation-for="Address" class="text-danger"></span>
-                    </div>
+				<!-- Description -->
+				<div class="form-floating mb-3">
+					<textarea asp-for="Description" class="form-control" placeholder="Description" style="height: 100px;"></textarea>
+					<label asp-for="Description" class="control-label fw-medium" style="color:#1162a3">Retail Description</label>
+					<span asp-validation-for="Description" class="text-danger small"></span>
+				</div>
 
-                    <!-- Button Placement -->
-                    <div class="row row-cols-2 pt-4">
-                        <div class="text-start">
-                            <a asp-action="Index" class="btn btn-outline-secondary fw-medium">Back to List</a>
-                        </div>
-                        <div class="form-group text-end">
-                            <input type="submit" value="Save" class="btn btn-primary fw-medium" />
-                        </div>
-                    </div>
-                </form>
-            </div>
+				<!-- Address -->
+				<div class="form-group">
+					<label asp-for="Address" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
+					<input asp-for="Address" class="form-control" />
+					<span asp-validation-for="Address" class="text-danger"></span>
+				</div>
+
+				<!-- Status Id -->
+				<div class="form-group">
+					<label asp-for="StatusId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Status</label>
+					<select asp-for="StatusId" class="form-control" asp-items="ViewBag.StatusId"></select>
+					<span asp-validation-for="StatusId" class="text-danger"></span>
+				</div>
+
+				<!-- Button Placement -->
+				<div class="row row-cols-2 pt-4">
+					<div class="text-start">
+						<a href="javascript:void(0);"
+						   class="btn btn-outline-secondary fw-medium"
+						   onclick="window.history.back();">
+							<i class="fa-solid fa-arrow-left me-1"></i> Return
+						</a>
+					</div>
+					<div class="form-group text-end">
+						<input type="submit" value="Save" class="btn btn-primary fw-medium" />
+					</div>
+				</div>
+			</form>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-
     <partial name="_ValidationScriptsPartial" />
-
-    <script type="text/javascript">
-        document.addEventListener("DOMContentLoaded", function () {
-            const passwordInput = document.getElementById("passwordInput");
-            const toggleIcon = document.getElementById("togglePasswordIcon");
-
-            toggleIcon.addEventListener("click", function () {
-                if (passwordInput.type === "password") {
-                    passwordInput.type = "text";
-                    this.classList.remove("fa-eye");
-                    this.classList.add("fa-eye-slash");
-                } else {
-                    passwordInput.type = "password";
-                    this.classList.remove("fa-eye-slash");
-                    this.classList.add("fa-eye");
-                }
-            });
-        });
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('retailPreview').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
     </script>
 }

@@ -8,20 +8,23 @@
 @section Styles {
     <style>
         body {
-            background: linear-gradient(0deg, #95CCDD 0%);
+            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
             background-repeat: no-repeat;
             background-size: cover;
         }
     </style>
 }
 
-<div class="card shadow border-0 mt-4">
-    <div class="card-header text-white p-3" style="background-color:#1162a3">
+<div class="card shadow border-0 rounded-4 mt-4">
+    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
         <h5 class="mb-0"><i class="fa-solid fa-id-badge"></i> Enroll Customer</h5>
     </div>
     <div class="p-3 d-flex justify-content-between align-items-center mb-3">
         <p>
             <a class="btn btn-success fw-semibold"  asp-action="Create">Add Customer Info</a>
+        </p>
+        <p> <!-- DELETE LATER! -->
+            <a class="btn btn-primary fw-semibold" asp-action="VerifyIdentity">Test Face Detector</a>
         </p>
         <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 450px; padding-bottom: 11px; width:100%;">
             <div class="input-group">
@@ -98,6 +101,9 @@
                                 }
                             </td>
                             <td>
+                                <a asp-action="Enroll" asp-route-customerid="@item.CustomerId" class="btn btn-info fw-medium" title="Manage Identity & Biometrics">
+                                    <i class="fa-solid fa-fingerprint"></i> Enroll
+                                </a>
                                 <a class="btn btn-primary fw-medium" asp-action="Edit" asp-route-customerid="@item.CustomerId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
                                 <form asp-action="Delete" asp-route-customerid="@item.CustomerId" method="post" onsubmit="return confirm('Are you sure you want to delete @item.FullName?');" style="display:inline;">
                                     <button type="submit" class="btn btn-danger fw-medium">

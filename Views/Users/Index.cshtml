@@ -1,98 +1,96 @@
-﻿@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityUser>
+﻿@model IEnumerable<SmartScan.Models.Retail>
+
 @{
-	ViewData["Title"] = "User Manager";
-	ViewData["HeaderTitle"] = "Account Management";
+    ViewData["Title"] = "Home";
+    ViewData["HeaderTitle"] = "Home";
 }
 
 @section Styles {
     <style>
         body {
-            background: linear-gradient(0deg, #95CCDD 0%);
+            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
             background-repeat: no-repeat;
             background-size: cover;
         }
     </style>
 }
 
-<div class="card shadow border-0 mt-4">
-    <div class="card-header text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-users-gear"></i> User Account Management </h5>
+<div class="card shadow border-0 rounded-4 mt-4">
+    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
+        <h5 class="mb-0"><i class="fa-solid fa-border-all"></i> Dashboard </h5>
     </div>
     <div class="card-body">
-
-        @if (TempData["UserMessage"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fa-solid fa-circle-check"></i> @TempData["UserMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
-        
-        @if(TempData["UserMessage2"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fa-solid fa-circle-check"></i> @TempData["UserMessage2"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
+        <!-- Retail Overview | Header -->
+        <p class="text-primary fw-bold fs-5">Retail Overview</p>
+        <hr />
 
         @if (!Model.Any())
         {
-            <div class="text-center py-5">
-                <div class="text-muted mb-3">
-                    <i class="fa-solid fa-folder-open fa-3x text-secondary opacity-50"></i>
+            <div class="p-4">
+                <div class="alert alert-warning text-center my-2 fw-semibold" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i>No retail found matching "<strong>@ViewData["CurrentFilter"]</strong>".
                 </div>
-                <h4 class="fw-semibold text-secondary">Empty User Accounts</h4>
-                <p class="text-muted small">You currently have a no existing user accounts.</p>
             </div>
         }
         else
         {
-            <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Username / Email</th>
-                        <th class="text-center">Account Status</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in Model)
-                    {
-                        <tr>
-                            <td>
-                                <i class="fa-solid fa-user text-secondary me-2"></i> @user.UserName
-                            </td>
-                            <td class="text-center">
-                                @if (user.EmailConfirmed)
-                                {
-                                    <span class="badge bg-success rounded-pill px-3">Active / Approved</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-danger text-light rounded-pill px-3">Disabled</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                @if (!user.EmailConfirmed)
-                                {
-                                    <a asp-action="Approve" asp-route-id="@user.Id" class="btn btn-sm btn-outline-success">
-                                        <i class="fa-solid fa-check"></i> Unblock User
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 p-3 pt-0">
+                @foreach (var item in Model)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm border retail-card position-relative overflow-hidden">
+                            <!-- Store Image Banner -->
+                            <div class="position-relative" style="height: 180px;">
+                                <img src="@(string.IsNullOrEmpty(item.ImagePath) ? "/images/default-retail-pic.png" : item.ImagePath)"
+                                     onerror="this.onerror=null; this.src='/images/default-store.png';"
+                                     alt="@item.RetailName"
+                                     class="card-img-top w-100 h-100 object-fit-cover" />
+
+                                <!-- Status Badge -->
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    @if (item.Status?.StatusName == "Active")
+                                    {
+                                        <span class="badge bg-success rounded-pill px-3 shadow-sm">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary rounded-pill px-3 shadow-sm">Inactive</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="card-body d-flex flex-column p-3">
+                                <h5 class="card-title fw-bold mb-1 text-truncate" style="color: #1162a3;" title="@item.RetailName">
+                                    <!-- Stretched link triggers navigation to store details/view -->
+                                    <a asp-controller="Retails" asp-action="View" asp-route-retailid="@item.RetailId" class="stretched-link text-decoration-none text-reset">
+                                        @item.RetailName
                                     </a>
-                                }
-                                else
+                                </h5>
+
+                                <!-- Address -->
+                                <p class="card-text text-muted small mb-2 text-truncate" title="@item.Address">
+                                    <i class="fa-solid fa-location-dot me-1 text-danger"></i> @item.Address
+                                </p>
+
+                                <!-- Description preview -->
+                                @if (!string.IsNullOrWhiteSpace(item.Description))
                                 {
-                                    <a asp-action="Disable" asp-route-id="@user.Id" class="btn btn-sm btn-outline-danger">
-                                        <i class="fa-solid fa-ban"></i> Block User
-                                    </a>
+                                    <p class="card-text text-secondary small line-clamp-2 mb-3">
+                                        @item.Description
+                                    </p>
                                 }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <!-- Hidden POST form for Delete -->
+                <form id="globalRetailDeleteForm" asp-controller="Retails" asp-action="Delete" method="post" style="display:none;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="retailid" id="deleteFormRetailId" value="" />
+                </form>
+            </div>
         }
     </div>
 </div>
+

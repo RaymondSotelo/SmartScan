@@ -3,13 +3,54 @@
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
 }
 <ul class="nav nav-pills flex-column">
-    <li class="nav-item"><a class="nav-link @ManageNavPages.IndexNavClass(ViewContext)" id="profile" asp-page="./Index">Profile</a></li>
-    <li class="nav-item"><a class="nav-link @ManageNavPages.EmailNavClass(ViewContext)" id="email" asp-page="./Email">Email</a></li>
-    <li class="nav-item"><a class="nav-link @ManageNavPages.ChangePasswordNavClass(ViewContext)" id="change-password" asp-page="./ChangePassword">Password</a></li>
+
+    <!-- Header -->
+    <span class="text-start fw-medium fs-5 text-secondary pb-3">Account Info</span>
+
+    <!-- Profile Button -->
+    <li class="nav-item fw-medium">
+        <a class="nav-link d-flex align-items-center p-2 rounded fw-medium @ManageNavPages.IndexNavClass(ViewContext)" id="profile" asp-page="./Index">
+            <i class="fa-solid fa-user fa-fw sidebar-icon fs-5"></i>
+            <span class="menu-text ms-3" style="font-size: 18px;">Profile</span>
+        </a>
+    </li>
+
+	<!-- Password Button -->
+	<li class="nav-item fw-medium">
+		<a class="nav-link d-flex align-items-center p-2 rounded fw-medium @ManageNavPages.ChangePasswordNavClass(ViewContext)" id="change-password" asp-page="./ChangePassword">
+			<i class="fa-solid fa-user-lock fa-fw sidebar-icon fs-5"></i>
+			<span class="menu-text ms-3" style="font-size: 18px;">Password</span>
+		</a>
+	</li>
+
+    <!-- Email Button -->
+    <li class="nav-item fw-medium">
+        <a class="nav-link d-flex align-items-center p-2 rounded fw-medium @ManageNavPages.EmailNavClass(ViewContext)" id="email" asp-page="./Email">
+            <i class="fa-solid fa-envelope fa-fw sidebar-icon fs-5"></i>
+            <span class="menu-text ms-3" style="font-size: 18px;">Email</span>
+        </a>
+    </li>
+
+    <!-- Display Button -->
+    <li class="nav-item fw-medium">
+        <a class="nav-link d-flex align-items-center p-2 rounded fw-medium @ManageNavPages.DisplayNavClass(ViewContext)" id="display" asp-page="./Display">
+            <i class="fa-solid fa-tv fa-fw sidebar-icon fs-5"></i>
+            <span class="menu-text ms-3" style="font-size: 18px;">Display</span>
+        </a>
+    </li>
+    
+    <!-- Personal Data -->
+    <li class="nav-item fw-medium">
+        <a class="nav-link d-flex align-items-center p-2 rounded fw-medium @ManageNavPages.PersonalDataNavClass(ViewContext)" id="personal-data" asp-page="./PersonalData">
+            <i class="fa-solid fa-user-xmark fa-fw sidebar-icon fs-5"></i>
+            <span class="menu-text ms-3" style="font-size: 18px;">Personal Data</span>
+        </a>
+    </li>
+
+    @* -- [DISABLED!] -- 
     @if (hasExternalLogins)
     {
         <li id="external-logins" class="nav-item"><a id="external-login" class="nav-link @ManageNavPages.ExternalLoginsNavClass(ViewContext)" asp-page="./ExternalLogins">External logins</a></li>
     }
-    <li class="nav-item"><a class="nav-link @ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)" id="two-factor" asp-page="./TwoFactorAuthentication">Two-factor authentication</a></li>
-    <li class="nav-item"><a class="nav-link @ManageNavPages.PersonalDataNavClass(ViewContext)" id="personal-data" asp-page="./PersonalData">Personal data</a></li>
+    <li class="nav-item"><a class="nav-link @ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)" id="two-factor" asp-page="./TwoFactorAuthentication">Two-factor authentication</a></li> *@
 </ul>

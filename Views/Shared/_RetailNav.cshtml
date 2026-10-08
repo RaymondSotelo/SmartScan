@@ -1,0 +1,105 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using SmartScan.Data
+@inject ApplicationDbContext DbContext
+
+@{
+    var retailIdStr = ViewContext.RouteData.Values["retailid"]?.ToString()
+                      ?? Context.Request.Query["retailid"].ToString()
+                      ?? ViewData["RetailId"]?.ToString();
+
+    int.TryParse(retailIdStr, out int retailId);
+
+    // Fetch the store details dynamically so this works on any sub-page (Inventories, Staffs, etc.)
+    var store = retailId > 0
+        ? await DbContext.Retails.AsNoTracking().FirstOrDefaultAsync(r => r.RetailId == retailId)
+        : null;
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+}
+
+<!-- Store Summary Mini-Card Above Tabs -->
+@if (store != null)
+{
+    <div class="card border-0 bg-light rounded-3 mb-3 text-center overflow-hidden">
+        <!-- Edge-to-edge image banner -->
+        <div style="height: 140px; width: 100%;">
+            <img src="@(string.IsNullOrEmpty(store.ImagePath) ? "/images/default-store.png" : store.ImagePath)"
+                 onerror="this.onerror=null; this.src='/images/default-store.png';"
+                 alt="@store.RetailName"
+                 class="w-100 h-100 object-fit-cover d-block" />
+        </div>
+
+        <!-- Store Info (Padded below the image) -->
+        <div class="p-3">
+            <h6 class="fw-bold mb-1 text-truncate" title="@store.RetailName" style="color: #1162a3;">
+                @store.RetailName
+            </h6>
+
+            <p class="text-muted fw-medium small mb-1 text-truncate" title="@store.Address">
+                <i class="fa-solid fa-location-dot text-danger me-1"></i>@store.Address
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(store.Description))
+            {
+                <p class="text-secondary small mb-0 text-truncate" title="@store.Description">
+                    @store.Description
+                </p>
+            }
+        </div>
+    </div>
+}
+
+<hr />
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-pills flex-column gap-2">
+
+    <!-- Inventory Tab -->
+    <li class="nav-item">
+        <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "Inventories" ? "active text-white" : "text-primary")"
+           style="@(currentController == "Inventories" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           asp-controller="Inventories"
+           asp-action="Index"
+           asp-route-retailid="@retailId">
+            <i class="fa-solid fa-boxes-stacked me-2" style="width: 20px;"></i>
+            Inventory
+        </a>
+    </li>
+
+    <!-- Staff Assignment Tab -->
+    <li class="nav-item">
+        <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "RetailStaffs" ? "active text-white" : "text-primary")"
+           style="@(currentController == "RetailStaffs" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           asp-controller="RetailStaffs"
+           asp-action="Index"
+           asp-route-retailid="@retailId">
+            <i class="fa-solid fa-user-plus me-2" style="width: 20px;"></i>
+            Staff Members
+        </a>
+    </li>
+
+    <!-- Sales Analysis -->
+    <li class="nav-item">
+        <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "Retails" && currentAction == "SalesAnalysis" ? "active text-white" : "text-primary")"
+           style="@(currentController == "Retails" && currentAction == "SalesAnalysis" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           asp-controller="Retails"
+           asp-action="SalesAnalysis"
+           asp-route-retailid="@retailId">
+            <i class="fa-solid fa-chart-line me-2" style="width: 20px;"></i>
+            Sales Analysis
+        </a>
+    </li>
+
+    <!-- Edit Store Settings -->
+    <li class="nav-item">
+        <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "Retails" && currentAction == "Edit" ? "active text-white" : "text-primary")"
+           style="@(currentController == "Retails" && currentAction == "Edit" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           asp-controller="Retails"
+           asp-action="Edit"
+           asp-route-retailid="@retailId">
+            <i class="fa-solid fa-gear me-2" style="width: 20px;"></i>
+            Settings
+        </a>
+    </li>
+</ul>

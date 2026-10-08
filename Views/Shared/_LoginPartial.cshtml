@@ -1,29 +1,122 @@
 ﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using SmartScan.Data
+@using SmartScan.Models
+
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
+@inject ApplicationDbContext DbContext
 
-<ul class="navbar-nav">
-@if (SignInManager.IsSignedIn(User))
-{
-    <li class="nav-item">
-            <a class="nav-link fw-semibold text-white" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage" style="padding-top:22px; padding-right:18px">Hello @User.Identity?.Name!</a>
-    </li>
-    <li class="nav-item">
-        <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                <button type="submit" class="btn btn-outline-danger rounded-2 fw-semibold" style="margin-top:14px"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
-        </form>
-    </li>
-}
-else
-{
-    <li class="nav-item" style="margin-top:16px;">
+<ul class="navbar-nav align-items-center">
+    @if (SignInManager.IsSignedIn(User))
+    {
+        var currentUser = await UserManager.GetUserAsync(User);
+
+        // 1. Standardized default path matching your wwwroot/images/ file
+        const string fallbackAvatar = "/images/default-profile-pic.png";
+        string profilePfpPath = fallbackAvatar;
+
+        if (currentUser != null)
+        {
+            var userProfile = await DbContext.UserProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(up => up.UserId == currentUser.Id);
+
+            if (!string.IsNullOrWhiteSpace(userProfile?.ProfilePicture))
+            {
+                // 2. Ensure path begins with '/' to prevent relative URL breaks
+                var pic = userProfile.ProfilePicture.Trim();
+                profilePfpPath = pic.StartsWith("~") ? pic.Substring(1) : (pic.StartsWith("/") ? pic : "/" + pic);
+            }
+        }
+
+        <!-- User Profile Dropdown -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none"
+               href="#"
+               id="userProfileDropdown"
+               role="button"
+               data-bs-toggle="dropdown"
+               aria-expanded="false"
+               style="padding-top: 24px; padding-bottom: 10px;">
+
+                <!-- Display Name -->
+                <span class="me-2 fs-5" style="padding-right: 10px;">@User.Identity?.Name</span>
+
+                <!-- Profile Picture with onerror fallback & cache buster -->
+                <img src="@profilePfpPath"
+                     onerror="this.onerror=null; this.src='@fallbackAvatar';"
+                     asp-append-version="true"
+                     alt="Profile Picture"
+                     class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white"
+                     style="width: 42px; height: 42px;" />
+            </a>
+
+            <!-- Dropdown Menu -->
+            <ul class="dropdown-menu dropdown-menu-end shadow border-1 mt-1 p-0 overflow-hidden" aria-labelledby="userProfileDropdown">
+                <!-- Option 1 | Account Settings -->
+                <li>
+                    <a class="dropdown-item py-2 fw-medium d-flex align-items-center text-primary"
+                       asp-area="Identity"
+                       asp-page="/Account/Manage/Index">
+                        <i class="fa-solid fa-gear me-2 text-primary" style="width: 20px;"></i>
+                        Account Settings
+                    </a>
+                </li>
+
+                <!-- Option 2 | Log out -->
+                <li>
+                    <form class="d-block w-100 m-0"
+                          asp-area="Identity"
+                          asp-page="/Account/Logout"
+                          asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })"
+                          method="post">
+                        <button type="submit" class="dropdown-item py-2 fw-medium text-danger d-flex align-items-center w-100">
+                            <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger" style="width: 20px;"></i>
+                            Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item" style="margin-top:16px;">
             <a style="color:#387bd6" class="nav-link fw-semibold fs-6" style="padding-left: 14px; padding-right:14px;" asp-area="Identity" asp-page="/Account/Login">Login</a>
-    </li>
-    <li class="nav-item" style="margin-top:23px;">
+        </li>
+        <li class="nav-item" style="margin-top:23px;">
             <p style="color:#387bd6" class="fw-medium"> | </p>
-    </li>
-    <li class="nav-item" style="margin-top:17px;">
+        </li>
+        <li class="nav-item" style="margin-top:17px;">
             <a style="color:#387bd6" class="nav-link fw-semibold fs-6" style="padding-left: 14px; padding-right:14px;" asp-area="Identity" asp-page="/Account/Register">Sign Up</a>
-    </li>   
-}
+        </li>
+    }
 </ul>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdownEl = document.getElementById('userProfileDropdown');
+        if (dropdownEl) {
+            const dropdownMenu = dropdownEl.nextElementSibling;
+            let isClosing = false;
+
+            dropdownEl.parentElement.addEventListener('hide.bs.dropdown', function (e) {
+                if (isClosing) return;
+
+                e.preventDefault();
+                isClosing = true;
+                dropdownMenu.classList.add('collapsing-out');
+
+                setTimeout(() => {
+                    dropdownMenu.classList.remove('collapsing-out');
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                    isClosing = false;
+                }, 170);
+            });
+        }
+    });
+</script>
