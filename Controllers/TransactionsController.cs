@@ -62,11 +62,11 @@ public class TransactionsController : Controller
 
         //Display Retail Staff Name
         var staffList = await _context.RetailStaffs
-            .Include(rs => rs.Cashier)
-            .Where(rs => rs.Cashier != null)
+            .Include(rs => rs.Staff)
+            .Where(rs => rs.Staff != null)
             .Select(rs => new {
                 RetailStaffId = rs.RetailStaffId,
-                DisplayName = rs.Cashier.UserName
+                DisplayName = rs.Staff.UserName
             })
             .ToListAsync();
 
@@ -98,18 +98,18 @@ public class TransactionsController : Controller
 
         //Display Retail Staff Name
         var staffList = await _context.RetailStaffs
-            .Include(rs => rs.Cashier)
-            .Where(rs => rs.Cashier != null)
+            .Include(rs => rs.Staff)
+            .Where(rs => rs.Staff != null)
             .Select(rs => new {
                 RetailStaffId = rs.RetailStaffId,
-                DisplayName = rs.Cashier.UserName
+                DisplayName = rs.Staff.UserName
             })
             .ToListAsync();
 
         // Display Staff Name
         ViewData["StaffNames"] = await (
         from rs in _context.RetailStaffs
-        join u in _context.Users on rs.CashierId equals u.Id
+        join u in _context.Users on rs.StaffId equals u.Id
         select new
         {
             rs.RetailStaffId,

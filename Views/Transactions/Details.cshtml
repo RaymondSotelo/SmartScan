@@ -30,7 +30,7 @@
                     <dd class="col-sm-7 fw-semibold">@Html.DisplayFor(model => model.ReceiptNumber)</dd>
                 </dl>
                 <dl class="row mb-2"> 
-                    <dt class="col-sm-5" style="color:#1162a3;">Cashier</dt> <!-- Cashier -->
+                    <dt class="col-sm-5" style="color:#1162a3;">Staff</dt> <!-- Staff -->
                     <dd class="col-sm-7 fw-semibold">
                         @(staffNames != null && staffNames.TryGetValue(Model.RetailStaffId, out var name)
                                                 ? name

@@ -102,4 +102,16 @@
             Settings
         </a>
     </li>
+
+    <hr />
+
+    <li class="nav-item">
+        <a class="nav-link fw-medium text-secondary d-flex align-items-center"
+           style="@(currentController == "Retails" && currentAction == "Edit" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           asp-controller="Retails"
+           asp-action="Index">
+            <i class="fa-solid fa-left-long me-2" style="width: 20px;"></i>
+            Back to List
+        </a>
+    </li>
 </ul>

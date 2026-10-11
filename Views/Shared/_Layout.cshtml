@@ -30,6 +30,9 @@
                 <ul class="list-unstyled components px-2">
                     @if (User.IsInRole("Admin"))
                     {
+                        <li style="padding-bottom:6px"> <!-- [HOME Header] -->
+                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">HOME</span>
+                        </li>
                         <li class="mb-2"> <!-- [DASHBOARD BUTTON] -->
                             <a asp-area="" asp-controller="Users" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
                                 <i class="fa-solid fa-border-all sidebar-icon fs-5 text-center"></i>
@@ -77,12 +80,6 @@
                         <hr />
                         <li style="padding-bottom:6px"> <!-- [STATISTICS Header] -->
                             <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">STATISTICS</span>
-                        </li>
-                        <li class="mb-2"> <!-- [CURRENTLY NOT WORKING!] -->
-                            <a asp-area="" asp-controller="" asp-action="" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-chart-line sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Sales Analysis</span>
-                            </a>
                         </li>
                         <li class="mb-2"> <!-- [TRANSACTION LOGS] -->
                             <a asp-area="" asp-controller="Transactions" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">

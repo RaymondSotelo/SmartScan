@@ -10,34 +10,45 @@
         <i class="fa-solid fa-chart-line me-2"></i> Sales Analysis
     </h4>
 
-    <!-- Export Dropdown Button -->
-    <div class="btn-group">
-        <button type="button" class="btn btn-outline-secondary dropdown-toggle fw-semibold shadow-sm" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fa-solid fa-download me-1"></i> Export Report
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow border-1 p-0 overflow-hidden rounded-3">
-            <!-- Excel Export (GET) -->
-            <li>
-                <a class="dropdown-item d-flex align-items-center py-2 fw-medium text-success"
-                   asp-controller="Retails"
-                   asp-action="ExportExcel"
-                   asp-route-retailId="@ViewBag.RetailId">
-                    <i class="fa-solid fa-file-excel text-success me-2 fs-5"></i> Export to Excel (.xlsx)
-                </a>
-            </li>
-            <!-- PDF Export (POST Form) -->
-            <li>
-                <form id="pdfExportForm" method="post" asp-controller="Retails" asp-action="ExportPdf" target="_blank" class="m-0">
-                    <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
-                    <input type="hidden" name="revenueChartImg" id="revenueChartImg" />
-                    <input type="hidden" name="productsChartImg" id="productsChartImg" />
-                    <input type="hidden" name="paymentChartImg" id="paymentChartImg" />
-                    <button type="button" class="dropdown-item d-flex align-items-center py-2 w-100 fw-medium text-danger" onclick="exportPdfWithCharts()">
+    <div class="d-flex gap-2">
+        <!-- Date Filter Dropdown -->
+        <form id="filterForm" method="get" asp-action="SalesAnalysis" asp-controller="Retails" class="m-0">
+            <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
+            <select name="range" class="form-select fw-medium shadow-sm border-0" onchange="document.getElementById('filterForm').submit();">
+                <option value="7days" selected="@(Model.CurrentRange == "7days")">Last 7 Days</option>
+                <option value="1month" selected="@(Model.CurrentRange == "1month")">Last Month</option>
+                <option value="6months" selected="@(Model.CurrentRange == "6months")">Last 6 Months</option>
+                <option value="1year" selected="@(Model.CurrentRange == "1year")">Last Year</option>
+            </select>
+        </form>
+
+        <!-- Hidden Form for Export Payload -->
+        <form id="exportForm" method="post" target="_blank" class="d-none">
+            <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
+            <input type="hidden" name="range" value="@Model.CurrentRange" />
+            <input type="hidden" name="revenueChartImg" id="revenueChartImg" />
+            <input type="hidden" name="productsChartImg" id="productsChartImg" />
+            <input type="hidden" name="paymentChartImg" id="paymentChartImg" />
+        </form>
+
+        <!-- Export Dropdown Button -->
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle fw-semibold shadow-sm" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-download me-1"></i> Export Report
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-1 mt-1 p-0 overflow-hidden">
+                <li>
+                    <button type="button" class="dropdown-item d-flex align-items-center fw-medium py-2" onclick="submitExport('ExportExcel')">
+                        <i class="fa-solid fa-file-excel text-success me-2 fs-5"></i> Export to Excel (.xlsx)
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item d-flex align-items-center fw-medium py-2" onclick="submitExport('ExportPdf')">
                         <i class="fa-solid fa-file-pdf text-danger me-2 fs-5"></i> Export to PDF (.pdf)
                     </button>
-                </form>
-            </li>
-        </ul>
+                </li>
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -112,7 +123,7 @@
     <div class="col-md-8">
         <div class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-body">
-                <h6 class="fw-bold text-muted mb-3">Revenue (Last 7 Days)</h6>
+                <h6 class="fw-bold text-muted mb-3">Revenue (@Model.RangeLabel)</h6>
                 <div style="height: 300px;">
                     <canvas id="revenueChart"></canvas>
                 </div>
@@ -223,9 +234,9 @@
             });
         });
 
-        // Function to capture charts and submit the PDF form
-        function exportPdfWithCharts() {
-            // Grab the base64 image data directly from the Chart.js canvases
+        // Function to capture charts and route to the correct export action
+        function submitExport(actionName) {
+            // 1. Grab canvas data
             const revCanvas = document.getElementById('revenueChart');
             const prodCanvas = document.getElementById('topProductsChart');
             const payCanvas = document.getElementById('paymentChart');
@@ -234,8 +245,14 @@
             if (prodCanvas) document.getElementById('productsChartImg').value = prodCanvas.toDataURL('image/png', 1.0);
             if (payCanvas) document.getElementById('paymentChartImg').value = payCanvas.toDataURL('image/png', 1.0);
 
-            // Submit the form to the server
-            document.getElementById('pdfExportForm').submit();
+            // 2. Set the form action dynamically (Excel or PDF)
+            const form = document.getElementById('exportForm');
+
+            // Generates the base URL (e.g., /Retails/ExportPdf)
+            form.action = '@Url.Action("Placeholder", "Retails")'.replace("Placeholder", actionName);
+
+            // 3. Submit
+            form.submit();
         }
     </script>
 }

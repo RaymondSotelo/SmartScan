@@ -27,17 +27,21 @@
             <input type="hidden" asp-for="ProductId" id="SelectedProductId" />
 
             <div class="row g-3 p-2 align-items-end">
+
                 <!-- Product that acts as search bar -->
-                <div class="col-md-3 position-relative">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                        <input type="text" id="productSearchInput"
-                               class="form-control border-start-0 @(ViewData.ModelState.ContainsKey("ProductId") && ViewData.ModelState["ProductId"].Errors.Count > 0 ? "is-invalid" : "")" 
-                               placeholder="Product to search..." 
+                <div class="col-md-3 position-relative" style="top: 4px;">
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden border @(ViewData.ModelState.ContainsKey("ProductId") && ViewData.ModelState["ProductId"].Errors.Count > 0 ? "border-danger is-invalid" : "")">
+                        <span class="input-group-text bg-white border-0">
+                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                        </span>
+                        <input type="text"
+                               id="productSearchInput"
+                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold @(ViewData.ModelState.ContainsKey("ProductId") && ViewData.ModelState["ProductId"].Errors.Count > 0 ? "is-invalid" : "")"
+                               placeholder="Product to search..."
                                value="@((ViewBag.ProductList as IEnumerable<SmartScan.Models.Product>)?.FirstOrDefault(p => p.ProductId == Model?.ProductId)?.ProductName)"
                                autocomplete="off" />
                     </div>
-                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                    <span asp-validation-for="ProductId" class="text-danger small mt-1 d-block"></span>
                 </div>
 
                 <!-- Local Price -->
@@ -124,7 +128,8 @@
         
         <!-- Return Button -->
         <div class="text-start pt-3">
-            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary fw-medium">Back to List</a>
+            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary fw-medium">
+            <i class="fa-solid fa-left-long me-2"></i>Return</a>
         </div>
     </div>
 </div>

@@ -64,7 +64,7 @@
 
     <script>
         const video = document.getElementById('videoFeed');
-        const canvas = document.getElementById('faceCanvas'); // Grab from HTML
+        const canvas = document.getElementById('faceCanvas');
         const btnToggleCamera = document.getElementById('btnToggleCamera');
         const liveMatchBar = document.getElementById('liveMatchBar');
         const scanGuide = document.getElementById('scanGuide');
@@ -74,19 +74,18 @@
         let isScanningActive = false;
         let isAuthenticating = false;
         let scanSessionTimeout = null;
-        let scanLoop = null;
 
         const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
         const AUTO_STOP_MS = 15000;
 
-        // 1. Initialize Models
+        // 1. Initialize Lightweight Fast Models
         async function loadModels() {
             liveMatchBar.className = 'alert alert-secondary py-2 fw-bold mb-3 fs-5 border-0';
             liveMatchBar.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Loading models...';
 
             try {
                 await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
@@ -104,7 +103,6 @@
             isScanningActive = false;
             isAuthenticating = false;
             if (scanSessionTimeout) clearTimeout(scanSessionTimeout);
-            if (scanLoop) cancelAnimationFrame(scanLoop);
 
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
@@ -112,15 +110,13 @@
             }
             video.srcObject = null;
 
-            // Clear canvas safely
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             btnToggleCamera.className = 'btn btn-outline-secondary fw-semibold px-4';
             btnToggleCamera.innerHTML = '<i class="fa-solid fa-video me-1"></i> Start Camera';
 
-            scanGuide.classList.remove('border-success', 'border-danger', 'border-warning');
-            scanGuide.classList.add('border-primary');
+            scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
         }
 
         // 3. Start Camera Toggle
@@ -135,7 +131,9 @@
             if (!isModelReady) return;
 
             try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
+                });
                 video.srcObject = currentStream;
 
                 btnToggleCamera.className = 'btn btn-danger fw-semibold px-4';
@@ -144,12 +142,10 @@
                 isScanningActive = true;
                 isAuthenticating = false;
 
-                // IMPORTANT: Wait for the video to actually start playing frames!
                 video.onplay = () => {
                     const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
                     faceapi.matchDimensions(canvas, displaySize);
 
-                    // Start timeout countdown only after video plays
                     scanSessionTimeout = setTimeout(() => {
                         if (isScanningActive) {
                             stopCamera();
@@ -158,8 +154,7 @@
                         }
                     }, AUTO_STOP_MS);
 
-                    // Start loop
-                    runFastDetectionLoop();
+                    runDetectionLoop();
                 };
 
             } catch (err) {
@@ -168,47 +163,46 @@
             }
         });
 
-        // 4. Ultra-Fast Continuous Detection Loop
-        async function runFastDetectionLoop() {
-            if (!isScanningActive) return;
+        // 4. Controlled Detection Loop (Sequential & Non-blocking)
+        async function runDetectionLoop() {
+            const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
 
-            // Ensure video is actively rendering frames before scanning
-            if (video.readyState === 4) {
-                // Lowered minConfidence to 0.4 for faster pickup in varied lighting
-                const detection = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 }))
-                                               .withFaceLandmarks()
-                                               .withFaceDescriptor();
+            while (isScanningActive) {
+                if (video.readyState === 4 && !isAuthenticating) {
+                    try {
+                        const detection = await faceapi.detectSingleFace(video, detectorOptions)
+                                                       .withFaceLandmarks()
+                                                       .withFaceDescriptor();
 
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                if (detection) {
-                    const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-                    const resizedDetection = faceapi.resizeResults(detection, displaySize);
-                    faceapi.draw.drawFaceLandmarks(canvas, resizedDetection, { drawLines: true, color: '#00ff00', lineWidth: 1 });
+                        if (detection) {
+                            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                            const resizedDetection = faceapi.resizeResults(detection, displaySize);
+                            faceapi.draw.drawFaceLandmarks(canvas, resizedDetection, { drawLines: true, color: '#00ff00', lineWidth: 1 });
 
-                    if (!isAuthenticating) {
-                        verifyWithServer(detection.descriptor);
-                    }
-                } else {
-                    if (!isAuthenticating) {
-                        liveMatchBar.className = 'alert alert-info py-2 fw-bold mb-3 fs-5 border-0 text-dark';
-                        liveMatchBar.innerHTML = '<i class="fa-solid fa-crosshairs fa-fade me-1"></i> Looking for face...';
-                        scanGuide.classList.replace('border-primary', 'border-warning');
-                        scanGuide.classList.replace('border-danger', 'border-warning');
+                            // Found face: trigger verification
+                            await verifyWithServer(detection.descriptor);
+                        } else {
+                            liveMatchBar.className = 'alert alert-info py-2 fw-bold mb-3 fs-5 border-0 text-dark';
+                            liveMatchBar.innerHTML = '<i class="fa-solid fa-crosshairs fa-fade me-1"></i> Center face in oval...';
+                            scanGuide.classList.replace('border-danger', 'border-warning') || scanGuide.classList.replace('border-primary', 'border-warning');
+                        }
+                    } catch (err) {
+                        console.error('Detection frame drop:', err);
                     }
                 }
-            }
 
-            if (isScanningActive) {
-                scanLoop = requestAnimationFrame(runFastDetectionLoop);
+                // Throttle frame processing to save CPU cycles (~80ms gap)
+                await new Promise(r => setTimeout(r, 80));
             }
         }
 
         // 5. Backend Verification Request
         async function verifyWithServer(descriptorArray) {
             isAuthenticating = true;
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
 
             liveMatchBar.className = 'alert alert-primary py-2 fw-bold mb-3 fs-5 border-0';
             liveMatchBar.innerHTML = '<i class="fa-solid fa-microchip fa-spin me-1"></i> Verifying...';
@@ -216,7 +210,8 @@
             const capturedVectorJson = JSON.stringify(Array.from(descriptorArray));
 
             try {
-                const response = await fetch('/Customers/AuthenticateFace', {
+                // Corrected endpoint to Home controller
+                const response = await fetch('/Home/AuthenticateFace', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -231,22 +226,21 @@
                     isScanningActive = false;
                     clearTimeout(scanSessionTimeout);
 
-                    scanGuide.classList.remove('border-primary', 'border-warning', 'border-danger');
-                    scanGuide.classList.add('border-success');
-
+                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-success rounded-circle';
                     liveMatchBar.className = 'alert alert-success py-2 fw-bold mb-3 fs-5 border-0 shadow-sm';
                     liveMatchBar.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${result.customerName}`;
 
-                    setTimeout(() => { window.location.href = result.redirectUrl; }, 1000);
+                    setTimeout(() => { window.location.href = result.redirectUrl; }, 800);
                 } else {
-                    scanGuide.classList.replace('border-warning', 'border-danger');
+                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-danger rounded-circle';
                     liveMatchBar.className = 'alert alert-danger py-2 fw-bold mb-3 fs-5 border-0';
                     liveMatchBar.innerHTML = '<i class="fa-solid fa-user-xmark me-1"></i> Unregistered Face';
 
-                    setTimeout(() => { isAuthenticating = false; }, 800);
+                    // Cool-down before retrying next frame
+                    setTimeout(() => { isAuthenticating = false; }, 1000);
                 }
             } catch (err) {
-                setTimeout(() => { isAuthenticating = false; }, 800);
+                setTimeout(() => { isAuthenticating = false; }, 1000);
             }
         }
 

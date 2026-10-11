@@ -298,15 +298,15 @@ public class CustomersController : Controller
     }
 
     // -------------------- [TEST AREA!!] --------------------
-
     // GET: Customers/VerifyIdentity
-    public IActionResult VerifyIdentity()
+    public IActionResult CustomerVerification()
     {
         return View();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Cashier")]
     public async Task<IActionResult> AuthenticateFace([FromBody] FaceAuthRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.CapturedEmbeddingJson))
@@ -400,7 +400,7 @@ public class CustomersController : Controller
                 customerId = bestMatch.CustomerId,
                 customerName = bestMatch.FullName,
                 confidence = $"{(bestMatch.SimilarityScore * 100):0.0}%",
-                redirectUrl = Url.Action("Index", "Customers", new { search = bestMatch.FullName })
+                redirectUrl = Url.Action("Payment", "Home", new { search = bestMatch.FullName })
             });
         }
 

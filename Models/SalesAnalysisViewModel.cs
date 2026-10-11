@@ -10,7 +10,9 @@ namespace SmartScan.Models.ViewModels
         public int TotalItemsSold { get; set; }
         public string TopSellingItemName { get; set; } = "N/A";
 
-        // Data for Graph 1: Revenue Last 7 Days (Line Chart)
+        // Data for Graph 1: RevenueLine Chart)
+        public string CurrentRange { get; set; } = "7days";
+        public string RangeLabel { get; set; } = "Last 7 Days";
         public string RevenueDatesJson { get; set; } = "[]";
         public string RevenueValuesJson { get; set; } = "[]";
 

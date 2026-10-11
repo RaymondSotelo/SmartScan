@@ -4,9 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SmartScan.Data;
 
-namespace SmartScan.Controllers
+namespace SmartScan.Data
 {
     [Authorize(Roles = "Admin")]
     public class UsersController : Controller
@@ -41,7 +40,7 @@ namespace SmartScan.Controllers
         }
 
         // [UPDATE THIS LATER TO MANAGE ADMIN ROLE] <<--
-        // Currently managing Cashier Role <--
+        // Currently managing Staff Role <--
         public async Task<IActionResult> User_Management()
         {
             var users = _userManager.Users.ToListAsync();

@@ -34,7 +34,7 @@ public class InventoriesController : Controller
             .FirstOrDefaultAsync();
 
         //Fetch Inv data
-        var InvQuery = _context.Inventories
+        var invQuery = _context.Inventories
             .Include(i => i.Product)
                 .ThenInclude(p => p.Category)
             .Include(i => i.Retail)
@@ -44,13 +44,19 @@ public class InventoriesController : Controller
         //Store retailId
         ViewBag.RetailId = retailId;
 
+        //Display Total distinct products registered in inventory
+        ViewBag.TotalProducts = await invQuery
+            .Select(i => i.ProductId)
+            .Distinct()
+            .CountAsync();
+
         if (!string.IsNullOrWhiteSpace(search))
         {
             search = search.Trim();
             bool isPrice = decimal.TryParse(search, out decimal parsedPrice);
             bool isNumeric = int.TryParse(search, out int parsedNumeric);
 
-            InvQuery = InvQuery.Where(i =>
+            invQuery = invQuery.Where(i =>
                (i.Product != null && i.Product.ProductName.Contains(search)) ||
                (isPrice && i.LocalPrice == parsedPrice) ||
                (isNumeric && i.Stock == parsedNumeric));
@@ -59,7 +65,7 @@ public class InventoriesController : Controller
         ViewBag.RetailName = storeName;
         ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName");
 
-        return View(await InvQuery.ToListAsync());
+        return View(await invQuery.ToListAsync());
     }
 
     // GET: INVENTORYS/Create

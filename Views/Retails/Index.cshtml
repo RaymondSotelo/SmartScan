@@ -1,8 +1,21 @@
 @model IEnumerable<SmartScan.Models.Retail>
+@inject SmartScan.Data.ApplicationDbContext DbContext
 
 @{
     ViewData["Title"] = "Enroll Retail";
     ViewData["HeaderTitle"] = "Retail Management";
+
+    // Collect all distinct AdminOwner IDs across all listed retail cards
+    var ownerIds = Model
+        .Select(r => r.AdminOwner)
+        .Where(id => !string.IsNullOrEmpty(id))
+        .Distinct()
+        .ToList();
+
+    // Fetch all matching UserProfiles in a single batched query
+    var profileMap = DbContext.UserProfiles
+        .Where(up => ownerIds.Contains(up.UserId))
+        .ToDictionary(up => up.UserId, up => up.ProfilePicture);
 }
 
 <div class="card shadow border-0 rounded-4 mt-4 mb-5">
@@ -68,6 +81,12 @@
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 p-3 pt-0">
             @foreach (var item in Model)
             {
+                // Resolve avatar path for the store owner
+                profileMap.TryGetValue(item.AdminOwner, out var customPic);
+                var avatarPath = string.IsNullOrWhiteSpace(customPic)
+                    ? "/images/default-pfp.jpg"
+                    : customPic;
+
                 <div class="col">
                     <div class="card h-100 shadow-sm border retail-card position-relative overflow-hidden">
                         <!-- Store Image Banner -->
@@ -114,6 +133,23 @@
 
                             <!-- Footer Info -->
                             <div class="mt-auto d-flex align-items-center small text-muted pt-2">
+
+                                <!-- Owner Section -->
+                                <div class="d-flex align-items-center text-truncate me-2 position-relative" style="z-index: 2;" title="Store Owner">
+                                    <img src="@avatarPath"
+                                         onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
+                                         alt="@(item.AdminOwnerNavigation?.UserName ?? "Owner")"
+                                         class="rounded-circle border border-1 object-fit-cover shadow-sm bg-white me-2 flex-shrink-0"
+                                         style="width: 38px; height: 38px;" />
+
+                                    <div class="d-flex flex-column text-truncate" style="line-height: 1.1;">
+                                        <span class="text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Owner</span>
+                                        <span class="fw-semibold text-dark text-truncate" style="font-size: 12px;">
+                                            @(item.AdminOwnerNavigation?.UserName ?? "Unknown")
+                                        </span>
+                                    </div>
+                                </div>
+
                                 <!-- 3-Dot Actions Dropdown -->
                                 <div class="dropdown ms-auto position-relative" style="z-index: 2;">
                                     <button class="btn btn-sm btn-link text-muted p-1 text-decoration-none shadow-none"

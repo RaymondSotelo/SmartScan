@@ -5,24 +5,18 @@
     ViewData["HeaderTitle"] = "Retail Management";
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
-
 <div class="card shadow border-0 rounded-4 mt-4">
     <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
         <h5 class="mb-0"><i class="fa-solid fa-cart-flatbed"></i> Products</h5>
     </div>
     <div class="p-3 d-flex justify-content-between align-items-center mb-3">
+
+        <!-- Add Product Button -->
         <p>
             <a class="btn btn-success fw-semibold" asp-action="Create">Add New Product</a>
         </p>
+
+        <!-- Search Bar -->
         <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 450px; padding-bottom: 11px; width:100%;">
             <div class="input-group">
                 <span class="input-group-text bg-light border-end-0">

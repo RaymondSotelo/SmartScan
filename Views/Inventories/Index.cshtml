@@ -1,4 +1,4 @@
-@model IEnumerable<SmartScan.Models.Inventory>
+﻿@model IEnumerable<SmartScan.Models.Inventory>
 
 @{
     ViewData["Title"] = "Inventory";
@@ -6,30 +6,39 @@
     Layout = "_RetailLayout";
 }
 
-<h4 class="fw-bold mb-4" style="color: #1162a3;">
-    <i class="fa-solid fa-boxes-stacked me-2"></i> Inventory
-</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0" style="color: #1162a3;">
+        <i class="fa-solid fa-boxes-stacked me-2"></i> Inventory   
+    </h4>
+    <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill">
+        Total Products: @(ViewBag.TotalProducts ?? 0)
+    </span>
+</div>
 
 <div class="p-2 d-flex justify-content-between align-items-center mb-3 bounded-header">
     <p>
         <a class="btn btn-success fw-semibold" asp-action="Create" asp-route-retailId="@ViewBag.RetailId">Add Product</a>
     </p>
 
-    <!--SEARCH Feature-->
-    <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 450px; padding-bottom: 11px; width:100%;">
+    <!-- Search Feature -->
+    <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 350px; width: 100%;">
         <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
-        <div class="input-group">
-            <span class="input-group-text bg-light border-end-0">
+
+        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+            <span class="input-group-text bg-white border-0">
                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
             </span>
-            <input type="text" name="search" value="@ViewData["CurrentFilter"]" class="form-control border-start-0 ps-0 fw-semibold"
-                   placeholder="Search..." aria-label="Search inventory" />
+            <input type="text"
+                   name="search"
+                   value="@ViewData["CurrentFilter"]"
+                   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                   placeholder="Search product..."
+                   aria-label="Search" />
         </div>
-        <button type="submit" class="btn btn-outline-primary fw-semibold">Search</button>
 
         @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
         {
-            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary" title="Clear Search">
+            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary rounded-3" title="Clear Search">
                 <i class="fa-solid fa-xmark"></i>
             </a>
         }
@@ -86,7 +95,7 @@ else
                             @(item.Product?.Category?.CategoryName ?? "Uncategorized")
                         </td>
                         <td>
-                            @Html.DisplayFor(model => item.LocalPrice)
+                            ₱@Html.DisplayFor(model => item.LocalPrice)
                         </td>
                         <td>
                             @Html.DisplayFor(model => item.Stock)

@@ -314,3 +314,39 @@ html, body {
     border-color: #0d6efd;
     box-shadow: 0 0 0 0.25rem rgba(17, 98, 163, 0.25);
 }
+
+/* ----[ ROLE BUTTON EFFECT ]---- */
+
+/* Inactive button style */
+.role-tab-btn {
+    background-color: #ffffff;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease-in-out;
+}
+
+    /* Hover state: changes text and border to primary */
+    .role-tab-btn:hover:not(.active) {
+        color: #1162a3 !important;
+        border-color: #1162a3 !important;
+        background-color: #f0f7fd !important;
+    }
+
+    /* Active selected state */
+    .role-tab-btn.active {
+        background-color: #1162a3 !important;
+        border-color: #1162a3 !important;
+        color: #ffffff !important;
+    }
+
+/* ----[ SEARCH BAR CLICK EFFECT ]---- */
+.input-group.border:focus-within {
+    border-color: #1162a3 !important;
+    box-shadow: 0 0 0 0.2rem rgba(17, 98, 163, 0.15) !important;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.input-group.border .form-control:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
