@@ -1,120 +1,222 @@
-@model IEnumerable<SmartScan.Models.Customer>
+﻿@model IEnumerable<SmartScan.Models.Customer>
 
 @{
-    ViewData["Title"] = "Enroll Customers";
+    ViewData["Title"] = "Customers";
     ViewData["HeaderTitle"] = "Miscellaneous";
+    string currentFilter = ViewData["CurrentFilter"]?.ToString()?.Trim() ?? "";
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
+<!-- Outer Card pinned to Viewport Height -->
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+     style="height: calc(100dvh - 130px); min-height: 500px;">
 
-<div class="card shadow border-0 rounded-4 mt-4">
-    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-id-badge"></i> Enroll Customer</h5>
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
+        <h5 class="mb-0"><i class="fa-solid fa-id-badge me-2"></i>Customer</h5>
     </div>
-    <div class="p-3 d-flex justify-content-between align-items-center mb-3">
-        <p>
-            <a class="btn btn-success fw-semibold"  asp-action="Create">Add Customer Info</a>
-        </p>
-        <p> <!-- DELETE LATER! -->
-            <a class="btn btn-primary fw-semibold" asp-action="VerifyIdentity">Test Face Detector</a>
-        </p>
-        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 450px; padding-bottom: 11px; width:100%;">
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0">
-                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                </span>
-                <input type="text" name="search" value="@ViewData["CurrentFilter"]" class="form-control border-start-0 ps-0 fw-semibold"
-                       placeholder="Search..." aria-label="Search customer" />
-            </div>
-            <button type="submit" class="btn btn-outline-primary fw-semibold">Search</button>
 
-            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+	<!-- Header Info -->
+	<div class="px-4 pt-4 pb-3">
+		<h4 class="mb-0 fw-bold" style="color: #1162a3;">
+			Registered Customer Accounts
+		</h4>
+		<p class="fw-medium pt-1 text-secondary mb-0">Manage customer records, monitor credit balances, and enroll biometric identity profiles.</p>
+	</div>
+
+    <!-- Action Bar & Search -->
+    <div class="px-4 pb-3 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0">
+
+		<!-- Add Button -->
+		<a asp-action="Create"
+		   class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+		   style="background-color: #1162a3; border-color: #1162a3;">
+			<i class="fa-solid fa-user-plus"></i>
+			<span>Add Customer</span>
+		</a>
+
+        <div class="d-flex justify-content-end align-items-center gap-2 pt-3 pb-3 mt-auto">
+            <!-- Search Bar -->
+            <form asp-action="Index" method="get" class="d-flex gap-2" style="width: 360px; max-width: 100%;">
+                <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                    <span class="input-group-text bg-white border-0">
+                        <i class="fa-solid fa-magnifying-glass text-muted"></i>
+					</span>
+					<input type="text"
+						   name="search"
+						   value="@currentFilter"
+                           class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+						   placeholder="Search by name, contact..."
+						   aria-label="Search customer" />
+				</div>
+
+				@if (!string.IsNullOrEmpty(currentFilter))
+				{
+					<a asp-action="Index"
+					   class="btn btn-outline-secondary rounded-pill px-3 d-flex align-items-center"
+					   style="height: 38px;"
+					   title="Clear Search">
+						<i class="fa-solid fa-xmark"></i>
+					</a>
+				}
+			</form>
+
+			<!-- Total Customer Badge -->
+			<span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
+				  style="background-color: #1162a3; height: 38px; font-size: 13px;">
+                <i class="fa-solid fa-users me-1"></i>@Model.Count() Enrolled
+			</span>
+        </div>
+    </div>
+
+    <!-- Overhead TempData Alert -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center rounded-3 mb-3 flex-shrink-0" role="alert">
+            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Scrollable Table Section -->
+    <div class="card-body p-4 pt-0 d-flex flex-column flex-grow-1 overflow-hidden">
+        @if (!Model.Any())
+        {
+            @if (!string.IsNullOrEmpty(currentFilter))
             {
-                <a asp-action="Index" class="btn btn-outline-secondary" title="Clear Search">
-                    <i class="fa-solid fa-xmark"></i>
-                </a>
+                <div class="alert alert-warning text-center my-4 fw-semibold shadow-sm border-0 rounded-4" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i>No customer found matching "<strong>@currentFilter</strong>".
+                </div>
             }
-        </form>
-    </div>
-    @if (!Model.Any())
-    {
-        <div class="alert alert-warning text-center my-4 fw-semibold" role="alert">
-            <i class="fa-solid fa-circle-exclamation me-2"></i>No customer found matching "<strong>@ViewData["CurrentFilter"]</strong>".
-        </div>
-    }
-    else
-    {
-        <div class="card-body">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>
-                            Full Name
-                        </th>
-                        <th>
-                            Contact Number
-                        </th>
-                        <th>
-                            Credit Limit
-                        </th>
-                        <th>
-                            Credit Debt
-                        </th>
-                        <th>
-                            Status
-                        </th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model)
-                    {
+            else
+            {
+                <div class="text-center py-5 my-auto">
+                    <div class="text-muted mb-3">
+                        <i class="fa-solid fa-users-slash fa-3x text-secondary opacity-50"></i>
+                    </div>
+                    <h5 class="fw-semibold text-secondary">No Customers Enrolled</h5>
+                    <p class="text-muted small">Click "Add Customer" above to register a new customer account in the system.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="table-responsive flex-grow-1 overflow-y-auto pe-1">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light sticky-top">
                         <tr>
-                            <td>
-                                @Html.DisplayFor(model => item.FullName)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.ContactNumber)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.CreditLimit)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.CurrentDebt)
-                            </td>
-                            <td>
-                                @if (item.Status.StatusName == "Active")
-                                {
-                                    <span class="badge bg-success rounded-pill px-3">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary text-light rounded-pill px-3">Inactive</span>
-                                }
-                            </td>
-                            <td>
-                                <a asp-action="Enroll" asp-route-customerid="@item.CustomerId" class="btn btn-info fw-medium" title="Manage Identity & Biometrics">
-                                    <i class="fa-solid fa-fingerprint"></i> Enroll
-                                </a>
-                                <a class="btn btn-primary fw-medium" asp-action="Edit" asp-route-customerid="@item.CustomerId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
-                                <form asp-action="Delete" asp-route-customerid="@item.CustomerId" method="post" onsubmit="return confirm('Are you sure you want to delete @item.FullName?');" style="display:inline;">
-                                    <button type="submit" class="btn btn-danger fw-medium">
-                                        <i class="fa-solid fa-trash"></i> Delete
-                                    </button>
-                                </form>
-                            </td>
+                            <th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Customer</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Contact</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Credit Limit</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Current Debt</th>
+                            <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;"></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            bool hasDebt = item.CurrentDebt > 0;
+
+                            <tr>
+                                <!-- 1. Customer Name & Avatar Bubble -->
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-primary d-block" style="font-size: 14px;">
+                                            @item.FullName
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- 2. Contact Number -->
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.ContactNumber))
+                                    {
+                                        <span class="fw-medium text-dark d-flex align-items-center gap-1" style="font-size: 13px;">
+                                            <i class="fa-solid fa-phone text-muted" style="font-size: 11px;"></i>
+                                            @item.ContactNumber
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic small">No contact provided</span>
+                                    }
+                                </td>
+
+                                <!-- 3. Credit Limit -->
+                                <td>
+                                    <span class="fw-semibold text-secondary" style="font-size: 13px;">
+                                        ₱@item.CreditLimit.ToString("N2")
+                                    </span>
+                                </td>
+
+                                <!-- 4. Current Debt -->
+                                <td>
+                                    <span class="fw-bold @(hasDebt ? "text-danger" : "text-success")" style="font-size: 13px;">
+                                        ₱@item.CurrentDebt.ToString("N2")
+                                    </span>
+                                    @if (hasDebt)
+                                    {
+                                        <small class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle ms-1" style="font-size: 10px;">
+                                            Balance Due
+                                        </small>
+                                    }
+                                </td>
+
+                                <!-- 5. Actions -->
+                                <td class="pe-4 text-end">
+                                    <div class="d-inline-flex align-items-center gap-1">
+
+                                        <!-- Edit -->
+                                        <a asp-action="Edit"
+                                            asp-route-customerid="@item.CustomerId"
+                                            class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium shadow-sm"
+                                            style="font-size: 14px;">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                                        </a>
+
+                                        <!-- Delete -->
+                                        <form asp-action="Delete"
+                                                asp-route-customerid="@item.CustomerId"
+                                                method="post"
+                                                id="deleteCustomerForm-@item.CustomerId"
+                                                class="m-0 d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-medium shadow-sm"
+                                                    onclick="confirmCustomerDelete('@item.CustomerId', '@Html.Raw(item.FullName.Replace("'", "\\'"))')"
+                                                    style="font-size: 14px;">
+                                                <i class="fa-solid fa-trash me-1"></i>Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmCustomerDelete(customerId, customerName) {
+            Swal.fire({
+                title: 'Delete Customer?',
+                text: `Are you sure you want to remove "${customerName}" from the registry?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(`deleteCustomerForm-${customerId}`).submit();
+                }
+            });
+        }
+    </script>
+}

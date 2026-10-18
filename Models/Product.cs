@@ -30,4 +30,7 @@ public partial class Product
     public virtual Status Status { get; set; } = null!;
 
     public virtual ICollection<TransactionItem> TransactionItems { get; set; } = new List<TransactionItem>();
+
+    [NotMapped]
+    public IFormFile? ImageUpload { get; set; }
 }

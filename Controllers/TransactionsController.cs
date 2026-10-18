@@ -16,8 +16,8 @@ public class TransactionsController : Controller
         _context = context;
     }
 
-    // GET: TRANSACTIONS
-    public async Task<IActionResult> Index(string search)    
+    // GET: Transactions
+    public async Task<IActionResult> Index(string? search)
     {
         ViewData["CurrentFilter"] = search;
 
@@ -28,12 +28,23 @@ public class TransactionsController : Controller
         }
 
         var transactionQuery = _context.Transactions
-            .Include(t => t.RetailStaff)
+            .Include(t => t.RetailStaff).ThenInclude(rs => rs.Staff)
             .Include(t => t.Customer)
             .Include(t => t.Retail)
             .Include(t => t.PaymentMethod)
             .Include(t => t.Status)
-            //.Where(t => t.Retail.RetailId == currentUserId)
+            .Include(t => t.TransactionItems)
+            .AsNoTracking()
+            // Filter: Show transactions ONLY for retails where the current user 
+            // is the primary Owner (AdminOwner) OR registered as active staff
+            .Where(t => t.Retail != null && (
+                t.Retail.AdminOwner == currentUserId ||
+                t.Retail.RetailStaffs.Any(rs =>
+                    rs.StaffId == currentUserId &&
+                    rs.Status != null &&
+                    rs.Status.StatusName == "Active"
+                )
+            ))
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -41,39 +52,51 @@ public class TransactionsController : Controller
             search = search.Trim();
 
             bool isNumeric = decimal.TryParse(search, out decimal parsedPrice);
-            //Date handler
+
             string[] formats = { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy" };
-            bool isDate = DateTime.TryParseExact(search,
-                                                 formats,
-                                                 System.Globalization.CultureInfo.InvariantCulture,
-                                                 System.Globalization.DateTimeStyles.None,
-                                                 out DateTime parsedDate);
+            bool isDate = DateTime.TryParseExact(
+                search,
+                formats,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out DateTime parsedDate);
 
-            DateTime startOfDay = parsedDate.Date;
-            DateTime endOfDay = parsedDate.Date.AddDays(1).AddTicks(-1);
+            if (isDate)
+            {
+                DateTime startOfDay = parsedDate.Date;
+                DateTime endOfDay = startOfDay.AddDays(1);
 
-            // You can search ->
-            transactionQuery = transactionQuery.Where(t =>
-                t.ReceiptNumber.Contains(search) || // Receipt Number
-               (t.Retail != null && t.Retail.RetailName.Contains(search)) || //Retail
-               (isNumeric && t.TotalAmount == parsedPrice) || // Total Amount
-               (isDate && t.CreatedAt >= startOfDay && t.CreatedAt < endOfDay)); // Date
+                transactionQuery = transactionQuery.Where(t =>
+                    t.ReceiptNumber.Contains(search) ||
+                    (t.Retail != null && t.Retail.RetailName.Contains(search)) ||
+                    (isNumeric && t.TotalAmount == parsedPrice) ||
+                    (t.CreatedAt >= startOfDay && t.CreatedAt < endOfDay));
+            }
+            else
+            {
+                transactionQuery = transactionQuery.Where(t =>
+                    t.ReceiptNumber.Contains(search) ||
+                    (t.Retail != null && t.Retail.RetailName.Contains(search)) ||
+                    (t.RetailStaff != null && t.RetailStaff.Staff != null && t.RetailStaff.Staff.UserName.Contains(search)) ||
+                    (isNumeric && t.TotalAmount == parsedPrice));
+            }
         }
 
-        //Display Retail Staff Name
-        var staffList = await _context.RetailStaffs
-            .Include(rs => rs.Staff)
-            .Where(rs => rs.Staff != null)
-            .Select(rs => new {
-                RetailStaffId = rs.RetailStaffId,
-                DisplayName = rs.Staff.UserName
-            })
+        // Filter dropdowns to only the user's accessible stores
+        var accessibleRetails = await _context.Retails
+            .Where(r => r.AdminOwner == currentUserId ||
+                        r.RetailStaffs.Any(rs => rs.StaffId == currentUserId && rs.Status.StatusName == "Active"))
+            .Select(r => new { r.RetailId, r.RetailName })
             .ToListAsync();
 
-        ViewData["Retail"] = new SelectList(_context.Retails, "RetailId", "RetailName");
-        ViewData["PaymentMethod"] = new SelectList(_context.PaymentMethods, "PaymentMethodId", "PaymentMethodName");
+        ViewData["Retail"] = new SelectList(accessibleRetails, "RetailId", "RetailName");
+        ViewData["PaymentMethod"] = new SelectList(await _context.PaymentMethods.ToListAsync(), "PaymentMethodId", "PaymentMethodName");
 
-        return View(await transactionQuery.ToListAsync());
+        var transactions = await transactionQuery
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        return View(transactions);
     }
 
     // GET: TRANSACTIONS/Details/5

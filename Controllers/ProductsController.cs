@@ -9,10 +9,12 @@ using SmartScan.Models;
 public class ProductsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
-    public ProductsController(ApplicationDbContext context)
+    public ProductsController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
     {
         _context = context;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     // GET: PRODUCTS
@@ -55,20 +57,52 @@ public class ProductsController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("ProductName,CategoryId,Price,ProductImage")] Product product)
+    public async Task<IActionResult> Create([Bind("ProductName,CategoryId,Price,ProductImage,ImageUpload")] Product product)
     {
-        ModelState.Remove("Status");
+        // Ignore relational navigation properties during model validation
         ModelState.Remove("Category");
-        ModelState.Remove("StatusId");
+        ModelState.Remove("Status");
 
+        // Checks if an image was uploaded via file tab
+        if (product.ImageUpload != null && product.ImageUpload.Length > 0)
+        {
+            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+            Directory.CreateDirectory(uploadsFolder);
+
+            // Sanitize file name
+            string cleanFileName = Path.GetFileName(product.ImageUpload.FileName);
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + cleanFileName;
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await product.ImageUpload.CopyToAsync(fileStream);
+            }
+
+            // Assign the saved file path to the non-nullable string
+            product.ProductImage = "/uploads/products/" + uniqueFileName;
+
+            // Strip the model validation error that was generated on initial binding
+            ModelState.Remove("ProductImage");
+        }
+
+        // Fallback check: ensure either a URL was provided or a file was saved
+        if (string.IsNullOrWhiteSpace(product.ProductImage))
+        {
+            ModelState.AddModelError("ProductImage", "Please provide a valid image URL or upload an image file.");
+        }
+
+        // Save to database
         if (ModelState.IsValid)
         {
             product.StatusId = 1;
 
             _context.Add(product);
             await _context.SaveChangesAsync();
+            TempData["UserMessage"] = $"{product.ProductName} was successfully added.";
             return RedirectToAction(nameof(Index));
         }
+
         ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryName", product.CategoryId);
         return View(product);
     }
@@ -99,22 +133,58 @@ public class ProductsController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? productid, [Bind("ProductId,ProductName,CategoryId,Price,ProductImage,StatusId")] Product product)
+    public async Task<IActionResult> Edit(int? productid, [Bind("ProductId,ProductName,CategoryId,Price,ProductImage,StatusId,ImageUpload")] Product product)
     {
         if (productid != product.ProductId)
         {
             return NotFound();
         }
 
-        if (ModelState.IsValid)
+        ModelState.Remove("Category");
+        ModelState.Remove("Status");
+
+        var existProduct = await _context.Products.FindAsync(productid);
+        if (existProduct == null)
         {
-            var existProduct = await _context.Products.FindAsync(productid);
-            if (existProduct == null)
+            return NotFound();
+        }
+
+        // Process new file upload if supplied
+        if (product.ImageUpload != null && product.ImageUpload.Length > 0)
+        {
+            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+            Directory.CreateDirectory(uploadsFolder);
+
+            string cleanFileName = Path.GetFileName(product.ImageUpload.FileName);
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + cleanFileName;
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
-                return NotFound();
+                await product.ImageUpload.CopyToAsync(fileStream);
             }
 
-            existProduct.ProductName = product.ProductName;
+            // Assign newly generated local file path
+            product.ProductImage = "/uploads/products/" + uniqueFileName;
+            ModelState.Remove("ProductImage");
+        }
+        else if (string.IsNullOrWhiteSpace(product.ProductImage))
+        {
+            // Retain the existing image if the user didn't enter a new URL or upload a file
+            product.ProductImage = existProduct.ProductImage;
+            ModelState.Remove("ProductImage");
+        }
+
+        // Verify that an image path exists
+        if (string.IsNullOrWhiteSpace(product.ProductImage))
+        {
+            ModelState.AddModelError("ProductImage", "Please provide a valid image URL or upload an image file.");
+        }
+
+        if (ModelState.IsValid)
+        {
+            // 5. Update existing entity fields
+            existProduct.ProductName = product.ProductName?.Trim();
             existProduct.CategoryId = product.CategoryId;
             existProduct.Price = product.Price;
             existProduct.ProductImage = product.ProductImage;
@@ -123,6 +193,8 @@ public class ProductsController : Controller
             try
             {
                 await _context.SaveChangesAsync();
+                TempData["UserMessage"] = $"{existProduct.ProductName} was updated successfully.";
+                return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -130,15 +202,13 @@ public class ProductsController : Controller
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
-            return RedirectToAction(nameof(Index));
         }
 
+        // Reload dropdown options if validation fails
         ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryName", product.CategoryId);
+        ViewData["StatusId"] = new SelectList(_context.Statuses, "StatusId", "StatusName", product.StatusId);
         return View(product);
     }
 
@@ -176,7 +246,6 @@ public class ProductsController : Controller
         {
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Product deleted successfully.";
         }
         catch (DbUpdateException)
         {

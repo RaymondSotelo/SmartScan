@@ -21,11 +21,11 @@
 <!-- Store Summary Mini-Card Above Tabs -->
 @if (store != null)
 {
-    <div class="card border-0 bg-light rounded-3 mb-3 text-center overflow-hidden">
+    <div class="card border-0 bg-light rounded-3 text-center overflow-hidden">
         <!-- Edge-to-edge image banner -->
         <div style="height: 140px; width: 100%;">
-            <img src="@(string.IsNullOrEmpty(store.ImagePath) ? "/images/default-store.png" : store.ImagePath)"
-                 onerror="this.onerror=null; this.src='/images/default-store.png';"
+            <img src="@(string.IsNullOrEmpty(store.ImagePath) ? "/images/default-retail-pic.png" : store.ImagePath)"
+                 onerror="this.onerror=null; this.src='/images/default-retail-pic.png';"
                  alt="@store.RetailName"
                  class="w-100 h-100 object-fit-cover d-block" />
         </div>
@@ -58,7 +58,7 @@
     <!-- Inventory Tab -->
     <li class="nav-item">
         <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "Inventories" ? "active text-white" : "text-primary")"
-           style="@(currentController == "Inventories" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           style="@(currentController == "Inventories" ? "background-color: #1162a3;" : ""); font-size: 16px;"
            asp-controller="Inventories"
            asp-action="Index"
            asp-route-retailid="@retailId">
@@ -70,7 +70,7 @@
     <!-- Staff Assignment Tab -->
     <li class="nav-item">
         <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "RetailStaffs" ? "active text-white" : "text-primary")"
-           style="@(currentController == "RetailStaffs" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           style="@(currentController == "RetailStaffs" ? "background-color: #1162a3;" : ""); font-size: 16px;"
            asp-controller="RetailStaffs"
            asp-action="Index"
            asp-route-retailid="@retailId">
@@ -82,7 +82,7 @@
     <!-- Sales Analysis -->
     <li class="nav-item">
         <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "Retails" && currentAction == "SalesAnalysis" ? "active text-white" : "text-primary")"
-           style="@(currentController == "Retails" && currentAction == "SalesAnalysis" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           style="@(currentController == "Retails" && currentAction == "SalesAnalysis" ? "background-color: #1162a3;" : ""); font-size: 16px;"
            asp-controller="Retails"
            asp-action="SalesAnalysis"
            asp-route-retailid="@retailId">
@@ -91,27 +91,27 @@
         </a>
     </li>
 
+    <!-- Transaction History -->
+    <li class="nav-item">
+        <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "Retails" && currentAction == "TransactionLogs" ? "active text-white" : "text-primary")"
+           style="@(currentController == "Retails" && currentAction == "TransactionLogs" ? "background-color: #1162a3;" : ""); font-size: 16px;"
+           asp-controller="Retails"
+           asp-action="TransactionLogs"
+           asp-route-retailid="@retailId">
+            <i class="fa-solid fa-clock-rotate-left me-2" style="width: 20px;"></i>
+            Transaction History
+        </a>
+    </li>
+
     <!-- Edit Store Settings -->
     <li class="nav-item">
         <a class="nav-link fw-medium text-primary d-flex align-items-center @(currentController == "Retails" && currentAction == "Edit" ? "active text-white" : "text-primary")"
-           style="@(currentController == "Retails" && currentAction == "Edit" ? "background-color: #1162a3;" : ""); font-size: 17px;"
+           style="@(currentController == "Retails" && currentAction == "Edit" ? "background-color: #1162a3;" : ""); font-size: 16px;"
            asp-controller="Retails"
            asp-action="Edit"
            asp-route-retailid="@retailId">
             <i class="fa-solid fa-gear me-2" style="width: 20px;"></i>
             Settings
-        </a>
-    </li>
-
-    <hr />
-
-    <li class="nav-item">
-        <a class="nav-link fw-medium text-secondary d-flex align-items-center"
-           style="@(currentController == "Retails" && currentAction == "Edit" ? "background-color: #1162a3;" : ""); font-size: 17px;"
-           asp-controller="Retails"
-           asp-action="Index">
-            <i class="fa-solid fa-left-long me-2" style="width: 20px;"></i>
-            Back to List
         </a>
     </li>
 </ul>

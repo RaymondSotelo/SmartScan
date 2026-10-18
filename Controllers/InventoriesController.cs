@@ -76,13 +76,28 @@ public class InventoriesController : Controller
             return NotFound();
         }
 
-        ViewBag.RetailId = retailId;
-        ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName");
-
-        ViewBag.ProductList = await _context.Products
-            .Include(p => p.Category)
-            .Where(p => p.StatusId == 1)
+        // Get a list of ProductIds already allocated to this specific retail store
+        var existingProductIds = await _context.Inventories
+            .Where(i => i.RetailId == retailId)
+            .Select(i => i.ProductId)
             .ToListAsync();
+
+        // Filter active products that are NOT yet in this store's inventory
+        var availableProducts = await _context.Products
+            .Include(p => p.Category)
+            .Where(p => p.StatusId == 1 && !existingProductIds.Contains(p.ProductId))
+            .ToListAsync();
+
+        ViewBag.RetailId = retailId;
+        ViewBag.ProductList = availableProducts;
+        ViewData["ProductId"] = new SelectList(availableProducts, "ProductId", "ProductName");
+
+        // Optional: Populate RetailName for the header badge in Create.cshtml
+        var retail = await _context.Retails.FindAsync(retailId);
+        if (retail != null)
+        {
+            ViewBag.RetailName = retail.RetailName;
+        }
 
         return View();
     }
@@ -114,8 +129,6 @@ public class InventoriesController : Controller
         {
             _context.Add(inventory);
             await _context.SaveChangesAsync();
-
-            //Redirect back of the same retailId
             return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId});
         }
 
@@ -337,5 +350,32 @@ public class InventoriesController : Controller
         }
 
         return RedirectToAction(nameof(Edit), new { inventoryid = inventoryId, retailId = retailId, barcodeSearch = barcodeSearch });
+    }
+
+    //POST: Clear all Barcode on a specific product
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ClearAllBarcodes(int inventoryId, int productId, int? retailId)
+    {
+        // Verify that this inventory item actually belongs to the specified ProductId
+        var inventoryItem = await _context.Inventories
+            .FirstOrDefaultAsync(i => i.InventoryId == inventoryId && i.ProductId == productId);
+
+        if (inventoryItem == null)
+        {
+            return NotFound();
+        }
+
+        // Fetch and delete only barcodes tied to this inventory record
+        var barcodes = _context.Barcodes.Where(b => b.InventoryId == inventoryId);
+
+        if (await barcodes.AnyAsync())
+        {
+            _context.Barcodes.RemoveRange(barcodes);
+            await _context.SaveChangesAsync();
+            TempData["UserMessage"] = "All barcodes for this product item have been removed.";
+        }
+
+        return RedirectToAction(nameof(Edit), new { inventoryId, retailId });
     }
 }

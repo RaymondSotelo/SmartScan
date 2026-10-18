@@ -27,8 +27,12 @@ public partial class Transaction
 
     public string ReceiptNumber { get; set; } = null!;
 
+    [Display(Name = "Due Date")]
+    [DataType(DataType.Date)]
+    public DateOnly? DueDate { get; set; }
+
     [ValidateNever]
-    public virtual Customer? Customer { get; set; }
+    public virtual Customer Customer { get; set; } = null!;
     [ValidateNever]
     public virtual PaymentMethod? PaymentMethod { get; set; }
     [ValidateNever]

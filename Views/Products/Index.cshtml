@@ -1,130 +1,194 @@
-@model IEnumerable<SmartScan.Models.Product>
+﻿@model IEnumerable<SmartScan.Models.Product>
 
 @{
     ViewData["Title"] = "Products";
     ViewData["HeaderTitle"] = "Retail Management";
 }
 
-<div class="card shadow border-0 rounded-4 mt-4">
-    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-cart-flatbed"></i> Products</h5>
-    </div>
-    <div class="p-3 d-flex justify-content-between align-items-center mb-3">
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
+     style="height: calc(100dvh - 130px); min-height: 500px;">
 
-        <!-- Add Product Button -->
-        <p>
-            <a class="btn btn-success fw-semibold" asp-action="Create">Add New Product</a>
-        </p>
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
+        <h5 class="mb-0"><i class="fa-solid fa-cart-flatbed me-2"></i>Products</h5>
+    </div>
+
+	<!-- Header Info -->
+    <div class="px-4 pt-4 pb-3">
+        <h4 class="mb-0 fw-bold" style="color: #1162a3;">Product Catalog</h4>
+		<p class="fw-medium pt-1 text-secondary mb-0">Manage retail items, pricing, categories, and inventory status.</p>
+	</div>
+
+    <!-- Action Bar & Search -->
+    <div class="px-4 pb-3 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0">
+       
+        <!-- Add Button -->
+		<a asp-action="Create" 
+           class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+		   style="background-color: #1162a3; border-color: #1162a3;">
+			<i class="fa-solid fa-plus"></i>
+			<span>Add New Product</span>
+		</a>
 
         <!-- Search Bar -->
-        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 450px; padding-bottom: 11px; width:100%;">
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0">
-                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                </span>
-                <input type="text" name="search" value="@ViewData["CurrentFilter"]" class="form-control border-start-0 ps-0 fw-semibold"
-                 placeholder="Search..." aria-label="Search products"/>
-            </div>
-            <button type="submit" class="btn btn-outline-primary fw-semibold">Search</button>
+		<form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+			<div class="input-group shadow-sm rounded-3 overflow-hidden border">
+				<span class="input-group-text bg-white border-0">
+					<i class="fa-solid fa-magnifying-glass text-muted"></i>
+				</span>
+				<input type="text"
+					   name="search"
+					   value="@ViewData["CurrentFilter"]"
+					   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+					   placeholder="Search product..."
+					   aria-label="Search products" />
+			</div>
 
-            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <a asp-action="Index" class="btn btn-outline-secondary" title="Clear Search">
-                    <i class="fa-solid fa-xmark"></i>
-                </a>
-            }
-        </form>
+			@if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+			{
+				<a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+					<i class="fa-solid fa-xmark"></i>
+				</a>
+			}
+		</form>
     </div>
-    @if (!Model.Any())
+
+    <!-- Overhead TempData Alert -->
+    @if (TempData["UserMessage"] != null)
     {
-        <div class="alert alert-warning text-center my-4 fw-semibold" role="alert">
-            <i class="fa-solid fa-circle-exclamation me-2"></i>No products found matching "<strong>@ViewData["CurrentFilter"]</strong>".
+        <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
+            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+            <div>
+                @TempData["UserMessage"]
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
-    else
-    {
-        <div class="card-body">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>
-                            Product Name
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.Category)
-                        </th>
-                        <th>
-                            Market Price
-                        </th>
-                        <th>
-                            Product Image
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.Status)
-                        </th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model)
-                    {
-                        <tr>
-                            <td class="text-truncate" style="max-width: 180px;" title="@item.ProductName">
-                                @Html.DisplayFor(model => item.ProductName)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.Category.CategoryName)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(model => item.Price)
-                            </td>
-                            <td>
-                                <img src="@item.ProductImage" alt="@item.ProductName" style="width: 90px; height: 90px; object-fit: cover; border-radius: 4px;" />
-                            </td>
-                            <td>
-                                @if (item.Status.StatusName == "Active")
-                                {
-                                    <span class="badge bg-success rounded-pill px-3">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary text-light rounded-pill px-3">Inactive</span>
-                                }
-                            </td>
-                            <td>
-                                <a class="btn btn-primary" asp-action="Edit" asp-route-productid="@item.ProductId"><i class="fa-solid fa-pen-to-square"></i> Edit</a>
-                                <form asp-controller="Products" asp-action="Delete" asp-route-productid="@item.ProductId" method="post" id="deleteForm-@item.ProductId" class="d-inline">
 
-                                    <a href="javascript:void(0);"
-                                       class="btn btn-sm btn-danger p-2"
-                                       onclick="if(confirm('Are you sure you want to delete this product instantly?')) { document.getElementById('deleteForm-@item.ProductId').submit(); }">
-                                        <i class="fa-solid fa-trash"></i> Delete
+    <!-- Dynamic Body / Table Area (Flex-Grow to fill the screen) -->
+    <div class="card-body p-4 pt-0 d-flex flex-column flex-grow-1 overflow-hidden">
+        @if (Model == null || !Model.Any())
+        {
+            @if (!string.IsNullOrWhiteSpace(ViewData["CurrentFilter"]?.ToString()))
+            {
+                <div class="alert alert-warning text-center my-3 fw-semibold shadow-sm" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i>No products found matching "<strong>@ViewData["CurrentFilter"]</strong>".
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 my-auto">
+                    <div class="text-muted mb-3">
+                        <i class="fa-solid fa-boxes-stacked fa-3x text-secondary opacity-50"></i>
+                    </div>
+                    <h4 class="fw-semibold text-secondary">No Products Yet</h4>
+                    <p class="text-muted small">Click "Add New Product" above to add your first inventory item.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <!-- Scrollable Table Container -->
+            <div class="table-responsive flex-grow-1 overflow-y-auto pe-1">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th class="ps-3 py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Product</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Category</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Market Price</th>
+                            <th class="py-3 text-center text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Status</th>
+                            <th class="pe-3 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var imgUrl = string.IsNullOrWhiteSpace(item.ProductImage) ? "/images/default-product.png" : item.ProductImage;
+
+                            <tr>
+                                <!-- Product Name + Thumbnail -->
+                                <td class="ps-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="@imgUrl"
+                                             onerror="this.onerror=null; this.src='/images/default-product.png';"
+                                             alt="@item.ProductName"
+                                             class="rounded-3 border object-fit-cover shadow-sm bg-white flex-shrink-0"
+                                             style="width: 48px; height: 48px;" />
+                                        <span class="fw-semibold text-truncate" style="max-width: 200px; color: #1162a3;" title="@item.ProductName">
+                                            @item.ProductName
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- Category -->
+                                <td>
+                                    <span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-1">
+                                        <i class="fa-solid fa-tag me-1"></i>@(item.Category?.CategoryName ?? "Unassigned")
+                                    </span>
+                                </td>
+
+                                <!-- Market Price -->
+                                <td>
+                                    <span class="fw-bold text-dark">₱@item.Price.ToString("N2")</span>
+                                </td>
+
+                                <!-- Status Badge -->
+                                <td class="text-center">
+                                    @if (item.Status?.StatusName == "Active")
+                                    {
+                                        <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                            <i class="fa-solid fa-circle-check me-1"></i>Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-white text-secondary border border-secondary-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                            <i class="fa-solid fa-circle-xmark me-1"></i>@(item.Status?.StatusName ?? "Inactive")
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Action Buttons -->
+                                <td class="pe-3 text-end">
+                                    <a class="btn btn-sm btn-outline-primary fw-medium rounded-pill px-3 me-1 shadow-sm"
+                                       asp-action="Edit"
+                                       asp-route-productid="@item.ProductId"
+                                       style="font-size: 14px;">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i>Edit
                                     </a>
 
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+                                    <form asp-controller="Products" asp-action="Delete" asp-route-productid="@item.ProductId" method="post" id="deleteForm-@item.ProductId" class="d-inline mb-0">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger fw-medium rounded-pill px-3 shadow-sm"
+                                                style="font-size: 14px;"
+                                                onclick="if(confirm('Are you sure you want to delete this product?')) { document.getElementById('deleteForm-@item.ProductId').submit(); }">
+                                            <i class="fa-solid fa-trash me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 </div>
 
-<!-- Alert Message Function -->
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         @if (TempData["ErrorMessage"] != null)
         {
-                    <text>
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Action Blocked',
-                        text: '@TempData["ErrorMessage"]',
-                        confirmButtonColor: '#1162a3'
-                    });
-                    </text>
+                <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Action Blocked',
+                    text: @Html.Raw(Json.Serialize(TempData["ErrorMessage"])),
+                    confirmButtonColor: '#1162a3'
+                });
+                </text>
         }
     </script>
 }

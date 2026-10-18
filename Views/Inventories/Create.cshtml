@@ -1,200 +1,414 @@
-@model SmartScan.Models.Inventory
+﻿@model SmartScan.Models.Inventory
 
 @{
-    ViewData["Title"] = "Modify Inventory";
+    ViewData["Title"] = "Add Inventory Item";
     ViewData["HeaderTitle"] = "Retail Management";
     var productList = ViewBag.ProductList as IEnumerable<SmartScan.Models.Product> ?? new List<SmartScan.Models.Product>();
+    var selectedProduct = productList.FirstOrDefault(p => p.ProductId == Model?.ProductId);
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
+     style="height: calc(100dvh - 130px); min-height: 520px;">
+
+    <!-- Top Card Header (Fixed) -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+         style="background-color: #1162a3;">
+        <h5 class="mb-0">
+            <i class="fa-solid fa-boxes-stacked me-2"></i>Allocate Product to Store Inventory
+        </h5>
+        @if (ViewBag.RetailName != null)
+        {
+            <span class="badge bg-white text-primary rounded-pill px-3 py-1 fw-semibold">
+                <i class="fa-solid fa-shop me-1"></i>@ViewBag.RetailName
+            </span>
         }
-    </style>
-}
-
-<div class="card shadow border-0 rounded-4 mt-4">
-    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-boxes"></i> Modifying Inventory</h5>
     </div>
-    <div class="card-body">
-        <form asp-action="Create" method="post">
+
+    <!-- Interior Content Body -->
+    <div class="card-body p-4 flex-grow-1 overflow-hidden d-flex flex-column">
+        <form asp-action="Create" method="post" id="createInventoryForm" class="h-100 d-flex flex-column justify-content-between">
+            @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
             <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
             <input type="hidden" asp-for="ProductId" id="SelectedProductId" />
 
-            <div class="row g-3 p-2 align-items-end">
+            <!-- Scrollable Workspace Row -->
+            <div class="row g-4 flex-grow-1 overflow-y-auto pe-1">
 
-                <!-- Product that acts as search bar -->
-                <div class="col-md-3 position-relative" style="top: 4px;">
-                    <div class="input-group shadow-sm rounded-3 overflow-hidden border @(ViewData.ModelState.ContainsKey("ProductId") && ViewData.ModelState["ProductId"].Errors.Count > 0 ? "border-danger is-invalid" : "")">
-                        <span class="input-group-text bg-white border-0">
-                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                <!-- Left Column: Input Form & Active Selected Item Preview -->
+                <div class="col-lg-5 d-flex flex-column">
+                    <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">
+                        Allocation Details
+                    </h6>
+
+                    <!-- Selected Product Input / Search Indicator -->
+                    <div class="form-group mb-3 position-relative">
+                        <label class="control-label fw-semibold mb-1" style="color: #1162a3;">Selected Product</label>
+                        <div class="input-group search-input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                            <span class="input-group-text bg-white border-0 pe-2">
+                                <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                            </span>
+                            <input type="text"
+                                   id="productSearchInput"
+                                   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                   placeholder="Search or pick a product from the right..."
+                                   value="@selectedProduct?.ProductName"
+                                   autocomplete="off" />
+                            <button class="btn btn-white border-0 text-secondary pe-3"
+                                    type="button"
+                                    id="clearProductBtn"
+                                    style="display: @(selectedProduct != null ? "block" : "none");">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ProductId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <!-- Local Store Price (PHP) -->
+                    <div class="form-group mb-3">
+                        <label asp-for="LocalPrice" class="control-label fw-semibold mb-1" style="color: #1162a3;">Store Local Price (PHP)</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                            <span class="input-group-text bg-light border-0 fw-bold text-secondary">₱</span>
+                            <input asp-for="LocalPrice"
+                                   id="LocalPriceInput"
+                                   class="form-control border-0 shadow-none fw-semibold no-spin"
+                                   type="number"
+                                   step="0.01"
+                                   min="0.01"
+                                   onwheel="this.blur()"
+                                   placeholder="0.00" />
+                        </div>
+                        <span asp-validation-for="LocalPrice" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <!-- Stock Quantity -->
+                    <div class="form-group mb-3">
+                        <label asp-for="Stock" class="control-label fw-semibold mb-1" style="color: #1162a3;">Initial Quantity in Stock</label>
+                        <input asp-for="Stock"
+                               class="form-control rounded-3 no-spin shadow-sm"
+                               type="number"
+                               step="1"
+                               min="0"
+                               onwheel="this.blur()"
+                               placeholder="e.g. 50" />
+                        <span asp-validation-for="Stock" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <!-- Visual Selected Product Preview Card -->
+                    <div class="card border rounded-3 p-3 bg-light shadow-sm mt-auto" id="selectedProductCard">
+                        <div class="d-flex align-items-center gap-3">
+
+                            <!-- Wrapper that swaps between real image and broken/empty icon -->
+                            <div id="productImgWrapper"
+                                 class="rounded-3 border shadow-sm bg-white flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden"
+                                 style="width: 58px; height: 58px;">
+
+                                <!-- Empty / Broken Icon Placeholder -->
+                                <div id="selectedProductPlaceholder"
+                                     class="text-muted d-flex align-items-center justify-content-center h-100 w-100"
+                                     style="display: @(string.IsNullOrEmpty(selectedProduct?.ProductImage) ? "flex" : "none") !important;">
+                                    <i class="fa-regular fa-image fa-2x opacity-25"></i>
+                                </div>
+
+                                <!-- Active Image Tag -->
+                                <img id="selectedProductImg"
+                                     src="@(selectedProduct?.ProductImage ?? "")"
+                                     alt="Product Preview"
+                                     class="w-100 h-100 object-fit-cover"
+                                     style="display: @(!string.IsNullOrEmpty(selectedProduct?.ProductImage) ? "block" : "none");"
+                                     onerror="showFallbackIcon();" />
+                            </div>
+                            <div class="overflow-hidden">
+                                <span class="badge rounded-pill bg-white text-secondary border fw-medium px-2 py-1 mb-1" id="selectedProductCategory">
+                                    <i class="fa-solid fa-tag me-1"></i>@(selectedProduct?.Category?.CategoryName ?? "No selection")
+                                </span>
+                                <h6 class="mb-0 fw-bold text-truncate" id="selectedProductName" style="color: #1162a3;">
+                                    @(selectedProduct?.ProductName ?? "No Product Selected")
+                                </h6>
+                                <small class="text-muted d-block" id="selectedProductPrice">
+                                    @(selectedProduct != null ? $"Base Market Price: ₱{selectedProduct.Price:N2}" : "Pick an item from the catalog")
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Catalog Table with Live Instant Filter -->
+                <div class="col-lg-7 d-flex flex-column h-100 ps-lg-3 border-start">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
+                        <div>
+                            <h6 class="fw-bold text-uppercase text-secondary mb-0" style="font-size: 14px; letter-spacing: 0.5px;">
+                                Available Products Catalog
+                            </h6>
+                            <small class="text-muted">Click any item row to instantly select and autofill</small>
+                        </div>
+                        <span class="badge bg-light text-secondary border rounded-pill px-2 py-1 small" id="matchCounter">
+                            @productList.Count() available
                         </span>
-                        <input type="text"
-                               id="productSearchInput"
-                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold @(ViewData.ModelState.ContainsKey("ProductId") && ViewData.ModelState["ProductId"].Errors.Count > 0 ? "is-invalid" : "")"
-                               placeholder="Product to search..."
-                               value="@((ViewBag.ProductList as IEnumerable<SmartScan.Models.Product>)?.FirstOrDefault(p => p.ProductId == Model?.ProductId)?.ProductName)"
-                               autocomplete="off" />
                     </div>
-                    <span asp-validation-for="ProductId" class="text-danger small mt-1 d-block"></span>
-                </div>
 
-                <!-- Local Price -->
-                <div class="col-md-3 position-relative">
-                    <label asp-for="LocalPrice" class="form-label fw-medium" style="color:#1162a3;">Local Price</label>
-                    <input asp-for="LocalPrice" class="form-control no-spin" id="LocalPriceInput" type="number" step="0.01" min="0.01" onwheel="this.blur()" />
-                    <div class="invalid-tooltip">
-                        <span asp-validation-for="LocalPrice" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Stock -->
-                <div class="col-md-3 position-relative">
-                    <label asp-for="Stock" class="form-label fw-medium" style="color:#1162a3;">Stock</label>
-                    <input asp-for="Stock" class="form-control no-spin" type="number" step="1" min="0" onwheel="this.blur()" />
-                    <div class="invalid-tooltip">
-                        <span asp-validation-for="Stock" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="col-md-3 position-relative">
-                    <label class="form-label d-block">&nbsp;</label>
-                    <input type="submit" value="Add Product" class="btn btn-primary fw-medium w-100" />
-                </div>
-            </div>
-        </form>
-
-        <!-- Product Table Filter (Moved outside the form) -->
-        <div class="card shadow-sm border-0 mt-4">
-            <div class="bg-light py-2 p-2" style="color:#1162a3;">
-                <h3 class="mb-0 fw-semibold"><i class="fa-solid fa-cart-flatbed me-1"></i> Available Products</h3>
-                <p class="fw-medium pt-1 text-secondary">Select a product from the catalog below to add it to your inventory.</p>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
-                    <table class="table table-striped table-hover align-middle mb-0" id="productTable">
-                        <!-- Corrected tag from thread to thead -->
-                        <thead class="table-light sticky-top">
-                            <tr>
-                                <th>Product Name</th>
-                                <th>Category</th>
-                                <th>Market Price</th>
-                                <th>Image</th>
-                                <th class="text-center" style="width: 100px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in productList)
-                            {
-                                <tr class="product-row" data-name="@item.ProductName.ToLower()" data-category="@item.Category?.CategoryName?.ToLower()">
-                                    <td class="fw-medium text-dark product-name">@item.ProductName</td>
-                                    <td>@item.Category?.CategoryName</td>
-                                    <td>@item.Price.ToString("N2")</td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(item.ProductImage))
+                    <!-- Scrollable Table Box -->
+                    <div class="border rounded-3 overflow-hidden shadow-sm flex-grow-1 d-flex flex-column bg-white">
+                        <div class="table-responsive flex-grow-1 overflow-y-auto" style="max-height: 380px;">
+                            <table class="table table-hover align-middle mb-0" id="productTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th class="ps-3 py-2 text-secondary text-uppercase fw-bold" style="font-size: 14px;">Product</th>
+                                        <th class="py-2 text-secondary text-uppercase fw-bold" style="font-size: 14px;">Category</th>
+                                        <th class="py-2 text-secondary text-uppercase fw-bold" style="font-size: 14px;">Market Price</th>
+                                        <th class="pe-3 py-2 text-end text-secondary text-uppercase fw-bold" style="font-size: 14px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!productList.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4 text-muted small">
+                                                <i class="fa-solid fa-box-open fa-2x mb-2 d-block opacity-50"></i>
+                                                No master products available to assign.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var item in productList)
                                         {
-                                            <img src="@item.ProductImage" alt="@item.ProductName" style="width: 90px; height: 90px; object-fit: cover; border-radius: 4px;" />
-                                        }
-                                        else
-                                        {
-                                            <div class="bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 50px; height: 50px; border-radius: 4px;">
-                                                <i class="fa-solid fa-image"></i>
-                                            </div>
-                                        }
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-primary select-product-btn fw-medium"
+                                            var imgUrl = string.IsNullOrWhiteSpace(item.ProductImage) ? "/images/default-product.png" : item.ProductImage;
+                                            var isSelected = Model?.ProductId == item.ProductId;
+
+                                            <tr class="product-row @(isSelected ? "table-primary" : "")"
+                                                style="cursor: pointer;"
                                                 data-id="@item.ProductId"
                                                 data-name="@item.ProductName"
-                                                data-price="@item.Price">
-                                                <i class="fa-regular fa-hand-pointer"></i>
-                                                Select
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                                                data-category="@(item.Category?.CategoryName ?? "General")"
+                                                data-price="@item.Price"
+                                                data-img="@imgUrl">
+
+                                                <td class="ps-3">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <img src="@imgUrl"
+                                                             onerror="this.onerror=null; this.src='/images/default-product.png';"
+                                                             alt="@item.ProductName"
+                                                             class="rounded-2 border object-fit-cover shadow-sm bg-white flex-shrink-0"
+                                                             style="width: 36px; height: 36px;" />
+                                                        <span class="fw-semibold text-truncate product-name-label" style="max-width: 170px;" title="@item.ProductName">
+                                                            @item.ProductName
+                                                        </span>
+                                                    </div>
+                                                </td>
+
+                                                <td>
+                                                    <span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-1" style="font-size: 11px;">
+                                                        @(item.Category?.CategoryName ?? "Unassigned")
+                                                    </span>
+                                                </td>
+
+                                                <td>
+                                                    <span class="fw-bold text-dark small">₱@item.Price.ToString("N2")</span>
+                                                </td>
+
+                                                <td class="pe-3 text-end" style="white-space: nowrap; width: 1%;">
+                                                    <button type="button"
+                                                            class="btn btn-sm @(isSelected ? "btn-primary" : "btn-outline-primary") select-product-btn action-btn rounded-pill px-3 py-1 fw-medium shadow-sm"
+                                                            style="font-size: 14px;"
+                                                            title="@(isSelected ? "Selected" : "Select Product")">
+                                                        <i class="fa-solid @(isSelected ? "fa-check" : "fa-plus") action-btn-icon me-1"></i><span class="action-btn-text">@(isSelected ? "Selected" : "Select")</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Return Button -->
-        <div class="text-start pt-3">
-            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary fw-medium">
-            <i class="fa-solid fa-left-long me-2"></i>Return</a>
-        </div>
+
+            <!-- Sticky Bottom Actions -->
+            <div class="d-flex justify-content-end align-items-center gap-2 pt-3 mt-3 border-top flex-shrink-0">
+                <a asp-action="Index"
+                   asp-route-retailId="@ViewBag.RetailId"
+                   class="btn btn-outline-secondary fw-medium rounded-pill px-4 shadow-sm"
+                   style="font-size: 14px;">
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary fw-medium rounded-pill px-4 shadow-sm"
+                        style="font-size: 14px; background-color: #1162a3; border-color: #1162a3;">
+                    <i class="fa-solid fa-check me-1"></i>Add to Inventory
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- Product Search Filter Function -->
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 
     <script>
+        // Cancel fallback navigation logic
+        function handleCancelNavigation(event, fallbackUrl) {
+            event.preventDefault();
+            const hasInternalReferrer = document.referrer && document.referrer.startsWith(window.location.origin);
+            const hasHistory = window.history.length > 1;
+
+            if (hasHistory && hasInternalReferrer) {
+                window.history.back();
+            } else {
+                window.location.href = fallbackUrl;
+            }
+        }
+
+        // Switches visibility to the broken/empty icon if the image fails or is empty
+        function showFallbackIcon() {
+            const previewImg = document.getElementById("selectedProductImg");
+            const placeholder = document.getElementById("selectedProductPlaceholder");
+            if (previewImg) previewImg.style.display = "none";
+            if (placeholder) {
+                placeholder.style.setProperty("display", "flex", "important");
+                placeholder.innerHTML = '<i class="fa-solid fa-triangle-exclamation fa-lg text-secondary opacity-50" title="Image failed to load"></i>';
+            }
+        }
+
+        // Helper: Updates Select/Selected button without destroying .action-btn-text or .action-btn-icon
+        function updateSelectButton(btn, isSelected) {
+            if (!btn) return;
+
+            // Toggle bootstrap theme styling while preserving action-btn & shadow classes
+            btn.classList.toggle("btn-primary", isSelected);
+            btn.classList.toggle("btn-outline-primary", !isSelected);
+            btn.setAttribute("title", isSelected ? "Selected" : "Select Product");
+
+            const icon = btn.querySelector(".action-btn-icon");
+            const text = btn.querySelector(".action-btn-text");
+
+            if (icon) {
+                icon.className = `fa-solid ${isSelected ? "fa-check" : "fa-plus"} action-btn-icon me-1`;
+            }
+            if (text) {
+                text.textContent = isSelected ? "Selected" : "Select";
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
             const searchInput = document.getElementById("productSearchInput");
             const hiddenProductId = document.getElementById("SelectedProductId");
             const localPriceInput = document.getElementById("LocalPriceInput");
-            const productRows = document.querySelectorAll(".product-row");
-            const selectButtons = document.querySelectorAll(".select-product-btn");
+            const clearBtn = document.getElementById("clearProductBtn");
+            const matchCounter = document.getElementById("matchCounter");
 
-            // Live Filter Table by Product Name or Category
+            // Preview card nodes
+            const previewImg = document.getElementById("selectedProductImg");
+            const previewName = document.getElementById("selectedProductName");
+            const previewCategory = document.getElementById("selectedProductCategory");
+            const previewPrice = document.getElementById("selectedProductPrice");
+
+            const productRows = document.querySelectorAll(".product-row");
+
+            function selectProduct(row) {
+                const id = row.getAttribute("data-id");
+                const name = row.getAttribute("data-name");
+                const category = row.getAttribute("data-category");
+                const price = row.getAttribute("data-price");
+                const img = row.getAttribute("data-img");
+
+                // Populate hidden model-bound input and search box
+                hiddenProductId.value = id;
+                searchInput.value = name;
+                clearBtn.style.display = "block";
+
+                // Autofill Local Price if empty or untouched
+                if (localPriceInput && price) {
+                    localPriceInput.value = parseFloat(price).toFixed(2);
+                    $(localPriceInput).valid();
+                }
+
+                // Update bottom-left preview card
+                const placeholder = document.getElementById("selectedProductPlaceholder");
+                if (img && img.trim() !== "") {
+                    previewImg.src = img;
+                    previewImg.style.display = "block";
+                    placeholder.style.setProperty("display", "none", "important");
+                } else {
+                    previewImg.style.display = "none";
+                    placeholder.style.setProperty("display", "flex", "important");
+                    placeholder.innerHTML = '<i class="fa-regular fa-image fa-2x opacity-25"></i>';
+                }
+
+                previewName.textContent = name;
+                previewCategory.innerHTML = `<i class="fa-solid fa-tag me-1"></i>${category}`;
+                previewPrice.textContent = `Base Market Price: ₱${parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+                // Update row highlight & button state safely
+                productRows.forEach(r => {
+                    r.classList.remove("table-primary");
+                    updateSelectButton(r.querySelector(".select-product-btn"), false);
+                });
+
+                row.classList.add("table-primary");
+                updateSelectButton(row.querySelector(".select-product-btn"), true);
+
+                // Trigger unobtrusive validation pass on ProductId
+                $(hiddenProductId).valid();
+            }
+
+            // Click row to select
+            productRows.forEach(row => {
+                row.addEventListener("click", function () {
+                    selectProduct(this);
+                });
+            });
+
+            // Live instant filter on search typing
             searchInput.addEventListener("input", function () {
                 const query = this.value.trim().toLowerCase();
+                clearBtn.style.display = query ? "block" : "none";
+                let visibleCount = 0;
 
                 productRows.forEach(row => {
-                    const name = row.getAttribute("data-name") || "";
-                    const category = row.getAttribute("data-category") || "";
+                    const name = (row.getAttribute("data-name") || "").toLowerCase();
+                    const category = (row.getAttribute("data-category") || "").toLowerCase();
 
                     if (name.includes(query) || category.includes(query)) {
                         row.style.display = "";
+                        visibleCount++;
                     } else {
                         row.style.display = "none";
                     }
                 });
 
-                // Clear hidden ID if user is typing manually to avoid sending stale selection
-                hiddenProductId.value = "";
+                if (matchCounter) {
+                    matchCounter.textContent = `${visibleCount} match${visibleCount === 1 ? '' : 'es'}`;
+                }
             });
 
-            // Select Button Click: Autofill inputs and sync ProductId
-            selectButtons.forEach(button => {
-                button.addEventListener("click", function () {
-                    const id = this.getAttribute("data-id");
-                    const name = this.getAttribute("data-name");
-                    const price = this.getAttribute("data-price");
+            // Clear button
+            clearBtn.addEventListener("click", function () {
+                searchInput.value = "";
+                hiddenProductId.value = "";
+                this.style.display = "none";
 
-                    // Set field values
-                    hiddenProductId.value = id;
-                    searchInput.value = name;
+                const placeholder = document.getElementById("selectedProductPlaceholder");
+                previewImg.style.display = "none";
+                placeholder.style.setProperty("display", "flex", "important");
+                placeholder.innerHTML = '<i class="fa-regular fa-image fa-2x opacity-25"></i>';
 
-                    if (localPriceInput && price) {
-                        localPriceInput.value = parseFloat(price).toFixed(2);
-                         // Trigger input/change event to clear validation errors if any
-                        localPriceInput.dispatchEvent(new Event('input'));
-                    }
+                previewName.textContent = "No Product Selected";
+                previewCategory.innerHTML = `<i class="fa-solid fa-tag me-1"></i>No selection`;
+                previewPrice.textContent = "Pick an item from the catalog";
 
-                    // Highlight selected row visually
-                    productRows.forEach(r => r.classList.remove("table-primary"));
-                    this.closest("tr").classList.add("table-primary");
-
-                    // Filter table to selected name
-                    const query = name.trim().toLowerCase();
-                    productRows.forEach(row => {
-                        const rowName = row.getAttribute("data-name") || "";
-                        row.style.display = rowName.includes(query) ? "" : "none";
-                    });
+                productRows.forEach(r => {
+                    r.style.display = "";
+                    r.classList.remove("table-primary");
+                    updateSelectButton(r.querySelector(".select-product-btn"), false);
                 });
+
+                if (matchCounter) {
+                    matchCounter.textContent = `${productRows.length} available`;
+                }
+                searchInput.focus();
             });
         });
     </script>

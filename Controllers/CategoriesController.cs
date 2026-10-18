@@ -33,12 +33,6 @@ public class CategoriesController : Controller
         return View(await category.ToListAsync());
     }
 
-    // GET: CATEGORYS/Create
-    public IActionResult Create()
-    {
-        return View();
-    }
-
     // POST: CATEGORYS/Create
     // To protect from overposting attacks, enable the specific properties you want to bind to.
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -48,29 +42,32 @@ public class CategoriesController : Controller
     {
         ModelState.Remove("Products");
 
+        // Sanitize & clean trailing/leading whitespace
+        if (!string.IsNullOrWhiteSpace(category.CategoryName))
+        {
+            category.CategoryName = category.CategoryName.Trim();
+        }
+
         if (ModelState.IsValid)
         {
+            // Check for duplicate name (case-insensitive)
+            bool exists = await _context.Categories
+                .AnyAsync(c => c.CategoryName.ToLower() == category.CategoryName.ToLower());
+
+            if (exists)
+            {
+                TempData["ErrorMessage"] = $"The category \"{category.CategoryName}\" already exists.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Persist new category
             _context.Add(category);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-        return View(category);
-    }
 
-    // GET: CATEGORYS/Edit/5
-    public async Task<IActionResult> Edit(int? categoryid)
-    {
-        if (categoryid == null)
-        {
-            return NotFound();
-        }
-
-        var category = await _context.Categories.FindAsync(categoryid);
-        if (category == null)
-        {
-            return NotFound();
-        }
-        return View(category);
+        TempData["ErrorMessage"] = "Failed to create category. Please provide a valid name.";
+        return RedirectToAction(nameof(Index));
     }
 
     // POST: CATEGORYS/Edit/5
@@ -78,17 +75,33 @@ public class CategoriesController : Controller
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? categoryid, [Bind("CategoryId,CategoryName")] Category category)
+    public async Task<IActionResult> Edit(int categoryId, [Bind("CategoryId,CategoryName")] Category category)
     {
-        ModelState.Remove("Products");
-
-        if (categoryid != category.CategoryId)
+        if (categoryId != category.CategoryId)
         {
             return NotFound();
         }
 
+        ModelState.Remove("Products");
+
+        if (!string.IsNullOrWhiteSpace(category.CategoryName))
+        {
+            category.CategoryName = category.CategoryName.Trim();
+        }
+
         if (ModelState.IsValid)
         {
+            // Check if another category already holds this name
+            bool exists = await _context.Categories
+                .AnyAsync(c => c.CategoryId != category.CategoryId &&
+                               c.CategoryName.ToLower() == category.CategoryName.ToLower());
+
+            if (exists)
+            {
+                TempData["ErrorMessage"] = $"Another category named {category.CategoryName} already exists.";
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 _context.Update(category);
@@ -96,36 +109,18 @@ public class CategoriesController : Controller
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!CategoryExists(category.CategoryId))
+                if (!await _context.Categories.AnyAsync(e => e.CategoryId == category.CategoryId))
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
+
             return RedirectToAction(nameof(Index));
         }
-        return View(category);
-    }
 
-    // GET: CATEGORYS/Delete/5
-    public async Task<IActionResult> Delete(int? categoryid)
-    {
-        if (categoryid == null)
-        {
-            return NotFound();
-        }
-
-        var category = await _context.Categories
-            .FirstOrDefaultAsync(m => m.CategoryId == categoryid);
-        if (category == null)
-        {
-            return NotFound();
-        }
-
-        return View(category);
+        TempData["ErrorMessage"] = "Failed to update category. Please check your input.";
+        return RedirectToAction(nameof(Index));
     }
 
     // POST: CATEGORYS/Delete/5
@@ -143,11 +138,10 @@ public class CategoriesController : Controller
         {
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Category deleted successfully.";
         }
         catch (DbUpdateException)
         {
-            TempData["ErrorMessage"] = "Cannot delete this category because products are assigned to it.";
+            TempData["ErrorMessage"] = $"Cannot delete '{category.CategoryName}' because products are assigned to it.";
         }
 
         return RedirectToAction(nameof(Index));

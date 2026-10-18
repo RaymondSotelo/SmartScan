@@ -2,7 +2,7 @@
 @inject SmartScan.Data.ApplicationDbContext DbContext
 
 @{
-    ViewData["Title"] = "Enroll Retail";
+    ViewData["Title"] = "Retails";
     ViewData["HeaderTitle"] = "Retail Management";
 
     // Collect all distinct AdminOwner IDs across all listed retail cards
@@ -18,55 +18,64 @@
         .ToDictionary(up => up.UserId, up => up.ProfilePicture);
 }
 
-<div class="card shadow border-0 rounded-4 mt-4 mb-5">
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+     style="min-height: max(520px, calc(100dvh - 130px)); height: auto;">
+
+    <!-- Top Card Header -->
     <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-shop me-2"></i>Enroll Retails</h5>
+        <h5 class="mb-0"><i class="fa-solid fa-shop me-2"></i>Retails</h5>
     </div>
 
-    <!-- Alert Messages -->
-    <div class="px-3 pt-3">
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fa-solid fa-circle-check me-2"></i>@TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
+    <!-- Header Info -->
+    <div class="px-4 pt-4 pb-4">
+        <h4 class="mb-0 fw-bold" style="color: #1162a3;">Retail Directory</h4>
+        <p class="fw-medium pt-1 text-secondary mb-0">Manage partner retail outlets, branch locations, store branding, and operational statuses.</p>
     </div>
 
-    <div class="p-3 d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-        <div>
-            <a class="btn btn-success fw-semibold" asp-action="Create">
-                <i class="fa-solid fa-plus me-1"></i> Add New Retail
-            </a>
-        </div>
+    <!-- Action Bar & Search -->
+    <div class="px-4 pb-4 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0 mb-3">
 
-        <!-- SEARCH Feature -->
-        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 450px; width: 100%;">
-            <div class="input-group">
-                <span class="input-group-text bg-light border-end-0">
+        <!-- Add Button -->
+        <a asp-action="Create" class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+           style="background-color: #1162a3; border-color: #1162a3;">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add New Product</span>
+        </a>
+
+        <!-- Search Bar -->
+        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 380px; width: 100%;">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                <span class="input-group-text bg-white border-0">
                     <i class="fa-solid fa-magnifying-glass text-muted"></i>
                 </span>
-                <input type="text" name="search" value="@ViewData["CurrentFilter"]" class="form-control border-start-0 ps-0 fw-semibold"
-                       placeholder="Search retail name, address..." aria-label="Search retail" />
+                <input type="text"
+                       name="search"
+                       value="@ViewData["CurrentFilter"]"
+                       class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                       placeholder="Search retail name, address..."
+                       aria-label="Search retail" />
             </div>
-            <button type="submit" class="btn btn-outline-primary fw-semibold">Search</button>
 
             @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
             {
-                <a asp-action="Index" class="btn btn-outline-secondary" title="Clear Search">
+                <a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
                     <i class="fa-solid fa-xmark"></i>
                 </a>
             }
         </form>
     </div>
+
+    <!-- Overhead TempData Alert -->
+    @if (TempData["UserMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
+            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+            <div>
+                @TempData["UserMessage"]
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     @if (!Model.Any())
     {
@@ -78,7 +87,7 @@
     }
     else
     {
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 p-3 pt-0">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 p-3 pt-0 overflow-y-auto no-scrollbar">
             @foreach (var item in Model)
             {
                 // Resolve avatar path for the store owner
@@ -92,7 +101,7 @@
                         <!-- Store Image Banner -->
                         <div class="position-relative" style="height: 180px;">
                             <img src="@(string.IsNullOrEmpty(item.ImagePath) ? "/images/default-retail-pic.png" : item.ImagePath)"
-                                 onerror="this.onerror=null; this.src='/images/default-store.png';"
+                                 onerror="this.onerror=null; this.src='/images/default-retail-pic.png';"
                                  alt="@item.RetailName"
                                  class="card-img-top w-100 h-100 object-fit-cover" />
 
@@ -143,8 +152,8 @@
                                          style="width: 38px; height: 38px;" />
 
                                     <div class="d-flex flex-column text-truncate" style="line-height: 1.1;">
-                                        <span class="text-muted text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Owner</span>
-                                        <span class="fw-semibold text-dark text-truncate" style="font-size: 12px;">
+                                        <span class="text-muted text-uppercase fw-medium" style="font-size: 9px; letter-spacing: 0.5px;">Owner</span>
+                                        <span class="fw-semibold text-primary text-truncate" style="font-size: 12px;">
                                             @(item.AdminOwnerNavigation?.UserName ?? "Unknown")
                                         </span>
                                     </div>

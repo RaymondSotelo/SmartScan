@@ -5,104 +5,237 @@
     ViewData["HeaderTitle"] = "Retail Management";
 }
 
-@section Styles {
-    <style>
-        body {
-            min-height: 100vh;
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 pb-3"
+     style="height: calc(100dvh - 130px); min-height: 520px;">
 
-<div class="card shadow border-0 rounded-4 mt-4">
-    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-shop"></i> Updating Retail Information</h5>
+    <!-- Top Card Header (Fixed) -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
+        <h5 class="mb-0"><i class="fa-solid fa-shop me-2"></i>Update Retail Information</h5>
     </div>
-    <div class="d-flex justify-content-center align-items-center w-100 py-4" style="min-height: 75vh;">
-        <div style="width: 100%; max-width: 540px;">
-			<form asp-action="Edit" asp-route-id="@Model.RetailId" method="post" enctype="multipart/form-data">
-				<div asp-validation-summary="ModelOnly" class="text-danger"></div>
-				<input type="hidden" asp-for="RetailId" />
 
-				<!-- Store Image Preview & Upload -->
-				<div class="mb-4 text-center">
-					<div class="d-inline-block position-relative mb-2">
-						<img id="retailPreview"
-							 src="@(string.IsNullOrEmpty(Model.ImagePath) ? "/images/default-store.png" : Model.ImagePath)"
-							 onerror="this.onerror=null; this.src='/images/default-store.png';"
-							 alt="Store Preview"
-							 class="rounded-3 border shadow-sm object-fit-cover"
-							 style="width: 480px; height: 320px;" />
-					</div>
-					<div>
-						<label class="form-label d-block small fw-medium" style="color:#1162a3;">
-							<i class="fa-solid fa-camera me-1"></i> Change Store Image
-						</label>
-						<input name="RetailImageFile" type="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" onchange="previewImage(this)" />
-						<span asp-validation-for="ImagePath" class="text-danger small"></span>
-					</div>
-				</div>
+    <!-- Scrollable Form Container -->
+    <div class="card-body p-4 flex-grow-1 overflow-y-auto">
+        <form asp-action="Edit" asp-route-id="@Model.RetailId" method="post" enctype="multipart/form-data" id="editRetailForm" class="h-100 d-flex flex-column justify-content-between">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <input type="hidden" asp-for="RetailId" />
 
-				<hr />
+            <div class="row g-4">
+                <!-- Left Column: Retail Details -->
+                <div class="col-lg-6">
+                    <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Store Details</h6>
 
-				<!-- Retail Name -->
-				<div class="form-group mb-3">
-					<label asp-for="RetailName" class="control-label fw-medium" style="color:#1162a3">Retail Name</label>
-					<input asp-for="RetailName" class="form-control" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
-					<span asp-validation-for="RetailName" class="text-danger"></span>
-				</div>
+                    <!-- [Retail Name] -->
+                    <div class="form-group mb-3">
+                        <label asp-for="RetailName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Retail Name</label>
+                        <input asp-for="RetailName" class="form-control rounded-3" placeholder="Enter store name" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+                        <span asp-validation-for="RetailName" class="text-danger small mt-1 d-block"></span>
+                    </div>
 
-				<!-- Description -->
-				<div class="form-floating mb-3">
-					<textarea asp-for="Description" class="form-control" placeholder="Description" style="height: 100px;"></textarea>
-					<label asp-for="Description" class="control-label fw-medium" style="color:#1162a3">Retail Description</label>
-					<span asp-validation-for="Description" class="text-danger small"></span>
-				</div>
+                    <!-- [Description] -->
+                    <div class="form-group mb-3">
+                        <label asp-for="Description" class="control-label fw-semibold mb-1" style="color: #1162a3;">Retail Description</label>
+                        <textarea asp-for="Description" class="form-control rounded-3" placeholder="Enter store details or notes..." style="height: 110px;"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small mt-1 d-block"></span>
+                    </div>
 
-				<!-- Address -->
-				<div class="form-group">
-					<label asp-for="Address" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
-					<input asp-for="Address" class="form-control" />
-					<span asp-validation-for="Address" class="text-danger"></span>
-				</div>
+                    <!-- [Address] -->
+                    <div class="form-group mb-3">
+                        <label asp-for="Address" class="control-label fw-semibold mb-1" style="color: #1162a3;">Store Address</label>
+                        <input asp-for="Address" class="form-control rounded-3" placeholder="e.g. 123 Main Street, City" />
+                        <span asp-validation-for="Address" class="text-danger small mt-1 d-block"></span>
+                    </div>
 
-				<!-- Status Id -->
-				<div class="form-group">
-					<label asp-for="StatusId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Status</label>
-					<select asp-for="StatusId" class="form-control" asp-items="ViewBag.StatusId"></select>
-					<span asp-validation-for="StatusId" class="text-danger"></span>
-				</div>
+                    <!-- [Status Toggle Switch] -->
+                    <div class="form-group mb-3">
+                        <label class="control-label fw-semibold mb-2 d-block" style="color: #1162a3;">Operating Status</label>
 
-				<!-- Button Placement -->
-				<div class="row row-cols-2 pt-4">
-					<div class="text-start">
-						<a href="javascript:void(0);"
-						   class="btn btn-outline-secondary fw-medium"
-						   onclick="window.history.back();">
-							<i class="fa-solid fa-arrow-left me-1"></i> Return
-						</a>
-					</div>
-					<div class="form-group text-end">
-						<input type="submit" value="Save" class="btn btn-primary fw-medium" />
-					</div>
-				</div>
-			</form>
-        </div>
+                        <!-- Hidden input bound to model so StatusId submits correctly -->
+                        <input type="hidden" asp-for="StatusId" id="statusIdInput" />
+
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 border shadow-sm">
+                            <!-- Start: Badge & Hint Description -->
+                            <div>
+                                <span id="statusBadge"
+                                      class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm @(Model.StatusId == 1 ? "bg-success text-white" : "bg-secondary text-white")">
+                                    <i id="statusIcon" class="fa-solid @(Model.StatusId == 1 ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
+                                    <span id="statusLabel">@(Model.StatusId == 1 ? "Active" : "Inactive")</span>
+                                </span>
+                                <small class="text-muted d-block mt-1" id="statusHint">
+                                    @(Model.StatusId == 1 ? "This store is operational and available for transactions." : "This store is currently disabled or closed.")
+                                </small>
+                            </div>
+
+                            <!-- End: Custom Switch Button -->
+                            <div class="form-check form-switch m-0 d-flex align-items-center">
+                                <input class="form-check-input custom-toggle"
+                                       type="checkbox"
+                                       role="switch"
+                                       id="statusToggleSwitch"
+                                       style="width: 2.75rem; height: 1.45rem; cursor: pointer;"
+                                       @(Model.StatusId == 1 ? "checked" : "") />
+                            </div>
+                        </div>
+
+                        <span asp-validation-for="StatusId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- Right Column: Store Media & Live Preview -->
+                <div class="col-lg-6">
+                    <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Store Branding Image</h6>
+
+                    <!-- File Upload Card -->
+                    <div class="border rounded-3 p-3 bg-light shadow-sm mb-3">
+                        <label for="retailFileInput" class="form-label small fw-semibold text-secondary mb-1">
+                            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload Store Image
+                        </label>
+                        <input type="file"
+                               name="RetailImageFile"
+                               id="retailFileInput"
+                               class="form-control rounded-3"
+                               accept=".jpg,.jpeg,.png,.webp" />
+                        <div class="form-text small mt-1">Select a PNG, JPG, JPEG, or WebP file to update the image.</div>
+                        <span asp-validation-for="ImagePath" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <!-- Live Image Preview Box -->
+                    <div class="image-preview-box shadow-sm mb-3" id="previewContainer" style="height: 250px;">
+                        <img id="retailPreview"
+                             src="@(string.IsNullOrEmpty(Model.ImagePath) ? "/images/default-store.png" : Model.ImagePath)"
+                             onerror="this.onerror=null; this.src='/images/default-store.png';"
+                             alt="Store Preview" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Bottom Actions -->
+            <div class="d-flex justify-content-end align-items-center gap-2 pt-3 mt-auto border-top">
+                <a href="@Url.Action("Index")"
+                   onclick="handleCancelNavigation(event, '@Url.Action("Index")')"
+                   class="btn btn-outline-secondary fw-medium rounded-pill px-4 shadow-sm"
+                   style="font-size: 14px;">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary fw-medium rounded-pill px-4 shadow-sm" style="font-size: 14px; background-color: #1162a3; border-color: #1162a3;">
+                    <i class="fa-solid fa-check me-1"></i>Save Changes
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        function previewImage(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('retailPreview').src = e.target.result;
-                };
-                reader.readAsDataURL(input.files[0]);
+        document.addEventListener("DOMContentLoaded", function () {
+            const urlInput = document.getElementById("retailUrlInput");
+            const fileInput = document.getElementById("retailFileInput");
+            const previewImg = document.getElementById("retailPreview");
+            const defaultImg = "/images/default-store.png";
+            const initialImage = previewImg.getAttribute("src");
+
+            function updatePreview(src) {
+                previewImg.src = src ? src : defaultImg;
+            }
+
+            // Preview URL link input
+            if (urlInput) {
+                urlInput.addEventListener("input", function () {
+                    if (this.value.trim().length > 8) {
+                        updatePreview(this.value.trim());
+                    } else {
+                        updatePreview(initialImage);
+                    }
+                });
+            }
+
+            // Preview local uploaded file
+            if (fileInput) {
+                fileInput.addEventListener("change", function () {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            updatePreview(e.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        updatePreview(urlInput && urlInput.value ? urlInput.value : initialImage);
+                    }
+                });
+            }
+
+            // Tab toggling adjustments
+            const urlTab = document.getElementById("url-tab");
+            const uploadTab = document.getElementById("upload-tab");
+
+            if (urlTab) {
+                urlTab.addEventListener("shown.bs.tab", function () {
+                    fileInput.value = "";
+                    updatePreview(urlInput.value ? urlInput.value : initialImage);
+                });
+            }
+
+            if (uploadTab) {
+                uploadTab.addEventListener("shown.bs.tab", function () {
+                    if (!fileInput.files.length) {
+                        updatePreview(initialImage);
+                    }
+                });
+            }
+        });
+
+        // Toggle Button Function
+        document.addEventListener("DOMContentLoaded", function () {
+        const statusSwitch = document.getElementById("statusToggleSwitch");
+        const statusInput = document.getElementById("statusIdInput");
+        const statusLabel = document.getElementById("statusLabel");
+        const statusBadge = document.getElementById("statusBadge");
+        const statusIcon = document.getElementById("statusIcon");
+        const statusHint = document.getElementById("statusHint");
+
+        const ACTIVE_ID = "1";
+        const INACTIVE_ID = "2";
+
+        function updateStatusUI(isActive) {
+            if (isActive) {
+                statusInput.value = ACTIVE_ID;
+                statusLabel.textContent = "Active";
+                statusBadge.className = "badge rounded-pill fw-semibold px-3 py-2 shadow-sm bg-success text-white";
+                statusIcon.className = "fa-solid fa-circle-check me-1";
+                statusHint.textContent = "This store is operational and available for transactions.";
+            } else {
+                statusInput.value = INACTIVE_ID;
+                statusLabel.textContent = "Inactive";
+                statusBadge.className = "badge rounded-pill fw-semibold px-3 py-2 shadow-sm bg-secondary text-white";
+                statusIcon.className = "fa-solid fa-circle-xmark me-1";
+                statusHint.textContent = "This store is currently disabled or closed.";
+            }
+        }
+
+        if (statusSwitch && statusInput) {
+            // Initialize hidden input to match current switch state
+            updateStatusUI(statusSwitch.checked);
+
+            statusSwitch.addEventListener("change", function () {
+                updateStatusUI(this.checked);
+            });
+        }
+    });
+
+            function handleCancelNavigation(event, fallbackUrl) {
+            event.preventDefault();
+
+            // Check if the user navigated from another page on the same origin
+            const hasInternalReferrer = document.referrer && document.referrer.startsWith(window.location.origin);
+            const hasHistory = window.history.length > 1;
+
+            if (hasHistory && hasInternalReferrer) {
+                window.history.back();
+            } else {
+                // Fallback if opened directly, via new tab, or from an external site
+                window.location.href = fallbackUrl;
             }
         }
     </script>
