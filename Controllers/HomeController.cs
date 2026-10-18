@@ -43,8 +43,6 @@ namespace SmartScan.Controllers
             return View();
         }
 
-        // Allows both /Home/Checkout and /Checkout
-        [HttpGet("/Checkout")]
         public IActionResult Checkout()
         {
             return View();
@@ -54,6 +52,16 @@ namespace SmartScan.Controllers
         {
             return View();
         }
+
+        public IActionResult CustomerDisplay()
+        {
+            return View();
+        }
+
+        // ------------------------------------
+        // Get product details for the scanner
+        // ------------------------------------
+
         [HttpGet]
         public async Task<IActionResult> GetProductDetails(string productName)
         {

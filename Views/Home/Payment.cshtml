@@ -5,10 +5,8 @@
 @section Styles {
     <style>
         body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-            height: 100vh;
+            background: #95CCDD;
+            min-height: 100vh;
         }
 
         .pay-btn {
@@ -18,92 +16,150 @@
             border-radius: 10px;
             border: none;
             font-size: 1rem;
-            transition: transform 0.1s ease-in-out;
         }
 
             .pay-btn:active {
-                transform: scale(0.95);
+                transform: scale(0.97);
             }
 
         .btn-cash {
-            background-color: #3498db;
+            background: #3498db;
         }
 
         .btn-credit {
-            background-color: #9b59b6;
+            background: #9b59b6;
         }
 
         .btn-ewallet {
-            background-color: #2ecc71;
+            background: #2ecc71;
         }
 
         .btn-store {
-            background-color: #f1c40f;
+            background: #f1c40f;
             color: #333;
+        }
+
+        .pay-btn.selected {
+            outline: 4px solid #212529;
         }
     </style>
 }
 
 <div class="container mt-5">
-    <div class="row g-4 justify-content-center" style="height: 70vh;">
+    <div class="row g-4 justify-content-center">
 
-        <!-- Left Panel: Transaction Summary -->
-        <div class="col-md-5 d-flex flex-column">
-            <div class="card shadow-sm border-0 flex-grow-1">
-                <div class="card-header text-white fw-bold p-3" style="background-color: #1b6ec2;">
-                    <i class="fa-solid fa-receipt me-2"></i> Transaction Summary
+        <!-- Transaction Summary -->
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header text-white fw-bold p-3"
+                     style="background:#1b6ec2;">
+                    <i class="fa-solid fa-receipt me-2"></i>
+                    Transaction Summary
                 </div>
-                <div class="card-body d-flex flex-column bg-white">
-                    <div class="table-responsive flex-grow-1" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-striped table-sm align-middle" style="font-size: 0.9rem;">
-                            <thead class="table-light text-muted">
+
+                <div class="card-body d-flex flex-column">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm align-middle">
+                            <thead>
                                 <tr>
-                                    <th>Product Name</th>
+                                    <th>Product</th>
                                     <th>Qty</th>
                                     <th>Unit Price</th>
                                     <th>Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody id="summaryList">
-                                <!-- JavaScript will load the items here -->
+                                <tr>
+                                    <td colspan="4" class="text-center">
+                                        Loading items...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-end">
-                        <h5 class="mb-0 text-muted fw-bold">Grand Total Due:</h5>
-                        <h3 class="mb-0 fw-bold text-dark" id="grandTotalDisplay">PHP 0.00</h3>
+                    <div class="mt-auto pt-3 border-top d-flex justify-content-between">
+                        <strong>Grand Total:</strong>
+                        <strong id="grandTotalDisplay">PHP 0.00</strong>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Panel: Payment Method -->
-        <div class="col-md-5 d-flex flex-column">
-            <div class="card shadow-sm border-0 flex-grow-1">
-                <div class="card-header text-white fw-bold p-3" style="background-color: #1b6ec2;">
-                    <i class="fa-solid fa-money-bill-wave me-2"></i> Payment Method
+        <!-- Payment Method -->
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header text-white fw-bold p-3"
+                     style="background:#1b6ec2;">
+                    <i class="fa-solid fa-money-bill-wave me-2"></i>
+                    Payment Method
                 </div>
-                <div class="card-body d-flex flex-column bg-white">
-                    <h6 class="fw-bold mb-4 text-center">Select Payment Method</h6>
 
-                    <div class="row g-3 mb-4 flex-grow-1 align-content-start">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="fw-bold mb-4 text-center">
+                        Select Payment Method
+                    </h6>
+
+                    <div class="row g-3 mb-4">
                         <div class="col-6">
-                            <button class="w-100 pay-btn btn-cash shadow-sm" onclick="selectPayment('Cash')">CASH IN HAND</button>
+                            <button class="w-100 pay-btn btn-cash"
+                                    onclick="selectPayment('Cash')">
+                                CASH IN HAND
+                            </button>
                         </div>
+
                         <div class="col-6">
-                            <button class="w-100 pay-btn btn-credit shadow-sm" onclick="selectPayment('Credit Card')">CREDIT CARD</button>
+                            <button class="w-100 pay-btn btn-credit"
+                                    onclick="selectPayment('Credit Card')">
+                                CREDIT CARD
+                            </button>
                         </div>
+
                         <div class="col-6">
-                            <button class="w-100 pay-btn btn-ewallet shadow-sm" onclick="selectPayment('E-Wallet')">E-WALLET</button>
+                            <button class="w-100 pay-btn btn-ewallet"
+                                    onclick="selectPayment('E-Wallet')">
+                                E-WALLET
+                            </button>
                         </div>
+
                         <div class="col-6">
-                            <button class="w-100 pay-btn btn-store shadow-sm" onclick="selectPayment('Store Credits')">STORE CREDITS</button>
+                            <button class="w-100 pay-btn btn-store"
+                                    onclick="selectPayment('Store Credits')">
+                                STORE CREDITS
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Logic Step 2: Cancel redirects back -->
-                    <button class="btn btn-danger w-100 py-3 fw-bold mt-auto shadow-sm" style="border-radius: 10px; font-size: 1.1rem;" onclick="cancelAndReturn()">
+                    <div id="paymentConfirmation"
+                         class="border rounded p-3 mb-3"
+                         style="display:none;">
+
+                        <h6 class="fw-bold">Confirm Payment</h6>
+
+                        <p class="mb-2">
+                            Method:
+                            <strong id="selectedMethod"></strong>
+                        </p>
+
+                        <p class="mb-3">
+                            Amount:
+                            <strong id="confirmTotal"></strong>
+                        </p>
+
+                        <button class="btn btn-success w-100 mb-2"
+                                id="btnConfirmPayment"
+                                onclick="confirmPayment()">
+                            CONFIRM PAYMENT
+                        </button>
+
+                        <button class="btn btn-outline-secondary w-100"
+                                onclick="cancelSelection()">
+                            CHANGE METHOD
+                        </button>
+                    </div>
+
+                    <button class="btn btn-danger w-100 py-3 fw-bold mt-auto"
+                            onclick="cancelAndReturn()">
                         CANCEL & RETURN
                     </button>
                 </div>
@@ -115,51 +171,185 @@
 
 @section Scripts {
     <script>
+        let cart = [];
+        let total = 0;
+        let selectedMethod = "";
+
         document.addEventListener("DOMContentLoaded", function () {
             const summaryList = document.getElementById("summaryList");
-            const grandTotalDisplay = document.getElementById("grandTotalDisplay");
-
-            // Retrieve the saved cart data from the previous page
             const cartData = sessionStorage.getItem("smartScanCart");
-            let currentTotal = 0;
 
-            if (cartData) {
-                const cart = JSON.parse(cartData);
-                let htmlOutput = "";
-
-                cart.forEach(item => {
-                    const subtotal = item.price * item.qty;
-                    currentTotal += subtotal;
-
-                    htmlOutput += `
-                        <tr>
-                            <td class="fw-semibold">${item.name}</td>
-                            <td>${item.qty}</td>
-                            <td>PHP ${item.price.toFixed(2)}</td>
-                            <td class="fw-bold text-success">PHP ${subtotal.toFixed(2)}</td>
-                        </tr>
-                    `;
-                });
-
-                summaryList.innerHTML = htmlOutput;
-            } else {
-                summaryList.innerHTML = "<tr><td colspan='4' class='text-center text-danger py-4 fw-bold'>Error: Cart data lost. Please return to checkout.</td></tr>";
+            if (!cartData) {
+                summaryList.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger">
+                            Cart is empty. Please return to Checkout.
+                        </td>
+                    </tr>`;
+                return;
             }
 
-            // Display Final Total
-            grandTotalDisplay.innerText = `PHP ${currentTotal.toFixed(2)}`;
+            try {
+                cart = JSON.parse(cartData);
+
+                if (!Array.isArray(cart) || cart.length === 0) {
+                    summaryList.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-danger">
+                                Cart is empty. Please return to Checkout.
+                            </td>
+                        </tr>`;
+                    cart = [];
+                    return;
+                }
+
+                let html = "";
+
+                cart.forEach(item => {
+                    const price = Number(item.price);
+                    const qty = Number(item.qty);
+
+                    if (!Number.isFinite(price) ||
+                        !Number.isFinite(qty) ||
+                        price < 0 || qty <= 0) {
+                        return;
+                    }
+
+                    const subtotal = price * qty;
+                    total += subtotal;
+
+                    html += `
+                        <tr>
+                            <td>${escapeHtml(item.name)}</td>
+                            <td>${qty}</td>
+                            <td>PHP ${price.toFixed(2)}</td>
+                            <td class="fw-bold">
+                                PHP ${subtotal.toFixed(2)}
+                            </td>
+                        </tr>`;
+                });
+
+                if (!html) {
+                    summaryList.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-danger">
+                                No valid items in cart.
+                            </td>
+                        </tr>`;
+                    cart = [];
+                    return;
+                }
+
+                summaryList.innerHTML = html;
+
+                document.getElementById("grandTotalDisplay").textContent =
+                    `PHP ${total.toFixed(2)}`;
+
+            } catch (error) {
+                cart = [];
+                summaryList.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger">
+                            Invalid cart data. Please return to Checkout.
+                        </td>
+                    </tr>`;
+            }
         });
 
-        // Logic Steps 1.1, 1.2, 1.3
-        function selectPayment(method) {
-            alert(`Redirecting to ${method} process... (Screen 7 / 8)`);
-            // Future logic: window.location.href = `/Home/ProcessPayment?method=${method}`;
+        function escapeHtml(value) {
+            const element = document.createElement("div");
+            element.textContent = value ?? "";
+            return element.innerHTML;
         }
 
-        // Logic Step 2
+        // Select a payment method
+        function selectPayment(method) {
+            if (cart.length === 0 || total <= 0) {
+                alert("Your cart is empty. Please return to Checkout.");
+                return;
+            }
+
+            selectedMethod = method;
+
+            document.getElementById("selectedMethod").textContent = method;
+            document.getElementById("confirmTotal").textContent =
+                `PHP ${total.toFixed(2)}`;
+
+            document.getElementById("paymentConfirmation").style.display =
+                "block";
+
+            document.querySelectorAll(".pay-btn").forEach(button => {
+                button.classList.remove("selected");
+            });
+
+            const buttons = document.querySelectorAll(".pay-btn");
+
+            buttons.forEach(button => {
+                if (button.textContent.trim() ===
+                    (method === "Cash" ? "CASH IN HAND" :
+                    method === "Credit Card" ? "CREDIT CARD" :
+                    method === "E-Wallet" ? "E-WALLET" :
+                    "STORE CREDITS")) {
+                    button.classList.add("selected");
+                }
+            });
+        }
+
+        // Cancel selected method
+        function cancelSelection() {
+            selectedMethod = "";
+
+            document.getElementById("paymentConfirmation").style.display =
+                "none";
+
+            document.querySelectorAll(".pay-btn").forEach(button => {
+                button.classList.remove("selected");
+            });
+        }
+
+        // Confirm simulated payment
+        function confirmPayment() {
+            if (!selectedMethod || cart.length === 0 || total <= 0) {
+                alert("Please select a valid payment method.");
+                return;
+            }
+
+            const confirmed = confirm(
+                `Confirm ${selectedMethod} payment of PHP ${total.toFixed(2)}?`
+            );
+
+            if (!confirmed) return;
+
+            const transaction = {
+                items: cart,
+                total: total,
+                paymentMethod: selectedMethod,
+                date: new Date().toISOString(),
+                status: "Completed"
+            };
+
+            // Save a demo transaction in this browser session
+            sessionStorage.setItem(
+                "smartScanLastTransaction",
+                JSON.stringify(transaction)
+            );
+
+            sessionStorage.removeItem("smartScanCart");
+
+            alert(
+                `Payment successful!\n` +
+                `Method: ${selectedMethod}\n` +
+                `Total: PHP ${total.toFixed(2)}`
+            );
+
+            // Continue to the final page
+            window.location.href = "/Home/Checkout";
+        }
+
+        // Return to Checkout
         function cancelAndReturn() {
             // Send cashier back to the scanning screen
-            window.location.href = "/Checkout";
+            window.location.href = "/Home/Checkout";
         }
     </script>
 }

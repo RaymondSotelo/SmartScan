@@ -53,13 +53,29 @@
             </div>
         </div>
 
+
         <!-- Right Column: Transaction Queue -->
         <div class="col-md-5 d-flex flex-column h-100">
             <div class="card shadow-sm border-0 h-100" style="background-color: #e9ecef;">
+
                 <!-- Blue Header -->
-                <div class="card-header text-white text-start fw-bold p-3" style="background-color: #1b6ec2;">
-                    <i class="fa-solid fa-list-ul me-2"></i> Transaction Queue
+                <div class="card-header text-white fw-bold p-3 d-flex justify-content-between align-items-center"
+                     style="background-color: #1b6ec2;">
+
+                    <span>
+                        <i class="fa-solid fa-list-ul me-2"></i>
+                        Transaction Queue
+                    </span>
+
+                    <button type="button"
+                            class="btn btn-light btn-sm fw-bold"
+                            onclick="window.open('/Home/CustomerDisplay', 'CustomerDisplay', 'width=1000,height=700')">
+                        <i class="fa-solid fa-display me-1"></i>
+                        Customer Display
+                    </button>
+
                 </div>
+
 
                 <div class="card-body bg-white m-2 rounded d-flex flex-column">
                     <h6 class="fw-bold mb-3 text-start">Digital Receipt</h6>
@@ -84,10 +100,37 @@
                         </table>
                     </div>
 
-                    <!-- Manual Add Input -->
-                    <div class="input-group input-group-sm mt-3 mb-3">
-                        <input type="text" class="form-control" placeholder="Enter product name" id="manualProductInput">
-                        <button class="btn btn-success fw-bold px-3" type="button" id="btnAddProduct" style="border-radius: 20px;">Add</button>
+                    <!-- Manual Product Search -->
+                    <div class="position-relative mt-3 mb-3">
+
+                        <div class="input-group input-group-sm">
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Enter product name"
+                                   id="manualProductInput"
+                                   autocomplete="off">
+
+                            <button class="btn btn-success fw-bold px-3"
+                                    type="button"
+                                    id="btnAddProduct"
+                                    style="border-radius: 20px;">
+                                Add
+                            </button>
+                        </div>
+
+                        <!-- Search Suggestions -->
+                        <div id="productSearchResults"
+                             class="position-absolute bg-white border rounded shadow-sm w-100"
+                             style="
+                               display: none;
+                               z-index: 1050;
+                              max-height: 220px;
+                               overflow-y: auto;
+                                  top: 100%;
+                                 left: 0;
+                           ">
+                        </div>
+
                     </div>
 
                     <!-- Total and Actions Row -->
@@ -181,6 +224,138 @@
             // CART & CACHE STATE
             const priceCache = {};
             let manualItems = [];
+
+            //  SEARCH HISTORY
+
+            const productSearchInput =
+                document.getElementById("manualProductInput");
+
+            const productSearchResults =
+                document.getElementById("productSearchResults");
+
+            let recentSearches =
+                JSON.parse(
+                    localStorage.getItem("smartScanRecentSearches") || "[]"
+                );
+
+
+            // Show latest 3 searches
+            function showRecentSearches() {
+
+                productSearchResults.innerHTML = "";
+
+                if (recentSearches.length === 0) {
+                    productSearchResults.style.display = "none";
+                    return;
+                }
+
+                productSearchResults.innerHTML =
+                    "<div class='px-3 py-2 fw-bold text-muted small'>Recent Searches</div>";
+
+                recentSearches.slice(0, 3).forEach(search => {
+
+                    const item = document.createElement("div");
+
+                    item.className = "px-3 py-2";
+
+                    item.style.cursor = "pointer";
+
+                    item.innerHTML =
+                        `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
+
+                    item.addEventListener("click", () => {
+
+                        productSearchInput.value = search;
+
+                        productSearchResults.style.display = "none";
+                    });
+
+                    productSearchResults.appendChild(item);
+                });
+
+                productSearchResults.style.display = "block";
+            }
+
+
+            // Save search
+            function saveRecentSearch(search) {
+
+                search = search.trim();
+
+                if (!search) return;
+
+                // Remove duplicate
+                recentSearches =
+                    recentSearches.filter(
+                        item =>
+                            item.toLowerCase() !==
+                            search.toLowerCase()
+                    );
+
+                // Put newest search at the top
+                recentSearches.unshift(search);
+
+                // Keep only 3
+                recentSearches =
+                    recentSearches.slice(0, 3);
+
+                localStorage.setItem(
+                    "smartScanRecentSearches",
+                    JSON.stringify(recentSearches)
+                );
+            }
+
+
+            // Click search box
+            productSearchInput.addEventListener(
+                "focus",
+                () => {
+
+                    if (
+                        productSearchInput.value.trim() === ""
+                    ) {
+
+                        showRecentSearches();
+                    }
+                }
+            );
+
+
+            // Start typing = hide history
+            productSearchInput.addEventListener(
+                "input",
+                () => {
+
+                    if (
+                        productSearchInput.value.trim() !== ""
+                    ) {
+
+                        productSearchResults.style.display =
+                            "none";
+
+                    } else {
+
+                        showRecentSearches();
+                    }
+                }
+            );
+
+
+            // Click outside = hide history
+            document.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        !productSearchInput.contains(event.target) &&
+                        !productSearchResults.contains(event.target)
+                    ) {
+
+                        productSearchResults.style.display =
+                            "none";
+                    }
+                }
+            );
 
             // 1. POPULATE CONNECTED WEBCAMS
             async function loadCameras() {
@@ -309,120 +484,120 @@
                 }
             }
 
-                    // 7. CAPTURE, DETECT, & UPDATE UI
-        async function captureAndDetect() {
-            captureCanvas.width = video.videoWidth;
-            captureCanvas.height = video.videoHeight;
-            // Resizing a canvas clears it, so only update its backing size when
-            // the camera's actual resolution changes.
-            if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
-                overlay.width = video.videoWidth;
-                overlay.height = video.videoHeight;
-            }
+            // 7. CAPTURE, DETECT, & UPDATE UI
+            async function captureAndDetect() {
+                captureCanvas.width = video.videoWidth;
+                captureCanvas.height = video.videoHeight;
+                // Resizing a canvas clears it, so only update its backing size when
+                // the camera's actual resolution changes.
+                if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
+                    overlay.width = video.videoWidth;
+                    overlay.height = video.videoHeight;
+                }
 
-            captureCtx.drawImage(
-                video,
-                0,
-                0,
-                captureCanvas.width,
-                captureCanvas.height
-            );
+                captureCtx.drawImage(
+                    video,
+                    0,
+                    0,
+                    captureCanvas.width,
+                    captureCanvas.height
+                );
 
-            const frameBase64 = captureCanvas.toDataURL("image/jpeg", 0.5);
+                const frameBase64 = captureCanvas.toDataURL("image/jpeg", 0.5);
 
-            try {
-                const response = await fetch("http://localhost:5000/detect_frame", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        image: frameBase64
-                    })
-                });
+                try {
+                    const response = await fetch("http://localhost:5000/detect_frame", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            image: frameBase64
+                        })
+                    });
 
-                const data = await response.json();
-                const detections = data.detections || [];
-                const now = Date.now();
-                const currentDetections = detections.filter(d => d.box);
+                    const data = await response.json();
+                    const detections = data.detections || [];
+                    const now = Date.now();
+                    const currentDetections = detections.filter(d => d.box);
 
-                // Keep a detection briefly through a single missed inference,
-                // while redrawing from a clean canvas to avoid label trails.
-                for (const detected of currentDetections) {
-                    const [x1, y1, x2, y2] = detected.box;
-                    let previous = recentDetections.find(item =>
-                        item.name === detected.name &&
-                        Math.abs(item.box[0] - x1) < video.videoWidth * 0.12 &&
-                        Math.abs(item.box[1] - y1) < video.videoHeight * 0.12
+                    // Keep a detection briefly through a single missed inference,
+                    // while redrawing from a clean canvas to avoid label trails.
+                    for (const detected of currentDetections) {
+                        const [x1, y1, x2, y2] = detected.box;
+                        let previous = recentDetections.find(item =>
+                            item.name === detected.name &&
+                            Math.abs(item.box[0] - x1) < video.videoWidth * 0.12 &&
+                            Math.abs(item.box[1] - y1) < video.videoHeight * 0.12
+                        );
+
+                        if (!previous) {
+                            previous = { name: detected.name, box: detected.box, confidence: detected.confidence };
+                            recentDetections.push(previous);
+                        }
+
+                        if (previous.lastSeen) {
+                            previous.box = detected.box.map((coordinate, index) =>
+                                Math.round(previous.box[index] * 0.65 + coordinate * 0.35)
+                            );
+                            previous.confidence = Math.round(
+                                (previous.confidence * 0.65 + detected.confidence * 0.35) / 5
+                            ) * 5;
+                        } else {
+                            previous.box = detected.box;
+                            previous.confidence = detected.confidence;
+                        }
+                        previous.lastSeen = now;
+                    }
+
+                    for (let i = recentDetections.length - 1; i >= 0; i--) {
+                        if (now - (recentDetections[i].lastSeen || 0) > detectionHoldMs) {
+                            recentDetections.splice(i, 1);
+                        }
+                    }
+
+                    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+                    for (const detected of recentDetections) {
+                        const [x1, y1, x2, y2] = detected.box;
+                        const boxColor = detected.confidence >= 80 ? "#00FF00" : "#FFA500";
+                        overlayCtx.lineWidth = 3;
+                        overlayCtx.strokeStyle = boxColor;
+                        overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                        overlayCtx.fillStyle = boxColor;
+                        overlayCtx.font = "bold 15px Arial";
+                        overlayCtx.fillText(`${detected.name} (${detected.confidence}%)`, x1, Math.max(18, y1 - 8));
+                    }
+
+                    const yoloCounts = {};
+                    let hasLowConfidence = false;
+
+                    for (const detected of detections) {
+
+                        if (detected.confidence < 80) {
+                            hasLowConfidence = true;
+                        } else {
+                            yoloCounts[detected.name] =
+                                (yoloCounts[detected.name] || 0) + 1;
+                        }
+                    }
+
+                    await buildCartAndRender(
+                        yoloCounts,
+                        hasLowConfidence
                     );
 
-                    if (!previous) {
-                        previous = { name: detected.name, box: detected.box, confidence: detected.confidence };
-                        recentDetections.push(previous);
-                    }
+                } catch (error) {
 
-                    if (previous.lastSeen) {
-                        previous.box = detected.box.map((coordinate, index) =>
-                            Math.round(previous.box[index] * 0.65 + coordinate * 0.35)
-                        );
-                        previous.confidence = Math.round(
-                            (previous.confidence * 0.65 + detected.confidence * 0.35) / 5
-                        ) * 5;
-                    } else {
-                        previous.box = detected.box;
-                        previous.confidence = detected.confidence;
-                    }
-                    previous.lastSeen = now;
+                    console.error(
+                        "Cannot connect to Python Server:",
+                        error
+                    );
+
+                    list.innerHTML =
+                        "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
                 }
-
-                for (let i = recentDetections.length - 1; i >= 0; i--) {
-                    if (now - (recentDetections[i].lastSeen || 0) > detectionHoldMs) {
-                        recentDetections.splice(i, 1);
-                    }
-                }
-
-                overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-
-                for (const detected of recentDetections) {
-                    const [x1, y1, x2, y2] = detected.box;
-                    const boxColor = detected.confidence >= 80 ? "#00FF00" : "#FFA500";
-                    overlayCtx.lineWidth = 3;
-                    overlayCtx.strokeStyle = boxColor;
-                    overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-                    overlayCtx.fillStyle = boxColor;
-                    overlayCtx.font = "bold 15px Arial";
-                    overlayCtx.fillText(`${detected.name} (${detected.confidence}%)`, x1, Math.max(18, y1 - 8));
-                }
-
-                const yoloCounts = {};
-                let hasLowConfidence = false;
-
-                for (const detected of detections) {
-
-                    if (detected.confidence < 80) {
-                        hasLowConfidence = true;
-                    } else {
-                        yoloCounts[detected.name] =
-                            (yoloCounts[detected.name] || 0) + 1;
-                    }
-                }
-
-                await buildCartAndRender(
-                    yoloCounts,
-                    hasLowConfidence
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Cannot connect to Python Server:",
-                    error
-                );
-
-                list.innerHTML =
-                    "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
             }
-        }
 
             // Helper to fetch DB data safely and render the final table
             window.buildCartAndRender = async function(yoloCounts, hasLowConfidence) {
@@ -510,34 +685,83 @@
 
                 list.innerHTML = htmlOutput;
                 totalDueDisplay.innerText = `PHP ${currentTotal.toFixed(2)}`;
+
+                // =========================================================
+                // NEW: BROADCAST TO CUSTOMER DISPLAY (ONLY SAVED/CART ITEMS)
+                // =========================================================
+                const broadcastItems = [];
+                let customerTotal = 0; // Calculate a separate total for the customer
+
+                // Grab ONLY locked/manual items (officially in the cart)
+                manualItems.forEach(item => {
+                    broadcastItems.push({ name: item.name, qty: item.qty, price: item.price });
+                    customerTotal += (item.price * item.qty);
+                });
+
+                // Push to localStorage so the display page instantly updates
+                localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({
+                    items: broadcastItems,
+                    total: customerTotal
+                }));
+                // =========================================================
             }
 
             // 8. MANUAL ADD BUTTON LOGIC
             document.getElementById("btnAddProduct").addEventListener("click", async () => {
+
                 const input = document.getElementById("manualProductInput");
                 const name = input.value.trim();
+
                 if (!name) return;
 
-                const formattedItemName = name.toLowerCase().replaceAll(" ", "_");
+                const formattedItemName =
+                    name.toLowerCase().replaceAll(" ", "_");
 
                 try {
-                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
+
+                    const dbResponse =
+                        await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
+
                     if (dbResponse.ok) {
+
                         const product = await dbResponse.json();
 
-                        const existing = manualItems.find(i => i.name === product.name);
+                        // Save product to recent searches
+                        saveRecentSearch(product.name);
+
+                        const existing =
+                            manualItems.find(i => i.name === product.name);
+
                         if (existing) {
+
                             existing.qty++;
+
                         } else {
-                            manualItems.push({ name: product.name, price: product.price, qty: 1 });
+
+                            manualItems.push({
+                                name: product.name,
+                                price: product.price,
+                                qty: 1
+                            });
                         }
+
+                        // Clear search box
                         input.value = "";
 
-                        if (!isScanningActive) buildCartAndRender({}, false);
+                        // Hide search history/results
+                        productSearchResults.style.display = "none";
+
+                        if (!isScanningActive) {
+                            buildCartAndRender({}, false);
+                        }
+
                     } else {
+
                         alert("Product not found in database.");
                     }
+
                 } catch (err) {
+
                     alert("Database connection error.");
                 }
             });

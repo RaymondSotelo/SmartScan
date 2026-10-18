@@ -1,8 +1,6 @@
 ﻿import cv2
 import time
 import base64
-import os
-import threading
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -28,43 +26,21 @@ print(" SmartScan AI Scanner")
 print(" YOLOv8s - 512 CPU Test")
 print("==========================================")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-# ============================================================
-# OLD MODEL
-# ============================================================
-
 print("Loading OLD model...")
 
-OLD_MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "my_model",
-    "my_model.pt"
+model_old = YOLO(
+    r"C:\YOLO\my_model\my_model.pt"
 )
 
-model_old = YOLO(OLD_MODEL_PATH)
-
 print("OLD model loaded.")
-print("OLD model path:", OLD_MODEL_PATH)
-
-
-# ============================================================
-# NEW MODEL
-# ============================================================
 
 print("Loading NEW model...")
 
-NEW_MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "my_model_v2",
-    "my_model.pt"
+model_new = YOLO(
+    r"C:\YOLO\my_model_v2\my_model.pt"
 )
 
-model_new = YOLO(NEW_MODEL_PATH)
-
 print("NEW model loaded.")
-print("NEW model path:", NEW_MODEL_PATH)
 
 print("Both models are ready.")
 
@@ -73,162 +49,28 @@ print("Both models are ready.")
 # SETTINGS
 # ============================================================
 
-# IMPORTANT:
-# Anything 80% OR BELOW will NOT be accepted.
 CONFIDENCE_THRESHOLD = 0.80
-
-# Reject boxes covering more than 75% of the image.
-MAX_BOX_AREA_RATIO = 0.75
 
 IMAGE_SIZE = 512
 
 
 # ============================================================
-# INFERENCE LOCK
+# DECODE BASE64
 # ============================================================
 
-_inference_lock = threading.Lock()
-
-
-# ============================================================
-# BOX IOU
-# ============================================================
-
-def _box_iou(box_a, box_b):
-
-    left = max(
-        box_a[0],
-        box_b[0]
-    )
-
-    top = max(
-        box_a[1],
-        box_b[1]
-    )
-
-    right = min(
-        box_a[2],
-        box_b[2]
-    )
-
-    bottom = min(
-        box_a[3],
-        box_b[3]
-    )
-
-    intersection = (
-        max(0, right - left)
-        *
-        max(0, bottom - top)
-    )
-
-    area_a = (
-        max(0, box_a[2] - box_a[0])
-        *
-        max(0, box_a[3] - box_a[1])
-    )
-
-    area_b = (
-        max(0, box_b[2] - box_b[0])
-        *
-        max(0, box_b[3] - box_b[1])
-    )
-
-    union = (
-        area_a
-        +
-        area_b
-        -
-        intersection
-    )
-
-    return (
-        intersection / union
-        if union
-        else 0
-    )
-
-
-# ============================================================
-# COMBINE MODEL DETECTIONS
-# ============================================================
-
-def _combine_model_detections(
-    old_detections,
-    new_detections
-):
-
-    combined = list(
-        old_detections
-    )
-
-    for detection in new_detections:
-
-        duplicate_index = next(
-            (
-                index
-                for index, existing
-                in enumerate(combined)
-
-                if (
-                    existing["name"]
-                    ==
-                    detection["name"]
-                )
-
-                and (
-                    _box_iou(
-                        existing["box"],
-                        detection["box"]
-                    )
-                    >= 0.5
-                )
-            ),
-            None
-        )
-
-        if duplicate_index is None:
-
-            combined.append(
-                detection
-            )
-
-        elif (
-            detection["confidence"]
-            >
-            combined[
-                duplicate_index
-            ]["confidence"]
-        ):
-
-            combined[
-                duplicate_index
-            ] = detection
-
-    return combined
-
-
-# ============================================================
-# DECODE BASE64 IMAGE
-# ============================================================
-
-def decode_base64_image(
-    base64_image
-):
+def decode_base64_image(base64_image):
 
     try:
 
         if "," in base64_image:
 
-            base64_image = (
-                base64_image
-                .split(",", 1)[1]
-            )
+            base64_image = base64_image.split(
+                ",",
+                1
+            )[1]
 
-        image_bytes = (
-            base64.b64decode(
-                base64_image
-            )
+        image_bytes = base64.b64decode(
+            base64_image
         )
 
         np_array = np.frombuffer(
@@ -267,25 +109,23 @@ def run_model(
 
     detections = []
 
-    # ========================================================
+
+    # --------------------------------------------------------
     # YOLO INFERENCE
-    # ========================================================
+    # --------------------------------------------------------
 
     results = model.predict(
         source=image,
         imgsz=IMAGE_SIZE,
-
-        # We use 0.80 here as the initial YOLO filter.
         conf=CONFIDENCE_THRESHOLD,
-
         device="cpu",
         verbose=False
     )
 
 
-    # ========================================================
-    # PROCESS RESULTS
-    # ========================================================
+    # --------------------------------------------------------
+    # YOLO RESULT
+    # --------------------------------------------------------
 
     for result in results:
 
@@ -295,28 +135,7 @@ def run_model(
                 box.conf[0]
             )
 
-
-            # =================================================
-            # CONFIDENCE FILTER
-            # =================================================
-            #
-            # 80% OR BELOW = REJECT
-            #
-            # 79%   -> reject
-            # 80%   -> reject
-            # 80.1% -> accept
-            # 90%   -> accept
-            #
-            # =================================================
-
-            if confidence <= CONFIDENCE_THRESHOLD:
-
-                print(
-                    f"{model_name}: "
-                    f"REJECTED LOW CONFIDENCE "
-                    f"{confidence * 100:.1f}%"
-                )
-
+            if confidence < CONFIDENCE_THRESHOLD:
                 continue
 
 
@@ -329,9 +148,10 @@ def run_model(
             ]
 
 
-            # =================================================
-            # BOX COORDINATES
-            # =================================================
+            # ------------------------------------------------
+            # YOLO gives coordinates relative to the image
+            # actually passed into YOLO.
+            # ------------------------------------------------
 
             x1, y1, x2, y2 = map(
                 int,
@@ -339,81 +159,28 @@ def run_model(
             )
 
 
-            # =================================================
-            # IMAGE SIZE USED BY YOLO
-            # =================================================
+            # ------------------------------------------------
+            # IMPORTANT:
+            #
+            # We resize the original image to 512x288 before
+            # sending it to YOLO.
+            #
+            # Therefore convert the coordinates back to
+            # the original 1280x720 image.
+            # ------------------------------------------------
 
             processed_height, processed_width = (
                 image.shape[:2]
             )
 
 
-            # =================================================
-            # LARGE BOX FILTER
-            # =================================================
-
-            box_width = (
-                x2 - x1
-            )
-
-            box_height = (
-                y2 - y1
-            )
-
-            image_area = (
-                processed_width
-                *
-                processed_height
-            )
-
-            box_area = (
-                box_width
-                *
-                box_height
-            )
-
-            box_area_ratio = (
-                box_area / image_area
-                if image_area > 0
-                else 0
-            )
-
-
-            # =================================================
-            # REJECT HUGE FALSE DETECTIONS
-            # =================================================
-
-            if (
-                box_area_ratio
-                >
-                MAX_BOX_AREA_RATIO
-            ):
-
-                print(
-                    f"{model_name}: "
-                    f"REJECTED LARGE BOX "
-                    f"{name} "
-                    f"{confidence * 100:.1f}% "
-                    f"AREA="
-                    f"{box_area_ratio * 100:.1f}%"
-                )
-
-                continue
-
-
-            # =================================================
-            # SCALE BOX BACK TO ORIGINAL IMAGE
-            # =================================================
-
             scale_x = (
-                original_width
-                /
+                original_width /
                 processed_width
             )
 
             scale_y = (
-                original_height
-                /
+                original_height /
                 processed_height
             )
 
@@ -435,9 +202,9 @@ def run_model(
             )
 
 
-            # =================================================
-            # KEEP BOX INSIDE IMAGE
-            # =================================================
+            # ------------------------------------------------
+            # LIMIT BOX TO ORIGINAL IMAGE
+            # ------------------------------------------------
 
             x1 = max(
                 0,
@@ -472,22 +239,13 @@ def run_model(
             )
 
 
-            # =================================================
-            # PRINT VALID DETECTION
-            # =================================================
-
             print(
                 f"{model_name}: "
                 f"{name} "
                 f"{confidence * 100:.1f}% "
-                f"BOX="
-                f"({x1},{y1},{x2},{y2})"
+                f"BOX=({x1},{y1},{x2},{y2})"
             )
 
-
-            # =================================================
-            # SAVE DETECTION
-            # =================================================
 
             detections.append({
 
@@ -523,9 +281,7 @@ def run_model(
 )
 def detect_frame():
 
-    total_start = (
-        time.perf_counter()
-    )
+    total_start = time.perf_counter()
 
 
     try:
@@ -559,33 +315,26 @@ def detect_frame():
 
 
         # ====================================================
-        # DECODE IMAGE
+        # DECODE
         # ====================================================
 
-        decode_start = (
-            time.perf_counter()
-        )
+        decode_start = time.perf_counter()
 
-
-        img = (
-            decode_base64_image(
-                base64_image
-            )
+        img = decode_base64_image(
+            base64_image
         )
 
 
         decode_time = (
             time.perf_counter()
-            -
-            decode_start
+            - decode_start
         )
 
 
         if img is None:
 
             return jsonify({
-                "error":
-                "Could not decode image"
+                "error": "Could not decode image"
             }), 400
 
 
@@ -599,18 +348,12 @@ def detect_frame():
 
 
         print("")
-        print(
-            "=========================================="
-        )
-
-        print(
-            "NEW FRAME"
-        )
+        print("==========================================")
+        print("NEW FRAME")
 
         print(
             f"Original image: "
-            f"{original_width}x"
-            f"{original_height}"
+            f"{original_width}x{original_height}"
         )
 
 
@@ -618,25 +361,20 @@ def detect_frame():
         # RESIZE FOR YOLO
         # ====================================================
 
-        resize_start = (
-            time.perf_counter()
-        )
+        resize_start = time.perf_counter()
 
 
         if original_width > IMAGE_SIZE:
 
             scale = (
-                IMAGE_SIZE
-                /
+                IMAGE_SIZE /
                 original_width
             )
 
             new_width = IMAGE_SIZE
 
             new_height = int(
-                original_height
-                *
-                scale
+                original_height * scale
             )
 
 
@@ -656,8 +394,7 @@ def detect_frame():
 
         resize_time = (
             time.perf_counter()
-            -
-            resize_start
+            - resize_start
         )
 
 
@@ -669,67 +406,57 @@ def detect_frame():
 
 
         # ====================================================
-        # RUN BOTH MODELS ON SAME FRAME
+        # OLD MODEL
         # ====================================================
 
-        with _inference_lock:
-
-            # ------------------------------------------------
-            # OLD MODEL
-            # ------------------------------------------------
-
-            old_start = (
-                time.perf_counter()
-            )
-
-            old_results = run_model(
-                model_old,
-                img_for_yolo,
-                "OLD",
-                original_width,
-                original_height
-            )
-
-            old_time = (
-                time.perf_counter()
-                -
-                old_start
-            )
+        old_start = time.perf_counter()
 
 
-            # ------------------------------------------------
-            # NEW MODEL
-            # ------------------------------------------------
-
-            new_start = (
-                time.perf_counter()
-            )
-
-            new_results = run_model(
-                model_new,
-                img_for_yolo,
-                "NEW",
-                original_width,
-                original_height
-            )
-
-            new_time = (
-                time.perf_counter()
-                -
-                new_start
-            )
+        old_results = run_model(
+            model_old,
+            img_for_yolo,
+            "OLD",
+            original_width,
+            original_height
+        )
 
 
-            # ------------------------------------------------
-            # COMBINE RESULTS
-            # ------------------------------------------------
+        old_time = (
+            time.perf_counter()
+            - old_start
+        )
 
-            detections = (
-                _combine_model_detections(
-                    old_results,
-                    new_results
-                )
-            )
+
+        # ====================================================
+        # NEW MODEL
+        # ====================================================
+
+        new_start = time.perf_counter()
+
+
+        new_results = run_model(
+            model_new,
+            img_for_yolo,
+            "NEW",
+            original_width,
+            original_height
+        )
+
+
+        new_time = (
+            time.perf_counter()
+            - new_start
+        )
+
+
+        # ====================================================
+        # COMBINE
+        # ====================================================
+
+        detections = (
+            old_results +
+            new_results
+        )
 
 
         # ====================================================
@@ -738,20 +465,12 @@ def detect_frame():
 
         total_time = (
             time.perf_counter()
-            -
-            total_start
+            - total_start
         )
 
-
-        # ====================================================
-        # PERFORMANCE OUTPUT
-        # ====================================================
 
         print("")
-
-        print(
-            "------------- PERFORMANCE ---------------"
-        )
+        print("------------- PERFORMANCE ---------------")
 
         print(
             f"Image decode:     "
@@ -793,30 +512,21 @@ def detect_frame():
             f"{len(new_results)}"
         )
 
-        print(
-            f"FINAL detections: "
-            f"{len(detections)}"
-        )
-
-        print(
-            "------------------------------------------"
-        )
+        print("------------------------------------------")
 
 
         # ====================================================
-        # RETURN RESULTS
+        # RETURN
         # ====================================================
 
         return jsonify({
 
-            "detections":
-                detections,
+            "detections": detections,
 
-            "processing_time":
-                round(
-                    total_time,
-                    4
-                )
+            "processing_time": round(
+                total_time,
+                4
+            )
 
         })
 
@@ -824,18 +534,11 @@ def detect_frame():
     except Exception as e:
 
         print("")
-
-        print(
-            "!!!!!!!!!!!! ERROR !!!!!!!!!!!!"
-        )
-
+        print("!!!!!!!!!!!! ERROR !!!!!!!!!!!!")
         print(
             str(e)
         )
-
-        print(
-            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        )
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 
         return jsonify({
@@ -854,10 +557,7 @@ def detect_frame():
 def home():
 
     return jsonify({
-
-        "status":
-            "SmartScan AI Scanner is running"
-
+        "status": "SmartScan AI Scanner is running"
     })
 
 
@@ -868,39 +568,12 @@ def home():
 if __name__ == "__main__":
 
     print("")
-
-    print(
-        "=========================================="
-    )
-
-    print(
-        " SmartScan AI Scanner"
-    )
-
-    print(
-        " YOLOv8s x2"
-    )
-
-    print(
-        " 512 CPU Mode"
-    )
-
-    print(
-        " Confidence > 80%"
-    )
-
-    print(
-        " Large Box Filter <= 75%"
-    )
-
-    print(
-        " Port 5000"
-    )
-
-    print(
-        "=========================================="
-    )
-
+    print("==========================================")
+    print(" SmartScan AI Scanner")
+    print(" YOLOv8s x2")
+    print(" 512 CPU Mode")
+    print(" Port 5000")
+    print("==========================================")
     print("")
 
 
