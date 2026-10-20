@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/SmartScan.styles.css" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/images/SmartScanLogo.png" asp-append-version="true" />
+    <link rel="shortcut icon" type="image/png" href="~/images/SmartScanLogo.png" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -44,26 +46,20 @@
                             <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">ACCOUNT MANAGEMENT</span>
                         </li>
                         <li class="mb-2"> <!-- [ADMIN APPROVAL Button] -->
-                            <a asp-area="" asp-controller="Users" asp-action="Admin_Approval" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <a asp-area="" asp-controller="Users" asp-action="AdminApproval" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
                                 <i class="fa-solid fa-user-tie sidebar-icon fs-5 text-center"></i>
                                 <span class="menu-text ms-3">Admin Approval</span>
                             </a>
                         </li>
                         <li class="mb-2"> <!-- [USER MANAGER Button] -->
-                            <a asp-area="" asp-controller="Users" asp-action="User_Management" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <a asp-area="" asp-controller="Users" asp-action="UserManagement" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
                                 <i class="fa-solid fa-users-gear sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">User Manager</span>
+                                <span class="menu-text ms-3">User Account Manager</span>
                             </a>
                         </li>
                         <hr />
                         <li style="padding-bottom:6px"> <!-- [RETAIL MAMANGERMENT Header] -->
                             <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">RETAIL MANAGEMENT</span>
-                        </li>
-                        <li class="mb-2"> <!-- [PRODUCTS Button] -->
-                            <a asp-area="" asp-controller="Products" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-cart-flatbed sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Products</span>
-                            </a>
                         </li>
                         <li class="mb-2"> <!-- [CATEGORIES Button] -->
                             <a asp-area="" asp-controller="Categories" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
@@ -71,30 +67,32 @@
                                 <span class="menu-text ms-3">Categories</span>
                             </a>
                         </li>
-                        <li class="mb-2"> <!-- [ENROLL RETAIL Button] -->
-                            <a asp-area="" asp-controller="Retails" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-shop sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Enroll Retail</span>
+                        <li class="mb-2"> <!-- [PRODUCTS Button] -->
+                            <a asp-area="" asp-controller="Products" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-cart-flatbed sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Products</span>
                             </a>
                         </li>
-                        <hr />
-                        <li style="padding-bottom:6px"> <!-- [STATISTICS Header] -->
-                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">STATISTICS</span>
+                        <li class="mb-2"> <!-- [RETAIL Button] -->
+                            <a asp-area="" asp-controller="Retails" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-shop sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Retail</span>
+                            </a>
                         </li>
-                        <li class="mb-2"> <!-- [TRANSACTION LOGS] -->
+                        <li class="mb-2"> <!-- [TRANSACTION LOGS Button] -->
                             <a asp-area="" asp-controller="Transactions" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
                                 <i class="fa-solid fa-receipt sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Transaction Logs</span>
+                                <span class="menu-text ms-3">Transaction</span>
                             </a>
                         </li>
                         <hr />
                         <li style="padding-bottom:6px"> <!-- [MISCELLANEOUS Header] -->
                             <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">MISCELLANEOUS</span>
                         </li>
-                        <li class="mb-2"> <!-- [ENROLL CUSTOMERS] -->
+                        <li class="mb-2"> <!-- [CUSTOMERS Button] -->
                             <a asp-area="" asp-controller="Customers" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
                                 <i class="fa-solid fa-id-badge sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Enroll Customer</span>
+                                <span class="menu-text ms-3">Customer</span>
                             </a>
                         </li>
 
@@ -103,19 +101,29 @@
             </nav>
         }
         <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column">
-
             <header> 
-                <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-0 mb-3" style="min-height: 60px; height:60px; background-color:@(User.Identity != null && User.Identity.IsAuthenticated ? "#1162a3" : "transparent");">
+                <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-0 mb-0" style="min-height: 60px; height:60px; background-color:@(User.Identity != null && User.Identity.IsAuthenticated ? "#1162a3" : "transparent");">
                     <div class="container-fluid">
                         @if (User.Identity == null || !User.Identity.IsAuthenticated)
                         {
-                            <img src="~/images/SmartScanLogo.png" alt="Smart Scan Logo" wdith="75" height="75" />
-                            <a class="navbar-brand fw-semibold me-auto" asp-area="" asp-controller="Home" asp-action="Index" style="font-size: 28px; font-family:'Microsoft Sans Serif'; text-decoration: none; color:#387bd6;">
-                                <!--<i class="fa-solid fa-basket-shopping" style="color:#387bd6"></i>-->
-                                SmartScan
-                                <span class="fs-6" style="color:#387bd6">
-                                    A Vision-Based Automated Checkout For Retail Counters
-                                </span>
+                            <a class="navbar-brand d-inline-flex align-items-center gap-1 me-auto py-1 pt-4" 
+                               asp-area="" asp-controller="Home" asp-action="Index" 
+                               style="font-family: 'Microsoft Sans Serif', sans-serif; text-decoration: none; color: #387bd6;">
+   
+                                <!-- Scaled Logo Image -->
+                                <img src="~/images/SmartScanLogo.png" 
+                                     alt="Smart Scan Logo" 
+                                     width="75" 
+                                     height="75" 
+                                     class="object-fit-contain flex-shrink-0"/>
+
+                                <!-- Brand & Tagline Block -->
+                                <div class="d-flex flex-column justify-content-center lh-1">
+                                    <span class="fw-bold" style="font-size: 32px; line-height: 1.1;">SmartScan</span>
+                                    <span class="fw-bold mt-1" style="font-size: 14px; letter-spacing: 0.3px;">
+                                        A Vision-Based Automated Checkout For Retail Counters
+                                    </span>
+                                </div>
                             </a>
                         }
                         else

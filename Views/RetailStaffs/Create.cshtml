@@ -26,176 +26,189 @@
     var cashierAccounts = staffList.Where(u => !adminUserIds.Contains(u.Id)).ToList();
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
+<!-- Outer Card locked to viewport height -->
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+     style="height: calc(100dvh - 130px); min-height: 520px;">
 
-<div class="card shadow border-0 rounded-4 mt-4 bg-white">
-    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-user-plus me-2"></i> Assigning Staff</h5>
+    <!-- Top Card Header  -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+         style="background-color: #1162a3;">
+        <h5 class="mb-0">
+            <i class="fa-solid fa-user-plus me-2"></i>Assigning Staff
+        </h5>
+        @if (ViewBag.RetailName != null)
+        {
+            <span class="badge bg-white text-primary rounded-pill px-3 py-1 fw-semibold">
+                <i class="fa-solid fa-shop me-1"></i>@ViewBag.RetailName
+            </span>
+        }
+
+        <!-- Return Link -->
+		<a asp-action="Index"
+		   asp-route-retailId="@ViewBag.RetailId"
+           class="btn btn-sm btn-light text-primary fw-semibold rounded-pill px-3 shadow-sm"
+           style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+			<i class="fa-solid fa-arrow-left me-1"></i>Return
+		</a>
     </div>
 
-    <div class="card-body p-4">
-        <!-- Header & Search -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
-            <div style="color:#1162a3;">
-                <h4 class="mb-0 fw-bold"><i class="fa-solid fa-user-group me-1"></i> Available Accounts</h4>
-                <p class="fw-medium pt-1 text-secondary mb-0">Select an unassigned account below to add them to your store.</p>
-            </div>
+    <!-- Interior Layout Body (Flex Container) -->
+    <div class="card-body p-4 flex-grow-1 overflow-hidden d-flex flex-column">
 
-            <!-- Staff Search Bar -->
-            <div style="max-width: 400px; width: 100%;">
-                <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-                    <span class="input-group-text bg-white border-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                    <input type="text"
-                           id="staffSearchInput"
-                           class="form-control border-0 bg-white"
-                           placeholder="Search accounts..." />
+        <!-- Header, Search & Filter Controls (Fixed at Top of Body) -->
+        <div class="flex-shrink-0">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+                <div style="color: #1162a3;">
+                    <h4 class="mb-0 fw-bold">Available Accounts</h4>
+                    <p class="fw-medium pt-1 text-secondary mb-0">Select an unassigned account below to add them to your store.</p>
+                </div>
+
+                <!-- Staff Search Bar -->
+                <div style="max-width: 400px; width: 100%;">
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                        <span class="input-group-text bg-white border-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text"
+                               id="staffSearchInput"
+                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                               placeholder="Search accounts..." />
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Role Filter Buttons (Below Search Bar) -->
-        <div class="d-flex gap-2 mb-4">
-            <button type="button"
-                    id="btnShowCashiers"
-                    class="btn role-tab-btn active fw-semibold rounded-pill px-4 shadow-sm"
-                    onclick="switchRoleTab('cashier')">
-                <i class="fa-solid fa-cash-register me-1"></i> Cashiers (@cashierAccounts.Count)
-            </button>
-            <button type="button"
-                    id="btnShowAdmins"
-                    class="btn role-tab-btn fw-semibold rounded-pill px-4 shadow-sm"
-                    onclick="switchRoleTab('admin')">
-                <i class="fa-solid fa-user-shield me-1"></i> Admins / Co-Admins (@adminAccounts.Count)
-            </button>
-        </div>
+            <!-- Role Filter Buttons -->
+            <div class="d-flex gap-2 mb-3">
+                <button type="button"
+                        id="btnShowCashiers"
+                        class="btn role-tab-btn active fw-semibold rounded-pill px-4 shadow-sm"
+                        onclick="switchRoleTab('cashier')">
+                    <i class="fa-solid fa-cash-register me-1"></i> Cashiers (@cashierAccounts.Count)
+                </button>
+                <button type="button"
+                        id="btnShowAdmins"
+                        class="btn role-tab-btn fw-semibold rounded-pill px-4 shadow-sm"
+                        onclick="switchRoleTab('admin')">
+                    <i class="fa-solid fa-user-shield me-1"></i> Admins / Co-Admins (@adminAccounts.Count)
+                </button>
+            </div>
 
-        <!-- Overhead TempData Alert -->
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center rounded-3 mb-3" role="alert">
-                <i class="fa-solid fa-circle-check fs-5 me-2"></i>
-                <div>
-                    @TempData["SuccessMessage"]
+            <!-- Overhead TempData Alert -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center rounded-3 mb-3" role="alert">
+                    <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+                    <div>@TempData["SuccessMessage"]</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
+            }
+        </div>
 
-        <!-- ================= DIV 1: CASHIERS (VISIBLE BY DEFAULT) ================= -->
-        <div id="cashierSection">
-            <div class="d-flex flex-column gap-2" id="cashierListContainer">
-                @if (cashierAccounts.Any())
-                {
-                    @foreach (var user in cashierAccounts)
+        <!-- Scrollable List Workspace -->
+        <div class="flex-grow-1 overflow-y-auto pe-1">
+
+            <!-- ================= DIV 1: CASHIERS (VISIBLE BY DEFAULT) ================= -->
+            <div id="cashierSection">
+                <div class="d-flex flex-column gap-2" id="cashierListContainer">
+                    @if (cashierAccounts.Any())
                     {
-                        profileMap.TryGetValue(user.Id, out var customPic);
-                        var avatarPath = string.IsNullOrWhiteSpace(customPic) ? "/images/default-pfp.jpg" : customPic;
+                        @foreach (var user in cashierAccounts)
+                        {
+                            profileMap.TryGetValue(user.Id, out var customPic);
+                            var avatarPath = string.IsNullOrWhiteSpace(customPic) ? "/images/default-pfp.jpg" : customPic;
 
-                        <div class="searchable-item d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
-                             style="background-color: #f0f7fd; border-color: #cfe2f3 !important;">
+                            <div class="searchable-item d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                                 style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
 
-                            <!-- Profile Info -->
-                            <div class="d-flex align-items-center gap-2 searchable-text">
-                                <img src="@avatarPath"
-                                     onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
-                                     alt="@user.UserName"
-                                     class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
-                                     style="width: 36px; height: 36px; flex-shrink: 0;" />
-                                <div>
-                                    <span class="fw-bold text-dark">@user.UserName</span>
+                                <!-- Profile Info -->
+                                <div class="d-flex align-items-center gap-2 searchable-text">
+                                    <img src="@avatarPath"
+                                         onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                                         alt="@user.UserName"
+                                         class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
+                                         style="width: 36px; height: 36px; flex-shrink: 0;" />
+                                    <div>
+                                        <span class="fw-semibold text-primary">@user.UserName</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Assign Action Form -->
-                            <form asp-action="Create" method="post" class="m-0">
-                                <input type="hidden" asp-for="StaffId" value="@user.Id" />
-                                <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
-                                <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm">
-                                    <i class="fa-solid fa-plus me-1"></i> Assign
-                                </button>
-                            </form>
+                                <!-- Assign Action Form -->
+                                <form asp-action="Create" method="post" class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" asp-for="StaffId" value="@user.Id" />
+                                    <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
+                                    <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm">
+                                        <i class="fa-solid fa-plus me-1"></i> Assign
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-light text-center fw-medium border text-muted py-3 rounded-3">
+                            <i class="fa-solid fa-user-slash me-1"></i> No unassigned cashiers found.
                         </div>
                     }
-                }
-                else
-                {
-                    <div class="alert alert-light text-center fw-medium border text-muted py-3 rounded-3">
-                        <i class="fa-solid fa-user-slash me-1"></i> No unassigned cashiers found.
-                    </div>
-                }
+                </div>
             </div>
-        </div>
 
-        <!-- ================= DIV 2: ADMINS (HIDDEN BY DEFAULT) ================= -->
-        <div id="adminSection" class="d-none">
-            <div class="d-flex flex-column gap-2" id="adminListContainer">
-                @if (adminAccounts.Any())
-                {
-                    @foreach (var user in adminAccounts)
+            <!-- ================= DIV 2: ADMINS (HIDDEN BY DEFAULT) ================= -->
+            <div id="adminSection" class="d-none">
+                <div class="d-flex flex-column gap-2" id="adminListContainer">
+                    @if (adminAccounts.Any())
                     {
-                        profileMap.TryGetValue(user.Id, out var customPic);
-                        var avatarPath = string.IsNullOrWhiteSpace(customPic) ? "/images/default-pfp.jpg" : customPic;
+                        @foreach (var user in adminAccounts)
+                        {
+                            profileMap.TryGetValue(user.Id, out var customPic);
+                            var avatarPath = string.IsNullOrWhiteSpace(customPic) ? "/images/default-pfp.jpg" : customPic;
 
-                        <div class="searchable-item d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
-                             style="background-color: #f0f7fd; border-color: #cfe2f3 !important;">
+                            <div class="searchable-item d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                                 style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
 
-                            <!-- Profile Info -->
-                            <div class="d-flex align-items-center gap-2 searchable-text">
-                                <img src="@avatarPath"
-                                     onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
-                                     alt="@user.UserName"
-                                     class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
-                                     style="width: 36px; height: 36px; flex-shrink: 0;" />
-                                <div>
-                                    <span class="fw-bold text-dark">@user.UserName</span>
+                                <!-- Profile Info -->
+                                <div class="d-flex align-items-center gap-2 searchable-text">
+                                    <img src="@avatarPath"
+                                         onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                                         alt="@user.UserName"
+                                         class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
+                                         style="width: 36px; height: 36px; flex-shrink: 0;" />
+                                    <div>
+                                        <span class="fw-semibold text-primary">@user.UserName</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <!-- Assign Action Form -->
-                            <form asp-action="Create" method="post" class="m-0">
-                                <input type="hidden" asp-for="StaffId" value="@user.Id" />
-                                <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
-                                <button type="submit" class="btn btn-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm">
-                                    <i class="fa-solid fa-user-shield me-1"></i> Assign as Co-Admin
-                                </button>
-                            </form>
+                                <!-- Assign Action Form -->
+                                <form asp-action="Create" method="post" class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" asp-for="StaffId" value="@user.Id" />
+                                    <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
+                                    <button type="submit" class="btn btn-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm">
+                                        <i class="fa-solid fa-user-shield me-1"></i> Assign as Co-Admin
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-light text-center fw-medium border text-muted py-3 rounded-3">
+                            <i class="fa-solid fa-user-shield me-1"></i> No unassigned admin accounts found.
                         </div>
                     }
-                }
-                else
-                {
-                    <div class="alert alert-light text-center fw-medium border text-muted py-3 rounded-3">
-                        <i class="fa-solid fa-user-shield me-1"></i> No unassigned admin accounts found.
-                    </div>
-                }
+                </div>
             </div>
-        </div>
 
-        <!-- No Results Warning (Client search) -->
-        <div id="noResultsAlert" class="alert alert-warning text-center my-3 fw-medium shadow-sm border-0" role="alert" style="display: none;">
-            <i class="fa-solid fa-circle-exclamation me-2"></i>No accounts found matching "<strong id="searchQueryDisplay"></strong>".
-        </div>
-
-        <!-- Back Link -->
-        <div class="text-start pt-4">
-            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary fw-medium">
-                <i class="fa-solid fa-arrow-left me-1"></i> Return
-            </a>
+            <!-- No Results Warning (Client search) -->
+            <div id="noResultsAlert" class="alert alert-warning text-center my-3 fw-medium shadow-sm border-0" role="alert" style="display: none;">
+                <i class="fa-solid fa-circle-exclamation me-2"></i>No accounts found matching "<strong id="searchQueryDisplay"></strong>".
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-                // Check whether a query matches any items inside a container
+        let currentTab = 'cashier';
+
         function countMatches(containerSelector, query) {
             let count = 0;
             document.querySelectorAll(containerSelector + ' .searchable-item').forEach(item => {
@@ -214,7 +227,6 @@
             const searchQueryDisplay = document.getElementById('searchQueryDisplay');
 
             if (query === '') {
-                // Reset visibility for both tabs when search is cleared
                 countMatches('#cashierListContainer', '');
                 countMatches('#adminListContainer', '');
                 noResultsAlert.style.display = 'none';
@@ -227,7 +239,6 @@
 
             let currentMatches = countMatches(currentContainer, query);
 
-            // If no match in current tab, check if the query exists in the other tab and switch automatically
             if (currentMatches === 0) {
                 let otherMatches = countMatches(otherContainer, query);
                 if (otherMatches > 0) {
@@ -244,7 +255,6 @@
             }
         }
 
-        // Update switchRoleTab to avoid recursive search loops on tab button clicks
         function switchRoleTab(tab) {
             currentTab = tab;
             const isCashier = tab === 'cashier';

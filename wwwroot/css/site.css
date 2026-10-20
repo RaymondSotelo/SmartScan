@@ -1,40 +1,15 @@
+/* ==========================================================================
+   1. BASE & ROOT STYLES
+   ========================================================================== */
 html {
-  font-size: 14px;
+    font-size: 14px;
+    height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
-body {
-  margin-bottom: 60px;
-}
-
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
-}
-
-.custom-button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
+    html {
+        font-size: 16px;
+    }
 }
 
 html, body {
@@ -47,12 +22,13 @@ html, body {
     background-size: cover;
 }
 
-.bounded-header {
-    max-height: 180px;
-    overflow-y: auto;
+/* ==========================================================================
+   2. APP LAYOUT & SIDEBAR
+   ========================================================================== */
+.action-btn {
+    transition: all 0.25s ease-in-out;
 }
 
-/* Set the wrapper to match the exact window dimensions */
 #wrapper {
     overflow: hidden;
     height: 100vh;
@@ -60,101 +36,81 @@ html, body {
     display: flex;
 }
 
-/* Lock the sidebar to the left screen height perfectly */
 #sidebar {
     min-width: 285px;
     max-width: 285px;
-    height: 100vh; /* Takes up full screen height */
+    height: 100vh;
     display: flex;
     flex-direction: column;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     z-index: 1000;
 }
 
-#sidebar .sidebar-header{
-    flex-shrink: 0;
-}
+    #sidebar .sidebar-header {
+        flex-shrink: 0;
+    }
 
-#sidebar ul.components {
-    flex-grow: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
+    #sidebar ul.components {
+        flex-grow: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
 
-/* Custom slim scrollbar */
-#sidebar ul.components::-webkit-scrollbar {
-    width: 5px;
-}
+        /* Sidebar Custom Scrollbar */
+        #sidebar ul.components::-webkit-scrollbar {
+            width: 5px;
+        }
 
-#sidebar ul.components::-webkit-scrollbar-track {
-    background: transparent;
-}
+        #sidebar ul.components::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-#sidebar ul.components::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 4px;
-}
+        #sidebar ul.components::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 4px;
+        }
 
-#sidebar ul.components::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
-}
+            #sidebar ul.components::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.5);
+            }
 
-/* Optional: hide scrollbar completely when collapsed */
-#sidebar.collapsed ul.components::-webkit-scrollbar {
-    display: none;
-}
+    /* Sidebar Collapsed State */
+    #sidebar.collapsed {
+        min-width: 65px;
+        max-width: 65px;
+    }
 
-/* Force ONLY the main view frame to handle scrolling */
-#page-content-wrapper {
-    height: 100vh;
-    display: flex;
-    flex-direction: column; 
-    overflow: hidden; 
-}
+        #sidebar.collapsed ul.components::-webkit-scrollbar {
+            display: none;
+        }
 
-/* Scroll container for the actual page data content */
-.content-scroll-container {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding-bottom: 2rem;
-}
+        #sidebar.collapsed .sidebar-header {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
 
-/* ----[ COLLAPSED RULES CONTAINER STATE ]---- */
-#sidebar.collapsed {
-    min-width: 65px;
-    max-width: 65px;
-}
+        #sidebar.collapsed .menu-toggle-icon {
+            margin: 0 !important;
+        }
 
-#sidebar.collapsed .sidebar-header{
-    justify-content: center !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-}
+        #sidebar.collapsed .project-name,
+        #sidebar.collapsed .menu-text,
+        #sidebar.collapsed li:has(.menu-text:only-child) {
+            display: none !important;
+        }
 
-#sidebar.collapsed .menu-toggle-icon{
-    margin: 0 !important;
-}
+        #sidebar.collapsed ul.components {
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+        }
 
-#sidebar.collapsed .project-name,
-#sidebar.collapsed .menu-text {
-    display: none !important;
-}
-
-#sidebar.collapsed li:has(.menu-text:only-child){
-    display: none !important;
-}
-
-#sidebar.collapsed ul.components{
-    padding-left: 0.25rem !important;
-    padding-right: 0.25rem !important;
-}
-
-#sidebar.collapsed .nav-link,
-#sidebar.collapsed .dropdown > button {
-    justify-content: center !important;
-    padding: 0.5rem 0 !important;
-    width: 100% !important;
-}
+        #sidebar.collapsed .nav-link,
+        #sidebar.collapsed .dropdown > button {
+            justify-content: center !important;
+            padding: 0.5rem 0 !important;
+            width: 100% !important;
+        }
 
 .sidebar-icon {
     width: 28px;
@@ -164,24 +120,223 @@ html, body {
     flex-shrink: 0;
 }
 
-/* ---- [ HIDE SCROLLING WHEEL ON NUMBER LABELS ] ---- */
+#sidebar:not(.collapsed) ~ #page-content-wrapper .action-btn-text {
+    display: none !important;
+}
 
-/* Chrome, Safari, Edge */
+#sidebar:not(.collapsed) ~ #page-content-wrapper .action-btn-icon {
+    margin-right: 0 !important;
+}
+
+#sidebar:not(.collapsed) ~ #page-content-wrapper .action-btn {
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+}
+
+/* Page Content Frame */
+#page-content-wrapper {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.content-scroll-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 2rem;
+}
+
+.bounded-header {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+/* Thermal Receipt Paper Styling */
+.receipt-paper {
+    background: #ffffff;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(17, 98, 163, 0.12);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
+}
+
+    /* Jagged Sawtooth Receipt Bottom */
+    .receipt-paper::after {
+        content: "";
+        position: absolute;
+        bottom: -14px;
+        left: 0;
+        right: 0;
+        height: 14px;
+        background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+        background-size: 16px 20px;
+    }
+
+.receipt-dashed-line {
+    border-top: 1.5px dashed #cbd5e1;
+    margin: 12px 0;
+}
+
+.receipt-double-line {
+    border-top: 2px double #94a3b8;
+    margin: 12px 0;
+}
+
+/* Barcode Simulation Lines */
+.barcode-strip {
+    height: 42px;
+    background: repeating-linear-gradient( 90deg, #1e293b, #1e293b 2px, transparent 2px, transparent 4px, #1e293b 4px, #1e293b 7px, transparent 7px, transparent 9px, #1e293b 9px, #1e293b 10px, transparent 10px, transparent 14px );
+    width: 75%;
+    margin: 0 auto;
+}
+
+/* Invisible scrollbar while maintaining scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* ==========================================================================
+   3. FORM CONTROLS & SEARCH INPUTS
+   ========================================================================== */
+/* Search Input Container Glow */
+.input-group.border:focus-within {
+    border-color: #1162a3 !important;
+    box-shadow: 0 0 0 0.2rem rgba(17, 98, 163, 0.15) !important;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.input-group.border .form-control:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Hide Number Input Spinners */
 .no-spin::-webkit-outer-spin-button,
 .no-spin::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-/* Firefox */
 .no-spin[type=number] {
     -moz-appearance: textfield;
     appearance: textfield;
 }
 
-/* ----[ COLLAPSE EFFECT ]---- */
+/* Floating Labels Placeholder Fix */
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
 
-/* Combined Dropdown Item Hover for Card & Navbar */
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+/* Consolidated Custom Toggle Switch */
+.form-switch .form-check-input.custom-toggle {
+    transition: background-color 0.2s ease, background-position 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    border-color: #0d6efd;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%230d6efd'/%3e%3c/svg%3e") !important;
+}
+
+    .form-switch .form-check-input.custom-toggle:checked {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e") !important;
+    }
+
+    .form-switch .form-check-input.custom-toggle:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(17, 98, 163, 0.25);
+    }
+
+/* ==========================================================================
+   4. BUTTONS & NAVIGATION LINKS
+   ========================================================================== */
+.custom-button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+.role-tab-btn {
+    background-color: #ffffff;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease-in-out;
+}
+
+    .role-tab-btn:hover:not(.active) {
+        color: #1162a3 !important;
+        border-color: #1162a3 !important;
+        background-color: #f0f7fd !important;
+    }
+
+    .role-tab-btn.active {
+        background-color: #1162a3 !important;
+        border-color: #1162a3 !important;
+        color: #ffffff !important;
+    }
+
+.nav-auth-link {
+    color: #387bd6;
+    font-size: 18px;
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.15s ease;
+    display: inline-block;
+}
+
+    .nav-auth-link:hover {
+        color: #1162a3;
+        transform: translateY(-1px);
+    }
+
+    .nav-auth-link:active {
+        transform: translateY(0);
+    }
+
+/* Dedicated image preview box */
+.image-preview-box {
+    width: 100%;
+    height: 220px;
+    border: 2px dashed #cfe2f3;
+    background-color: #f8fafc;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+    .image-preview-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+.nav-pills .nav-link.active {
+    background-color: #1162a3 !important;
+    color: #fff !important;
+}
+
+.nav-pills .nav-link {
+    color: #1162a3;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   5. DROPDOWNS & CARDS
+   ========================================================================== */
 .card .dropdown-menu .dropdown-item,
 .navbar-nav .dropdown-menu .dropdown-item {
     border-radius: 0 !important;
@@ -190,23 +345,67 @@ html, body {
     transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.card .dropdown-menu .dropdown-item:hover,
-.card .dropdown-menu .dropdown-item:focus,
-.navbar-nav .dropdown-menu .dropdown-item:hover,
-.navbar-nav .dropdown-menu .dropdown-item:focus {
-    background-color: var(--bs-primary) !important;
-    color: #ffffff !important;
+    .card .dropdown-menu .dropdown-item:hover,
+    .card .dropdown-menu .dropdown-item:focus,
+    .navbar-nav .dropdown-menu .dropdown-item:hover,
+    .navbar-nav .dropdown-menu .dropdown-item:focus {
+        background-color: var(--bs-primary) !important;
+        color: #ffffff !important;
+    }
+
+        .card .dropdown-menu .dropdown-item:hover i,
+        .card .dropdown-menu .dropdown-item:focus i,
+        .navbar-nav .dropdown-menu .dropdown-item:hover i,
+        .navbar-nav .dropdown-menu .dropdown-item:focus i {
+            color: #ffffff !important;
+        }
+
+.retail-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    border-radius: 0.75rem;
 }
 
-.card .dropdown-menu .dropdown-item:hover i,
-.card .dropdown-menu .dropdown-item:focus i,
-.navbar-nav .dropdown-menu .dropdown-item:hover i,
-.navbar-nav .dropdown-menu .dropdown-item:focus i {
-    color: #ffffff !important;
+    .retail-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+.kpi-card {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* ----[ NAVBAR COLLAPSE EFFECT ]---- */
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(17, 98, 163, 0.08) !important;
+    }
 
+.kpi-icon-bubble {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+}
+
+.chart-card {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 18px;
+}
+
+/* Text Truncation Utility */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   6. ANIMATIONS
+   ========================================================================== */
 @keyframes dropdownSlideDown {
     0% {
         opacity: 0;
@@ -231,17 +430,15 @@ html, body {
     }
 }
 
-/* ---[ DOT ICON OPTION COLLAPSE]---- */
-
 @keyframes cardDropdownIn {
     0% {
         opacity: 0;
-        transform: translateY(0px) scale(0.96); /* Start lower */
+        transform: translateY(0px) scale(0.96);
     }
 
     100% {
         opacity: 1;
-        transform: translateY(-30px) scale(1); /* Rest higher */
+        transform: translateY(-30px) scale(1);
     }
 }
 
@@ -257,96 +454,21 @@ html, body {
     }
 }
 
-/* ----[ RETAIL CARD EFFECT ]---- */
-
-.retail-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    cursor: pointer;
-    border-radius: 0.75rem;
+/* Pulse animation for scanning state */
+.pulse-border {
+    animation: pulse-ring 1.8s infinite;
 }
 
-.retail-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* ----[ TOGGLE BUTTON EFFECT ]---- */
-
-/* Limit description to 2 lines cleanly */
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Custom Switch Accent */
-.form-switch .custom-toggle:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.form-switch .custom-toggle:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.25rem rgba(17, 98, 163, 0.25);
-}
-
-.form-switch .custom-toggle {
-    transition: background-color 0.2s ease, background-position 0.2s ease;
-}
-
-/* Unchecked state: Knob circle is primary blue (#0d6efd) */
-.form-check-input.custom-toggle {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%230d6efd'/%3e%3c/svg%3e") !important;
-    border-color: #0d6efd;
-}
-
-/* Checked (active) state */
-.form-check-input.custom-toggle:checked {
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
-    /* When checked, flip the knob circle back to white so it contrasts against the blue track */
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e") !important;
-}
-
-/* Focus outline ring */
-.form-check-input.custom-toggle:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.25rem rgba(17, 98, 163, 0.25);
-}
-
-/* ----[ ROLE BUTTON EFFECT ]---- */
-
-/* Inactive button style */
-.role-tab-btn {
-    background-color: #ffffff;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-    transition: all 0.2s ease-in-out;
-}
-
-    /* Hover state: changes text and border to primary */
-    .role-tab-btn:hover:not(.active) {
-        color: #1162a3 !important;
-        border-color: #1162a3 !important;
-        background-color: #f0f7fd !important;
+@@keyframes pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(17, 98, 163, 0.45);
     }
 
-    /* Active selected state */
-    .role-tab-btn.active {
-        background-color: #1162a3 !important;
-        border-color: #1162a3 !important;
-        color: #ffffff !important;
+    70% {
+        box-shadow: 0 0 0 12px rgba(17, 98, 163, 0);
     }
 
-/* ----[ SEARCH BAR CLICK EFFECT ]---- */
-.input-group.border:focus-within {
-    border-color: #1162a3 !important;
-    box-shadow: 0 0 0 0.2rem rgba(17, 98, 163, 0.15) !important;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.input-group.border .form-control:focus {
-    box-shadow: none !important;
-    outline: none !important;
+    100% {
+        box-shadow: 0 0 0 0 rgba(17, 98, 163, 0);
+    }
 }

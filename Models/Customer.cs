@@ -13,30 +13,28 @@ public partial class Customer
 
     public string FullName { get; set; } = null!;
 
-    public string? DigitalIdNumber { get; set; }
-
     public string? FaceEmbedding { get; set; }
 
     public int StatusId { get; set; }
 
     [Column(TypeName = "decimal(10, 2)")]
-    public decimal CreditLimit { get; set; } = 0.00m;
+    public decimal CreditLimit { get; set; }
 
     [Column(TypeName = "decimal(10, 2)")]
-    public decimal CurrentDebt { get; set; } = 0.00m;
+    public decimal CurrentDebt { get; set; }
 
-    [Required(ErrorMessage = "Contact number is required.")]
-    [RegularExpression(@"^09\d{9}$", ErrorMessage = "Contact number must be an 11-digit mobile number starting with 09.")] public string? ContactNumber { get; set; }
-
-    public string? DigitalIdHash { get; set; }
-
-    public bool HasFaceRegistered { get; set; }
+    [Phone]
+    [StringLength(11, MinimumLength = 11, ErrorMessage = "Contact number must be 11 digits.")]
+    public string? ContactNumber { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public int? Age { get; set; }
+
+    public bool IsIdVerified { get; set; }
 
     [ValidateNever]
     public virtual Status Status { get; set; } = null!;
 
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
-
 }

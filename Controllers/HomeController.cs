@@ -136,8 +136,7 @@ namespace SmartScan.Controllers
             // Use AsNoTracking() so EF Core doesn't maintain tracking graphs for the embeddings
             var registeredCustomers = await _context.Customers
                 .AsNoTracking()
-                .Where(c => c.HasFaceRegistered && !string.IsNullOrWhiteSpace(c.FaceEmbedding))
-                .Select(c => new
+                .Where(c => c.FaceEmbedding != null && c.FaceEmbedding != "").Select(c => new
                 {
                     c.CustomerId,
                     c.FullName,

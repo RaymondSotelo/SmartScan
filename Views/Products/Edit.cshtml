@@ -1,87 +1,333 @@
-@model SmartScan.Models.Product
+﻿@model SmartScan.Models.Product
 
 @{
     ViewData["Title"] = "Edit Product";
     ViewData["HeaderTitle"] = "Product Management";
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 mb-3"
+     style="height: calc(100dvh - 130px); min-height: 520px;">
 
-<div class="card shadow border-0 rounded-4 mt-4">
-    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-cart-flatbed"></i> Updating Products Details</h5>
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
+        <h5 class="mb-0"><i class="fa-solid fa-cart-flatbed me-2"></i>Update Product Details</h5>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-4">
-                <form asp-action="Edit">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    <input type="hidden" asp-for="ProductId" />
 
-                    <!-- Product Name  -->
-                    <div class="form-group">
-                        <label asp-for="ProductName" class="control-label fw-medium" style="color:#1162a3">Product Name</label>
-                        <input asp-for="ProductName" class="form-control" oninput="this.value = this.value.replace(/[0-9]/g, '')"/>
-                        <span asp-validation-for="ProductName" class="text-danger"></span>
+    <!-- Scrollable Form Container -->
+    <div class="card-body p-4 flex-grow-1 overflow-y-auto">
+        <form asp-action="Edit" asp-route-productid="@Model.ProductId" method="post" enctype="multipart/form-data" id="editProductForm" class="h-100 d-flex flex-column justify-content-between">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <input type="hidden" asp-for="ProductId" />
+
+            <div class="row g-4">
+                <!-- Left Column: Primary Details & Status -->
+                <div class="col-lg-6">
+                    <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">General Information</h6>
+
+                    <!-- Product Name -->
+                    <div class="form-group mb-3">
+                        <label asp-for="ProductName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Product Name</label>
+                        <input asp-for="ProductName" class="form-control rounded-3" placeholder="Enter product name" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+                        <span asp-validation-for="ProductName" class="text-danger small mt-1 d-block"></span>
                     </div>
 
-                    <!-- Category Id -->
-                    <div class="form-group">
-                        <label asp-for="CategoryId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Category</label>
-                        <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.CategoryId"></select>
-                        <span asp-validation-for="CategoryId" class="text-danger"></span>
-                    </div>
+                    <!-- Category Selection with Live Filter -->
+                    <div class="form-group position-relative mb-3" id="categoryCombobox">
+                        <label asp-for="CategoryId" class="control-label fw-semibold mb-1" style="color: #1162a3;">Category</label>
+                        <input type="hidden" asp-for="CategoryId" id="hiddenCategoryId" />
 
-                    <!-- Status Id -->
-                    <div class="form-group">
-                        <label asp-for="StatusId" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Status</label>
-                        <select asp-for="StatusId" class="form-control" asp-items="ViewBag.StatusId"></select>
-                        <span asp-validation-for="StatusId" class="text-danger"></span>
+                        <div class="input-group search-input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                            <span class="input-group-text bg-white border-0 pe-2">
+                                <i class="fa-solid fa-tag text-muted"></i>
+                            </span>
+                            <input type="text"
+                                   id="categorySearchInput"
+                                   class="form-control border-0 bg-white shadow-none ps-0 fw-medium"
+                                   placeholder="Type to search category..."
+                                   autocomplete="off" />
+                            <button class="btn btn-white border-0 text-secondary pe-3"
+                                    type="button"
+                                    id="clearCategoryBtn"
+                                    style="display: none;">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Dropdown List limited to 5 results -->
+                        <ul class="list-group shadow-sm position-absolute w-100 mt-1 rounded-3 border"
+                            id="categoryDropdownList"
+                            style="display: none; z-index: 1050; max-height: 220px; overflow-y: auto;">
+                        </ul>
+                        <span asp-validation-for="CategoryId" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <!-- Market Price -->
-                    <div class="form-group">
-                        <label asp-for="Price" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;"></label>
-                        <input asp-for="Price" class="form-control no-spin" type="number" step="0.01" min="0.01" onwheel="this.blur()" />
-                        <span asp-validation-for="Price" class="text-danger"></span>
+                    <div class="form-group mb-3">
+                        <label asp-for="Price" class="control-label fw-semibold mb-1" style="color: #1162a3;">Market Price (PHP)</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                            <span class="input-group-text bg-light border-0 fw-bold text-secondary">₱</span>
+                            <input asp-for="Price" class="form-control border-0 shadow-none fw-semibold no-spin" type="number" step="0.01" min="0.01" onwheel="this.blur()" placeholder="0.00" />
+                        </div>
+                        <span asp-validation-for="Price" class="text-danger small mt-1 d-block"></span>
                     </div>
 
-                    <!-- Product Image -->
-                    <div class="form-group">
-                        <!--IMG URL so far! Copy Image Adress!-->
-                        <label asp-for="ProductImage" class="control-label fw-medium" style="color:#1162a3; padding-top:10px;">Product Image</label>
-                        <input asp-for="ProductImage" class="form-control" placeholder="https://sample.photos/200/300" />
-                        <span asp-validation-for="ProductImage" class="text-danger"></span>
-                    </div>
+                    <!-- Operating Status Toggle -->
+                    <div class="form-group mb-3">
+                        <label class="control-label fw-semibold mb-2 d-block" style="color: #1162a3;">Product Status</label>
+                        <input type="hidden" asp-for="StatusId" id="statusIdInput" />
 
-                    <!-- Button Placement -->
-                    <div class="row row-cols-2 pt-4">
-                        <div class="text-start">
-                            <a asp-action="Index" class="btn btn-outline-secondary fw-medium">Back to List</a>
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 border shadow-sm">
+                            <div>
+                                <span id="statusBadge"
+                                      class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm @(Model.StatusId == 1 ? "bg-success text-white" : "bg-secondary text-white")">
+                                    <i id="statusIcon" class="fa-solid @(Model.StatusId == 1 ? "fa-circle-check" : "fa-circle-xmark") me-1"></i>
+                                    <span id="statusLabel">@(Model.StatusId == 1 ? "Active" : "Inactive")</span>
+                                </span>
+                                <small class="text-muted d-block mt-1" id="statusHint">
+                                    @(Model.StatusId == 1 ? "Item is visible in catalog and available for checkout." : "Item is hidden from POS catalog.")
+                                </small>
+                            </div>
+
+                            <div class="form-check form-switch m-0 d-flex align-items-center">
+                                <input class="form-check-input custom-toggle"
+                                       type="checkbox"
+                                       role="switch"
+                                       id="statusToggleSwitch"
+                                       style="width: 2.75rem; height: 1.45rem; cursor: pointer;"
+                                       @(Model.StatusId == 1 ? "checked" : "") />
+                            </div>
                         </div>
-                        <div class="form-group text-end">
-                            <input type="submit" value="Save" class="btn btn-primary fw-medium" />
+                        <span asp-validation-for="StatusId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+                </div>
+
+                <!-- Right Column: Product Image & Live Preview -->
+                <div class="col-lg-6">
+                    <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Product Media</h6>
+
+                    <!-- Tab Switcher -->
+                    <ul class="nav nav-pills mb-2" id="imageTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-1 px-3 rounded-pill border shadow-sm me-2" id="url-tab" data-bs-toggle="pill" data-bs-target="#url-pane" type="button" role="tab">Link URL</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-1 px-3 rounded-pill border shadow-sm" id="upload-tab" data-bs-toggle="pill" data-bs-target="#upload-pane" type="button" role="tab">Upload File</button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content border rounded-3 p-3 bg-light shadow-sm mb-3">
+                        <div class="tab-pane fade show active" id="url-pane" role="tabpanel">
+                            <input asp-for="ProductImage" id="productUrlInput" class="form-control rounded-3" placeholder="https://example.com/image.jpg" />
+                            <div class="form-text small mt-1">Direct web link to an image file.</div>
+                        </div>
+
+                        <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                            <input type="file" name="ImageUpload" id="ImageUpload" class="form-control rounded-3" accept="image/png, image/jpeg, image/jpg, image/webp" />
+                            <div class="form-text small mt-1">Select a new image file to replace current picture.</div>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="col-md-4">
-                <div class="position-absolute top-50 start-50 translate-middle" style="padding-left: 45%;">
-                    <img src="@ViewBag.ProductImage" style="max-width: 350px; max-height: 350px; padding-right: 8px" />
+                    <span asp-validation-for="ProductImage" class="text-danger small mt-1 d-block"></span>
+
+                    <!-- Live Image Preview Box -->
+                    <div class="image-preview-box shadow-sm mt-3 mb-3" id="previewContainer">
+                        <img id="livePreviewImg"
+                             src="@(string.IsNullOrEmpty(Model.ProductImage) ? "/images/default-product.png" : Model.ProductImage)"
+                             onerror="this.onerror=null; this.src='/images/default-product.png';"
+                             alt="@Model.ProductName" />
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <!-- Sticky Bottom Actions -->
+            <div class="d-flex justify-content-end align-items-center gap-2 pt-3 pb-3 mt-auto border-top">
+                <a asp-action="Index" class="btn btn-outline-secondary fw-medium rounded-pill px-4 shadow-sm" style="font-size: 14px;">Cancel</a>
+                <button type="submit" class="btn btn-primary fw-medium rounded-pill px-4 shadow-sm" style="font-size: 14px; background-color: #1162a3; border-color: #1162a3;">
+                    <i class="fa-solid fa-check me-1"></i>Save Changes
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // --- Category Combobox Logic ---
+            const categories = [
+                @if (ViewBag.CategoryId != null)
+                {
+                        foreach (var item in (IEnumerable<SelectListItem>)ViewBag.CategoryId)
+                        {
+                                @:{ id: "@item.Value", name: "@Html.Raw(item.Text.Replace("\"", "\\\""))" },
+                        }
+                }
+            ];
+
+            const searchInput = document.getElementById("categorySearchInput");
+            const hiddenId = document.getElementById("hiddenCategoryId");
+            const dropdown = document.getElementById("categoryDropdownList");
+            const clearBtn = document.getElementById("clearCategoryBtn");
+
+            // Pre-fill category input with model's existing category
+            if (hiddenId.value) {
+                const selected = categories.find(c => c.id === hiddenId.value);
+                if (selected) {
+                    searchInput.value = selected.name;
+                    clearBtn.style.display = "block";
+                }
+            }
+
+            function filterCategories(query) {
+                dropdown.innerHTML = "";
+                const cleanQuery = query.trim().toLowerCase();
+
+                const matches = categories
+                    .filter(c => c.name.toLowerCase().includes(cleanQuery))
+                    .slice(0, 5);
+
+                if (matches.length === 0) {
+                    const emptyItem = document.createElement("li");
+                    emptyItem.className = "list-group-item text-muted small py-2 fst-italic";
+                    emptyItem.textContent = "No matching categories found";
+                    dropdown.appendChild(emptyItem);
+                } else {
+                    matches.forEach(item => {
+                        const li = document.createElement("li");
+                        li.className = "list-group-item list-group-item-action py-2 px-3 fw-medium d-flex align-items-center justify-content-between";
+                        li.style.cursor = "pointer";
+                        li.innerHTML = `<span><i class="fa-solid fa-tag text-secondary me-2 opacity-50"></i>${item.name}</span>`;
+
+                        li.addEventListener("click", function () {
+                            searchInput.value = item.name;
+                            hiddenId.value = item.id;
+                            clearBtn.style.display = "block";
+                            dropdown.style.display = "none";
+                            $(hiddenId).valid();
+                        });
+
+                        dropdown.appendChild(li);
+                    });
+                }
+
+                dropdown.style.display = "block";
+            }
+
+            searchInput.addEventListener("input", function () {
+                hiddenId.value = "";
+                clearBtn.style.display = this.value ? "block" : "none";
+                filterCategories(this.value);
+            });
+
+            searchInput.addEventListener("focus", function () {
+                filterCategories(this.value);
+            });
+
+            clearBtn.addEventListener("click", function () {
+                searchInput.value = "";
+                hiddenId.value = "";
+                clearBtn.style.display = "none";
+                dropdown.style.display = "none";
+                searchInput.focus();
+            });
+
+            document.addEventListener("click", function (e) {
+                if (!document.getElementById("categoryCombobox").contains(e.target)) {
+                    dropdown.style.display = "none";
+                }
+            });
+
+            // --- Status Toggle Switch Logic ---
+            const statusSwitch = document.getElementById("statusToggleSwitch");
+            const statusInput = document.getElementById("statusIdInput");
+            const statusLabel = document.getElementById("statusLabel");
+            const statusBadge = document.getElementById("statusBadge");
+            const statusIcon = document.getElementById("statusIcon");
+            const statusHint = document.getElementById("statusHint");
+
+            const ACTIVE_ID = "1";
+            const INACTIVE_ID = "2";
+
+            function updateStatusUI(isActive) {
+                if (isActive) {
+                    statusInput.value = ACTIVE_ID;
+                    statusLabel.textContent = "Active";
+                    statusBadge.className = "badge rounded-pill fw-semibold px-3 py-2 shadow-sm bg-success text-white";
+                    statusIcon.className = "fa-solid fa-circle-check me-1";
+                    statusHint.textContent = "Item is visible in catalog and available for checkout.";
+                } else {
+                    statusInput.value = INACTIVE_ID;
+                    statusLabel.textContent = "Inactive";
+                    statusBadge.className = "badge rounded-pill fw-semibold px-3 py-2 shadow-sm bg-secondary text-white";
+                    statusIcon.className = "fa-solid fa-circle-xmark me-1";
+                    statusHint.textContent = "Item is hidden from POS catalog.";
+                }
+            }
+
+            if (statusSwitch && statusInput) {
+                updateStatusUI(statusSwitch.checked);
+
+                statusSwitch.addEventListener("change", function () {
+                    updateStatusUI(this.checked);
+                });
+            }
+
+            // --- Image Preview & Tab Logic ---
+            const urlInput = document.getElementById("productUrlInput");
+            const fileInput = document.getElementById("ImageUpload");
+            const previewImg = document.getElementById("livePreviewImg");
+            const defaultImg = "/images/default-product.png";
+            const initialImage = previewImg.getAttribute("src") || defaultImg;
+
+            function updatePreview(src) {
+                previewImg.src = src ? src : defaultImg;
+            }
+
+            if (urlInput) {
+                urlInput.addEventListener("input", function () {
+                    if (this.value.trim().length > 8) {
+                        updatePreview(this.value.trim());
+                    } else {
+                        updatePreview(initialImage);
+                    }
+                });
+            }
+
+            if (fileInput) {
+                fileInput.addEventListener("change", function () {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            updatePreview(e.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        updatePreview(urlInput && urlInput.value ? urlInput.value : initialImage);
+                    }
+                });
+            }
+
+            const urlTab = document.getElementById("url-tab");
+            const uploadTab = document.getElementById("upload-tab");
+
+            if (urlTab) {
+                urlTab.addEventListener("shown.bs.tab", function () {
+                    fileInput.value = "";
+                    updatePreview(urlInput.value ? urlInput.value : initialImage);
+                });
+            }
+
+            if (uploadTab) {
+                uploadTab.addEventListener("shown.bs.tab", function () {
+                    if (!fileInput.files.length) {
+                        updatePreview(initialImage);
+                    }
+                });
+            }
+        });
+    </script>
 }

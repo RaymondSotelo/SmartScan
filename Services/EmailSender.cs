@@ -1,8 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MimeKit;
 
 namespace SmartScan.Services
@@ -10,42 +12,58 @@ namespace SmartScan.Services
     public class EmailSender : IEmailSender
     {
         private readonly IConfiguration _config;
+        private readonly ILogger<EmailSender> _logger;
 
-        public EmailSender(IConfiguration config)
+        // Inject ILogger so you can track SMTP errors in your console/logs
+        public EmailSender(IConfiguration config, ILogger<EmailSender> logger)
         {
             _config = config;
+            _logger = logger;
         }
 
-        public async Task SendEmailAsync(string email, string subject, string htmlMessage) 
+        public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            var emailSettings = _config.GetSection("EmailSettings");
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]));
-            message.To.Add(MailboxAddress.Parse(email));
-            message.Subject = subject;
-
-            var bodyBuilder = new BodyBuilder
+            try
             {
-                HtmlBody = htmlMessage
-            };
-            message.Body = bodyBuilder.ToMessageBody();
+                var emailSettings = _config.GetSection("EmailSettings");
 
-            using var client = new SmtpClient();
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]));
+                message.To.Add(MailboxAddress.Parse(email));
+                message.Subject = subject;
 
-            // Connecting to port 587 for STARTTLS
-            await client.ConnectAsync(
-                emailSettings["SmtpServer"],
-                int.Parse(emailSettings["Port"]!),
-                SecureSocketOptions.StartTls
-            );
+                var bodyBuilder = new BodyBuilder
+                {
+                    HtmlBody = htmlMessage
+                };
+                message.Body = bodyBuilder.ToMessageBody();
 
-            // Aunthenticate with your sender email & app password
-            await client.AuthenticateAsync(emailSettings["SenderEmail"], emailSettings["Password"]);
+                using var client = new SmtpClient();
 
-            // Sends the email
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+                // Safely parse the port, fallback to 587 if missing or invalid in config
+                int.TryParse(emailSettings["Port"], out int port);
+                port = port == 0 ? 587 : port;
+
+                // Connecting to port for STARTTLS
+                await client.ConnectAsync(
+                    emailSettings["SmtpServer"],
+                    port,
+                    SecureSocketOptions.StartTls
+                );
+
+                // Authenticate with your sender email & app password
+                await client.AuthenticateAsync(emailSettings["SenderEmail"], emailSettings["Password"]);
+
+                // Sends the email
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+            }
+            catch (Exception ex)
+            {
+                // Logs the exact error (e.g., auth failure, connection timeout)
+                _logger.LogError(ex, "Failed to send email to {Email}. Subject: {Subject}", email, subject);
+
+            }
         }
     }
 }

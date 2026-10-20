@@ -1,0 +1,125 @@
+﻿@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityUser>
+@{
+    ViewData["Title"] = "Admin Approval";
+    ViewData["HeaderTitle"] = "Account Management";
+
+    var profileMap = ViewBag.ProfileMap as Dictionary<string, string> ?? new Dictionary<string, string>();
+}
+
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
+     style="height: calc(100dvh - 130px); min-height: 500px;">
+
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
+        <h5 class="mb-0"><i class="fa-solid fa-user-tie me-2"></i>Admin Approval</h5>
+    </div>
+
+    <!-- Title & Search Bar -->
+    <div class="d-flex flex-wrap flex-shrink-0 justify-content-between align-items-center gap-3 p-4">
+        <div style="color: #1162a3;">
+            <h4 class="mb-0 fw-bold">Unverified Admin List</h4>
+            <p class="fw-medium pt-1 text-secondary mb-0">Select an unverified admin account below to approve access.</p>
+        </div>
+
+        <!-- Search Feature -->
+        <form asp-action="AdminApproval" method="get" class="d-flex gap-2" style="max-width: 350px; width: 100%;">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                <span class="input-group-text bg-white border-0">
+                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                </span>
+                <input type="text"
+                       name="search"
+                       value="@ViewData["CurrentFilter"]"
+                       class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                       placeholder="Search user..."
+                       aria-label="Search" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+            {
+                <a asp-action="AdminApproval" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+            }
+        </form>
+    </div>
+
+    <!-- Overhead TempData Alert -->
+    @if (TempData["UserMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
+            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+            <div>
+                @TempData["UserMessage"]
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Dynamic Body / List Area -->
+    <div class="card-body p-4 pt-0 d-flex flex-column flex-grow-1 overflow-hidden">
+        @if (Model == null || !Model.Any())
+        {
+            @if (!string.IsNullOrWhiteSpace(ViewData["CurrentFilter"]?.ToString()))
+            {
+                <div class="alert alert-warning text-center my-3 fw-semibold shadow-sm" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i>No accounts found matching "<strong>@ViewData["CurrentFilter"]</strong>".
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 my-auto">
+                    <div class="text-muted mb-3">
+                        <i class="fa-solid fa-folder-open fa-3x text-secondary opacity-50"></i>
+                    </div>
+                    <h4 class="fw-semibold text-secondary">Empty Admin Approvals</h4>
+                    <p class="text-muted small">All registering administrators have been verified and processed.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <!-- Scrollable List -->
+            <div class="d-flex flex-column gap-2 pe-1 flex-grow-1 overflow-y-auto">
+                @foreach (var user in Model)
+                {
+                    profileMap.TryGetValue(user.Id, out var userPic);
+                    var avatarUrl = string.IsNullOrWhiteSpace(userPic) ? "/images/default-pfp.jpg" : userPic;
+
+                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                         style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+
+                        <!-- Left: Avatar + User Info -->
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="@avatarUrl"
+                                 onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                                 alt="@user.UserName"
+                                 class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
+                                 style="width: 34px; height: 34px; flex-shrink: 0;" />
+
+                            <div class="d-flex flex-column lh-1">
+                                <span class="fw-semibold text-primary">@user.UserName</span>
+                                @if (!string.IsNullOrEmpty(user.Email) && user.Email != user.UserName)
+                                {
+                                    <span class="text-secondary small mt-1" style="font-size: 11px;">@user.Email</span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Approve Button -->
+                        <form asp-action="Approve" method="post" class="d-inline mb-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <button type="submit"
+                                    class="btn btn-sm btn-success rounded-pill fw-semibold px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                                    style="font-size: 12px;">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Approve</span>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

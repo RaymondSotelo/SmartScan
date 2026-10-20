@@ -14,32 +14,31 @@
     ViewData["HeaderTitle"] = "Account Settings";
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
+     style="height: calc(100dvh - 130px); min-height: 500px;">
 
-<div class="card shadow border-0 rounded-4 mt-4">
-    <div class="card-header rounded-top-4 text-white p-3" style="background-color:#1162a3">
-        <h5 class="mb-0"><i class="fa-solid fa-circle-user"></i> Manage your Account</h5>
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
+        <h5 class="mb-0"><i class="fa-solid fa-circle-user me-2"></i>Manage your Account</h5>
     </div>
-    <div class="p-3">
-        <div>
-            <div class="row">
-                <div class="col-md-3">
-                    <partial name="_ManageNav" />
-                </div>
-                <div class="col-md-9">
-                    @RenderBody()
-                </div>
+
+    <!-- Body Area -->
+    <div class="card-body p-4 d-flex flex-column flex-grow-1 overflow-hidden">
+        <div class="row g-4 flex-grow-1 overflow-hidden">
+
+            <!-- Left Navigation -->
+            <div class="col-md-3 flex-shrink-0">
+                <partial name="_ManageNav" />
             </div>
+
+            <!-- Right Content Area -->
+            <div class="col-md-9 flex-grow-1 overflow-y-auto pe-2 h-100">
+                @RenderBody()
+            </div>
+
         </div>
     </div>
+
 </div>
 
 @section Scripts {

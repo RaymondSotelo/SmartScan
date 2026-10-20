@@ -3,7 +3,7 @@
 @using System.Security.Claims
 
 @{
-    ViewData["Title"] = "Enroll Retail Staffs";
+    ViewData["Title"] = "Register Retail Staff";
     ViewData["HeaderTitle"] = "Retail Management";
     Layout = "_RetailLayout";
 
@@ -14,14 +14,11 @@
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     // 1. Fetch Store and Head Admin
-    var retailStore = DbContext.Retails
-        .FirstOrDefault(r => r.RetailId == currentRetailId);
-
+    var retailStore = DbContext.Retails.FirstOrDefault(r => r.RetailId == currentRetailId);
     var headAdminUser = retailStore != null && !string.IsNullOrEmpty(retailStore.AdminOwner)
         ? DbContext.Users.FirstOrDefault(u => u.Id == retailStore.AdminOwner)
         : null;
 
-    // Permissions: Head Admin (Store Owner) vs Co-Admin
     bool isHeadAdmin = retailStore != null && retailStore.AdminOwner == currentUserId;
 
     // Filter Head Admin if a search query is active
@@ -30,16 +27,14 @@
          (headAdminUser.UserName != null && headAdminUser.UserName.Contains(currentFilter, StringComparison.OrdinalIgnoreCase)) ||
          (headAdminUser.Email != null && headAdminUser.Email.Contains(currentFilter, StringComparison.OrdinalIgnoreCase)));
 
-    // Identify Co-Admins vs Cashiers from the staff model
+    // Categorize Co-Admins vs Cashiers
     var staffIds = Model.Select(m => m.StaffId).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
-
     var adminRoleIds = DbContext.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).ToList();
     var coAdminUserIds = DbContext.UserRoles
         .Where(ur => staffIds.Contains(ur.UserId) && adminRoleIds.Contains(ur.RoleId))
         .Select(ur => ur.UserId)
         .ToHashSet();
 
-    // Determine if current user is an assigned Co-Admin
     bool isCoAdmin = !isHeadAdmin && !string.IsNullOrEmpty(currentUserId) && coAdminUserIds.Contains(currentUserId);
 
     var coAdmins = Model.Where(m => !string.IsNullOrEmpty(m.StaffId) && coAdminUserIds.Contains(m.StaffId)).ToList();
@@ -56,211 +51,276 @@
         .Where(up => allUserIds.Contains(up.UserId))
         .ToDictionary(up => up.UserId, up => up.ProfilePicture);
 
+    int totalCount = (matchesHeadAdmin ? 1 : 0) + coAdmins.Count + cashiers.Count;
     bool hasAnyMatches = matchesHeadAdmin || coAdmins.Any() || cashiers.Any();
 }
 
-<h4 class="fw-bold mb-4" style="color: #1162a3;">
-    <i class="fa-solid fa-user-plus me-2"></i> Staff Members
-</h4>
+<div class="d-flex flex-column h-100">
 
-<div class="p-2 d-flex justify-content-between align-items-center mb-4 bounded-header">
-    <p class="mb-0">
-        <a class="btn btn-success fw-semibold" asp-action="Create" asp-route-retailId="@ViewBag.RetailId">
-            <i class="fa-solid fa-plus me-1"></i> Assign Staffs
-        </a>
-    </p>
-
-    <!-- Search Feature -->
-    <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 350px; width:100%;">
-        <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
-
-        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-            <span class="input-group-text bg-white border-0">
-                <i class="fa-solid fa-magnifying-glass text-muted"></i>
-            </span>
-            <input type="text"
-                   name="search"
-                   value="@ViewData["CurrentFilter"]"
-                   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-                   placeholder="Search user..."
-                   aria-label="Search" />
-        </div>
-
-        @if (!string.IsNullOrEmpty(currentFilter))
-        {
-            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary rounded-3" title="Clear Search">
-                <i class="fa-solid fa-xmark"></i>
-            </a>
-        }
-    </form>
-</div>
-
-<!-- Overhead TempData Alert -->
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center" role="alert">
-        <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+    <!-- Header & Badge Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
         <div>
-            @TempData["SuccessMessage"]
+            <h4 class="fw-bold mb-0" style="color: #1162a3;">Store Staff Members</h4>
+            <p class="text-secondary fw-medium mb-0">Manage authorized users, role assignments, and permissions for this branch.</p>
         </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <span class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm text-white flex-shrink-0" style="background-color: #1162a3; font-size: 13px;">
+            <i class="fa-solid fa-users-gear me-1"></i>Total Staff: @totalCount
+        </span>
     </div>
-}
 
-@if (!hasAnyMatches)
-{
-    @if (!string.IsNullOrEmpty(currentFilter))
-    {
-        <div class="alert alert-warning text-center my-4 fw-semibold" role="alert">
-            <i class="fa-solid fa-circle-exclamation me-2"></i>No staff found matching "<strong>@currentFilter</strong>".
-        </div>
-    }
-    else
-    {
-        <div class="alert alert-warning text-center my-4 fw-semibold" role="alert">
-            <i class="fa-solid fa-circle-exclamation me-2"></i>No staff have been added to this retail yet.
-        </div>
-    }
-}
-else
-{
-    <div class="d-flex flex-column gap-4">
+    <!-- Action Bar & Search -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-3 flex-shrink-0">
+        <a class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+           asp-action="Create"
+           asp-route-retailId="@ViewBag.RetailId"
+           style="background-color: #1162a3; border-color: #1162a3; font-size: 14px;">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Assign Staff</span>
+        </a>
 
-        <!-- ================= SECTION 1: HEAD ADMIN ================= -->
-        @if (matchesHeadAdmin && headAdminUser != null)
-        {
-            profileMap.TryGetValue(headAdminUser.Id, out var headAdminPic);
-            var headAvatar = string.IsNullOrWhiteSpace(headAdminPic) ? "/images/default-pfp.jpg" : headAdminPic;
+        <!-- Search Feature -->
+        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+            <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
 
-            <div>
-                <h6 class="text-uppercase fw-bold text-white mb-2 p-2 d-flex align-items-center gap-2 bg-primary rounded-top-3">
-                    <i class="fa-solid fa-crown text-white"></i>Head Admin
-                    <span class="badge rounded-pill bg-white text-primary" style="font-size: 10px;">Owner</span>
-                </h6>
-
-                <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
-                     style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                    <div class="d-flex align-items-center gap-2">
-                        <img src="@headAvatar"
-                             onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
-                             alt="@headAdminUser.UserName"
-                             class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
-                             style="width: 34px; height: 34px; flex-shrink: 0;" />
-                        <span class="fw-semibold text-primary">@headAdminUser.UserName</span>
-                    </div>   
-                </div>
+            <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                <span class="input-group-text bg-white border-0">
+                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                </span>
+                <input type="text"
+                       name="search"
+                       value="@ViewData["CurrentFilter"]"
+                       class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                       placeholder="Search staff..."
+                       aria-label="Search" />
             </div>
-        }
 
-        <!-- ================= SECTION 2: CO-ADMIN ================= -->
-        @if (coAdmins.Any())
+            @if (!string.IsNullOrEmpty(currentFilter))
+            {
+                <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+            }
+        </form>
+    </div>
+
+    <!-- Overhead TempData Alert -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mb-3 flex-shrink-0" role="alert">
+            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Scrollable Unified List Area -->
+    <div class="flex-grow-1 overflow-y-auto pe-1">
+        @if (!hasAnyMatches)
         {
-            <div>
-                <h6 class="text-uppercase fw-bold text-white mb-2 p-2 d-flex align-items-center gap-2 bg-primary rounded-top-3">
-                    <i class="fa-solid fa-user-shield text-white"></i> Co-Admin
-                    <span class="badge border rounded-2 bg-white text-primary fw-bolder" style="font-size: 11px;">@cashiers.Count</span>
-                </h6>
+            @if (!string.IsNullOrEmpty(currentFilter))
+            {
+                <div class="alert alert-warning text-center my-3 fw-semibold shadow-sm" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-2"></i>No staff member found matching "<strong>@currentFilter</strong>".
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 my-auto">
+                    <div class="text-muted mb-3">
+                        <i class="fa-solid fa-user-group fa-3x text-secondary opacity-50"></i>
+                    </div>
+                    <h5 class="fw-semibold text-secondary">No Assigned Staff</h5>
+                    <p class="text-muted small">Click "Assign Staff" above to authorize cashiers or managers for this store.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-2 pb-2">
 
-                <div class="d-flex flex-column gap-2">
-                    @foreach (var item in coAdmins)
-                    {
-                        profileMap.TryGetValue(item.StaffId, out var pic);
-                        var avatar = string.IsNullOrWhiteSpace(pic) ? "/images/default-pfp.jpg" : pic;
+                <!-- HEAD ADMIN (STORE OWNER) -->
+                @if (matchesHeadAdmin && headAdminUser != null)
+                {
+                    profileMap.TryGetValue(headAdminUser.Id, out var headPic);
+                    var headAvatar = string.IsNullOrWhiteSpace(headPic) ? "/images/default-pfp.jpg" : headPic;
 
-                        <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
-                             style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="@avatar"
-                                     onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
-                                     alt="@item.Staff?.UserName"
-                                     class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
-                                     style="width: 34px; height: 34px; flex-shrink: 0;" />
-                                <span class="fw-semibold text-primary">@item.Staff?.UserName</span>
-                            </div>
-
-                            <div class="d-flex align-items-center gap-3">
-                                @if (item.Status?.StatusName == "Active")
-                                {
-                                    <span class="badge bg-success rounded-pill px-3 shadow-sm">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary text-light rounded-pill px-3">Inactive</span>
-                                }
-
-                                @if (!isCoAdmin)
-                                {
-                                   <form asp-action="Delete"
-                                      asp-route-retailstaffid="@item.RetailStaffId"
-                                      asp-route-retailId="@ViewBag.RetailId"
-                                      method="post"
-                                      onsubmit="return confirm('Are you sure you want to remove @item.Staff?.UserName from this retail?');"
-                                      class="m-0">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3">
-                                        <i class="fa-solid fa-xmark"></i> Remove
-                                    </button>
-                                </form> 
-                                }
-                                
+                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                         style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="@headAvatar"
+                                 onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                                 alt="@headAdminUser.UserName"
+                                 class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
+                                 style="width: 44px; height: 44px; flex-shrink: 0;" />
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="fw-semibold" style="color: #1162a3;">@headAdminUser.UserName</span>
+                                    <span class="badge rounded-pill fw-semibold px-2 py-1 text-white shadow-sm" style="background-color: #f59e0b; font-size: 11px;">
+                                        <i class="fa-solid fa-crown me-1"></i>Head Admin
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    }
-                </div>
-            </div>
-        }
 
-        <!-- ================= SECTION 3: CASHIER ================= -->
-        @if (cashiers.Any())
-        {
-            <div>
-                <h6 class="text-uppercase fw-bold text-white mb-2 p-2 d-flex align-items-center gap-2 bg-primary rounded-top-3">
-                    <i class="fa-solid fa-cash-register text-white"></i> Cashier
-                    <span class="badge border rounded-2 bg-white text-primary fw-bolder" style="font-size: 11px;">@cashiers.Count</span>
-                </h6>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                <i class="fa-solid fa-circle-check me-1"></i>Active
+                            </span>
+                            <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small">
+                                <i class="fa-solid fa-lock me-1"></i>Owner
+                            </span>
+                        </div>
+                    </div>
+                }
 
-                <div class="d-flex flex-column gap-2">
-                    @foreach (var item in cashiers)
-                    {
-                        profileMap.TryGetValue(item.StaffId, out var pic);
-                        var avatar = string.IsNullOrWhiteSpace(pic) ? "/images/default-pfp.jpg" : pic;
+                <!-- CO-ADMINS -->
+                @foreach (var item in coAdmins)
+                {
+                    profileMap.TryGetValue(item.StaffId ?? "", out var pic);
+                    var avatar = string.IsNullOrWhiteSpace(pic) ? "/images/default-pfp.jpg" : pic;
 
-                        <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
-                             style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="@avatar"
-                                     onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
-                                     alt="@item.Staff?.UserName"
-                                     class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
-                                     style="width: 34px; height: 34px; flex-shrink: 0;" />
-                                <span class="fw-semibold text-primary">@item.Staff?.UserName</span>
+                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                         style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="@avatar"
+                                 onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                                 alt="@item.Staff?.UserName"
+                                 class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
+                                 style="width: 44px; height: 44px; flex-shrink: 0;" />
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="fw-semibold" style="color: #1162a3;">@(item.Staff?.UserName ?? "Unknown User")</span>
+                                    <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                        <i class="fa-solid fa-user-shield me-1"></i>Co-Admin
+                                    </span>
+                                </div>
                             </div>
+                        </div>
 
-                            <div class="d-flex align-items-center gap-3">
-                                @if (item.Status?.StatusName == "Active")
-                                {
-                                    <span class="badge bg-success rounded-pill px-3 shadow-sm">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary text-light rounded-pill px-3">Inactive</span>
-                                }
+                        <div class="d-flex align-items-center gap-3">
+                            @if (item.Status?.StatusName == "Active")
+                            {
+                                <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-white text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa-solid fa-circle-xmark me-1"></i>@(item.Status?.StatusName ?? "Inactive")
+                                </span>
+                            }
 
+                            @if (isHeadAdmin)
+                            {
                                 <form asp-action="Delete"
                                       asp-route-retailstaffid="@item.RetailStaffId"
                                       asp-route-retailId="@ViewBag.RetailId"
                                       method="post"
-                                      onsubmit="return confirm('Are you sure you want to remove @item.Staff?.UserName from this retail?');"
+                                      id="deleteStaffForm-@item.RetailStaffId"
                                       class="m-0">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3">
-                                        <i class="fa-solid fa-xmark"></i> Remove
+                                    @Html.AntiForgeryToken()
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3 shadow-sm"
+                                            onclick="confirmStaffRemoval('@item.RetailStaffId', '@Html.Raw(item.Staff?.UserName?.Replace("'", "\\'") ?? "this Co-Admin")')">
+                                        <i class="fa-solid fa-xmark me-1"></i>Remove
                                     </button>
                                 </form>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small">
+                                    <i class="fa-solid fa-lock me-1"></i>Protected
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- CASHIERS -->
+                @foreach (var item in cashiers)
+                {
+                    profileMap.TryGetValue(item.StaffId ?? "", out var pic);
+                    var avatar = string.IsNullOrWhiteSpace(pic) ? "/images/default-pfp.jpg" : pic;
+
+                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                         style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="@avatar"
+                                 onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                                 alt="@item.Staff?.UserName"
+                                 class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
+                                 style="width: 44px; height: 44px; flex-shrink: 0;" />
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="fw-semibold" style="color: #1162a3;">@(item.Staff?.UserName ?? "Unknown User")</span>
+                                    <span class="badge rounded-pill bg-light text-secondary border fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                        <i class="fa-solid fa-cash-register me-1"></i>Cashier
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    }
-                </div>
+
+                        <div class="d-flex align-items-center gap-3">
+                            @if (item.Status?.StatusName == "Active")
+                            {
+                                <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-white text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa-solid fa-circle-xmark me-1"></i>@(item.Status?.StatusName ?? "Inactive")
+                                </span>
+                            }
+
+                            @if (isHeadAdmin || isCoAdmin)
+                            {
+                                <form asp-action="Delete"
+                                      asp-route-retailstaffid="@item.RetailStaffId"
+                                      asp-route-retailId="@ViewBag.RetailId"
+                                      method="post"
+                                      id="deleteStaffForm-@item.RetailStaffId"
+                                      class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3 shadow-sm"
+                                            onclick="confirmStaffRemoval('@item.RetailStaffId', '@Html.Raw(item.Staff?.UserName?.Replace("'", "\\'") ?? "this Cashier")')">
+                                        <i class="fa-solid fa-xmark me-1"></i>Remove
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small fst-italic px-2">Restricted</span>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         }
-
     </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmStaffRemoval(retailStaffId, userName) {
+            Swal.fire({
+                title: 'Revoke Staff Access?',
+                text: `Are you sure you want to remove "${userName}" from this store?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, remove',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(`deleteStaffForm-${retailStaffId}`).submit();
+                }
+            });
+        }
+    </script>
 }

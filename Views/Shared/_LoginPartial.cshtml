@@ -13,7 +13,7 @@
         var currentUser = await UserManager.GetUserAsync(User);
 
         // 1. Standardized default path matching your wwwroot/images/ file
-        const string fallbackAvatar = "/images/default-profile-pic.png";
+        const string fallbackAvatar = "/images/default-pfp.jpg";
         string profilePfpPath = fallbackAvatar;
 
         if (currentUser != null)
@@ -82,14 +82,10 @@
     }
     else
     {
-        <li class="nav-item" style="margin-top:16px;">
-            <a style="color:#387bd6" class="nav-link fw-semibold fs-6" style="padding-left: 14px; padding-right:14px;" asp-area="Identity" asp-page="/Account/Login">Login</a>
-        </li>
-        <li class="nav-item" style="margin-top:23px;">
-            <p style="color:#387bd6" class="fw-medium"> | </p>
-        </li>
-        <li class="nav-item" style="margin-top:17px;">
-            <a style="color:#387bd6" class="nav-link fw-semibold fs-6" style="padding-left: 14px; padding-right:14px;" asp-area="Identity" asp-page="/Account/Register">Sign Up</a>
+        <li class="nav-item d-flex align-items-center pt-4 pe-2">
+            <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
+            <span class="mx-2 fw-medium user-select-none" style="color: #387bd6;">|</span>
+            <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Register">Sign Up</a>
         </li>
     }
 </ul>
