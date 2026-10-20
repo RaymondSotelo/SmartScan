@@ -145,7 +145,7 @@
                         <div class="d-flex gap-2">
                             <!-- Stacked Buttons -->
                             <div class="d-flex flex-column gap-1">
-                                <button class="btn btn-warning btn-sm fw-bold text-dark py-1 px-2" style="font-size: 0.65rem;">OLD<br>TRANSACTION</button>
+                                <button class="btn btn-warning btn-sm fw-bold text-dark py-1 px-2" style="font-size: 0.65rem;" onclick="openOldTransactions()">OLD<br>TRANSACTION</button>
                                 <button class="btn btn-danger btn-sm fw-bold py-1 px-2" id="btnVoidCart" style="font-size: 0.65rem;">VOID CART</button>
                             </div>
                             <!-- Big Blue Button (ID ADDED HERE) -->
@@ -159,6 +159,34 @@
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- Old Transactions Modal -->
+<div class="modal fade" id="oldTransactionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-clock-rotate-left"></i> Recent Transactions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Receipt #</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oldTransactionsList">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -201,6 +229,9 @@
 @section Scripts {
     <script type="text/javascript">
         document.addEventListener("DOMContentLoaded", function () {
+            // Force the customer display to start completely empty on page load
+            localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({ items: [], total: 0 }));
+
             const video = document.getElementById("webcamFeed");
             const videoContainer = document.getElementById("videoContainer");
             const captureCanvas = document.getElementById("captureCanvas");
@@ -778,6 +809,38 @@
 
             // --- NEW GLOBAL FUNCTIONS ---
 
+            // Displays Old Transactions Modal
+            window.openOldTransactions = async function() {
+                const modal = new bootstrap.Modal(document.getElementById('oldTransactionsModal'));
+                modal.show();
+
+                const tbody = document.getElementById('oldTransactionsList');
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center">Loading...</td></tr>';
+
+                try {
+                    const response = await fetch('/Home/GetOldTransactions');
+                    const data = await response.json();
+
+                    if (data.success && data.transactions.length > 0) {
+                        let html = '';
+                        data.transactions.forEach(tx => {
+                            html += `
+                                <tr>
+                                    <td class="fw-bold">${tx.receiptNumber}</td>
+                                    <td><small class="text-muted">${tx.date}</small></td>
+                                    <td class="text-success fw-bold">PHP ${tx.total.toFixed(2)}</td>
+                                </tr>
+                            `;
+                        });
+                        tbody.innerHTML = html;
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No recent transactions found.</td></tr>';
+                    }
+                } catch (error) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error loading transactions.</td></tr>';
+                }
+            };
+
             // Locks a scanned Auto item into the permanent Saved cart
             window.lockYoloItem = function (formattedName, displayName, price, qty) {
                 const existing = manualItems.find(i => i.name === displayName);
@@ -851,6 +914,9 @@
                 // Redirect to the Payment page
                 window.location.href = "/Home/CustomerVerification";
             });
+
+            // Force initial render to sync empty cart state with customer display on load
+            buildCartAndRender({}, false);
         });
     </script>
 }

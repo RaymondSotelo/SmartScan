@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartScan.Data;
 using SmartScan.Models;
+using System.Security.Claims;
 
 namespace SmartScan.Controllers
 {
@@ -58,6 +59,10 @@ namespace SmartScan.Controllers
             return View();
         }
 
+        public IActionResult GenerateReceipt()
+        {
+            return View();
+        }
         // ------------------------------------
         // Get product details for the scanner
         // ------------------------------------
@@ -209,6 +214,140 @@ namespace SmartScan.Controllers
             });
         }
 
+        // -------------------- [TRANSACTION & INVENTORY] --------------------
+
+        [HttpPost]
+        public async Task<IActionResult> SaveTransaction([FromBody] TransactionPayload request)
+        {
+            if (request == null || !request.Items.Any())
+            {
+                return Json(new { success = false, message = "Cart is empty." });
+            }
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Json(new { success = false, message = "Session expired. Please log in again." });
+            }
+
+            var retailStaff = await _context.RetailStaffs
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+            if (retailStaff == null)
+            {
+                return Json(new { success = false, message = "Error: Your account is not assigned to a retail store." });
+            }
+
+            int currentRetailId = retailStaff.RetailId;
+            int currentRetailStaffId = retailStaff.RetailStaffId;
+
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // --- 1. PRE-CHECK STOCK BEFORE SAVING ANYTHING ---
+                foreach (var item in request.Items)
+                {
+                    var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductName == item.Name);
+                    if (product == null) return Json(new { success = false, message = $"Product '{item.Name}' not found." });
+
+                    var inventory = await _context.Inventories
+                        .FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
+
+                    if (inventory == null)
+                        return Json(new { success = false, message = $"Product '{product.ProductName}' does not exist in this store's inventory." });
+
+                    if (inventory.Stock < item.Qty)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = $"Insufficient stock for '{product.ProductName}'. You tried to checkout {item.Qty}, but only {inventory.Stock} are left."
+                        });
+                    }
+                }
+
+                // --- 2. IF STOCK IS GOOD, CREATE TRANSACTION ---
+                string receiptNum = "REC" + DateTime.Now.ToString("yyyyMMddHHmmss");
+
+                // Map to the exact IDs in your SQL Database
+                int paymentId = 1; // Default to Cash
+                if (request.PaymentMethod == "Cash In Hand") paymentId = 1;
+                else if (request.PaymentMethod == "GCash API") paymentId = 2;
+                else if (request.PaymentMethod == "Credit Card") paymentId = 3;
+                else if (request.PaymentMethod == "Store Credits") paymentId = 4;
+                var newTx = new Transaction
+                {
+                    RetailStaffId = currentRetailStaffId,
+                    CustomerId = 2, // Note: If Customer 2 doesn't exist, this will throw an inner exception
+                    RetailId = currentRetailId,
+                    TotalAmount = request.Total,
+                    PaymentMethodId = paymentId,
+                    StatusId = 1,
+                    CreatedAt = DateTime.Now,
+                    ReceiptNumber = receiptNum
+                };
+
+                _context.Transactions.Add(newTx);
+                await _context.SaveChangesAsync();
+
+                // --- 3. DEDUCT STOCK AND ADD ITEMS ---
+                foreach (var item in request.Items)
+                {
+                    var product = await _context.Products.FirstAsync(p => p.ProductName == item.Name);
+
+                    var txItem = new TransactionItem
+                    {
+                        TransactionId = newTx.TransactionId,
+                        ProductId = product.ProductId,
+                        Quantity = item.Qty,
+                        UnitPrice = item.Price
+                    };
+                    _context.TransactionItems.Add(txItem);
+
+                    var inventory = await _context.Inventories
+                        .FirstAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
+
+                    inventory.Stock -= item.Qty;
+                    _context.Inventories.Update(inventory);
+                }
+
+                await _context.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+
+                return Json(new { success = true, receiptNumber = receiptNum });
+            }
+            catch (Exception ex)
+            {
+                await dbTransaction.RollbackAsync();
+
+                // This grabs the exact SQL error so we know what is missing!
+                string errorMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                return Json(new { success = false, message = errorMessage });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetOldTransactions()
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+            if (retailStaff == null) return Json(new { success = false });
+
+            var transactions = await _context.Transactions
+                .Where(t => t.RetailId == retailStaff.RetailId)
+                .OrderByDescending(t => t.CreatedAt)
+                .Take(5) // Shows the 5 most recent receipts
+                .Select(t => new {
+                    receiptNumber = t.ReceiptNumber,
+                    date = t.CreatedAt.ToString("MM/dd/yyyy hh:mm tt"),
+                    total = t.TotalAmount
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, transactions });
+        }
+
         // -------------------- [BIOMETRICS HELPERS] --------------------
 
         private static double ComputeEuclideanDistance(float[] vA, float[] vB)
@@ -248,5 +387,20 @@ namespace SmartScan.Controllers
             public double Distance { get; set; }
             public double SimilarityScore { get; set; }
         }
+    }
+
+    // -------------------- [TRANSACTION DTOs] --------------------
+    public class TransactionPayload
+    {
+        public List<CartItemPayload> Items { get; set; } = new();
+        public decimal Total { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+    }
+
+    public class CartItemPayload
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Qty { get; set; }
+        public decimal Price { get; set; }
     }
 }

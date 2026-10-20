@@ -1,0 +1,186 @@
+﻿@{
+    ViewData["Title"] = "Generate Receipt";
+}
+
+@section Styles {
+    <style>
+        body {
+            background: #95CCDD;
+            min-height: 100vh;
+        }
+
+        .receipt-card {
+            max-width: 450px;
+            margin: 0 auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .receipt-header {
+            background: #1b6ec2;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .receipt-body {
+            background: white;
+            padding: 25px;
+        }
+
+        .item-list {
+            max-height: 250px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+            /* Custom Scrollbar for long item lists */
+            .item-list::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .item-list::-webkit-scrollbar-thumb {
+                background-color: #ccc;
+                border-radius: 4px;
+            }
+
+        .btn-new-transaction {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 12px;
+            border: none;
+            transition: 0.2s;
+        }
+
+            .btn-new-transaction:hover {
+                background: #2980b9;
+                color: white;
+            }
+    </style>
+}
+
+<div class="container mt-5">
+    <div class="receipt-card">
+        <div class="receipt-header d-flex align-items-center">
+            <i class="fa-solid fa-receipt me-2"></i> Transaction Complete
+        </div>
+
+        <div class="receipt-body">
+            <h4 class="fw-bold mb-3">Customer Receipt</h4>
+
+            <div class="d-flex justify-content-between mb-1" style="font-size: 0.9rem; color: #555;">
+                <span>Transaction No:</span>
+                <strong class="text-dark" id="transactionNo">#0000-0000</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-3" style="font-size: 0.9rem; color: #555;">
+                <span>Date:</span>
+                <strong class="text-dark" id="transactionDate">MM/DD/YYYY</strong>
+            </div>
+
+            <!-- Scrollable Item List -->
+            <div class="item-list" id="receiptItems">
+                <!-- Items populated via JavaScript -->
+                <div class="text-center text-muted py-3">Loading receipt details...</div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-1">
+                <span class="fw-bold text-secondary">TOTAL:</span>
+                <strong class="fs-5" id="receiptTotal">PHP 0.00</strong>
+            </div>
+
+            <!-- NEW: Amount Paid and Change (Hidden by default, shown for cash) -->
+            <div class="d-flex justify-content-between mb-1" id="amountPaidRow" style="display: none; font-size: 0.95rem;">
+                <span class="fw-bold text-secondary">Amount Paid:</span>
+                <strong id="receiptAmountPaid">PHP 0.00</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2" id="changeRow" style="display: none; font-size: 0.95rem;">
+                <span class="fw-bold text-secondary">Change:</span>
+                <strong class="text-success" id="receiptChange">PHP 0.00</strong>
+            </div>
+
+            <div class="d-flex justify-content-between mb-4 border-top pt-2 mt-2">
+                <span class="fw-bold text-secondary">PAID via:</span>
+                <strong id="receiptMethod">Method</strong>
+            </div>
+
+            <button class="btn w-100 btn-new-transaction shadow-sm" onclick="startNewTransaction()">
+                New Transaction
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const transactionData = sessionStorage.getItem("smartScanLastTransaction");
+
+            if (!transactionData) {
+                alert("No recent transaction found.");
+                window.location.href = "/Home/Checkout";
+                return;
+            }
+
+            try {
+                const transaction = JSON.parse(transactionData);
+
+                // Use the real receipt number from the database if available
+                const randomId = Math.floor(1000 + Math.random() * 9000);
+                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                document.getElementById("transactionNo").textContent = transaction.receiptNumber ? transaction.receiptNumber : `#${randomId}-${randomSuffix}`;
+
+                // Format date to MM/DD/YYYY
+                const dateObj = new Date(transaction.date);
+                const formattedDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
+                document.getElementById("transactionDate").textContent = formattedDate;
+
+                // Load Items
+                let itemsHtml = "";
+                transaction.items.forEach(item => {
+                    const price = Number(item.price);
+                    itemsHtml += `
+                        <div class="d-flex justify-content-between mb-2" style="font-size: 0.9rem;">
+                            <span>${item.qty}x ${escapeHtml(item.name)}</span>
+                            <span>PHP ${price.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+                document.getElementById("receiptItems").innerHTML = itemsHtml;
+
+                // Load Totals
+                document.getElementById("receiptTotal").textContent = `PHP ${Number(transaction.total).toFixed(2)}`;
+                document.getElementById("receiptMethod").textContent = transaction.paymentMethod;
+
+                // --- SHOW AMOUNT PAID AND CHANGE ONLY FOR CASH TRANSACTIONS ---
+                if (transaction.paymentMethod === "Cash In Hand" && transaction.amountPaid !== undefined) {
+                    document.getElementById("amountPaidRow").style.display = "flex";
+                    document.getElementById("changeRow").style.display = "flex";
+
+                    document.getElementById("receiptAmountPaid").textContent = `PHP ${Number(transaction.amountPaid).toFixed(2)}`;
+                    document.getElementById("receiptChange").textContent = `PHP ${Number(transaction.change).toFixed(2)}`;
+                }
+
+            } catch (error) {
+                console.error("Error loading receipt:", error);
+            }
+        });
+
+        function escapeHtml(value) {
+            const element = document.createElement("div");
+            element.textContent = value ?? "";
+            return element.innerHTML;
+        }
+
+        // Clicking New Transaction redirects back to dashboard/checkout
+        function startNewTransaction() {
+            sessionStorage.removeItem("smartScanLastTransaction");
+            window.location.href = "/Home/Checkout";
+        }
+    </script>
+}
