@@ -1,28 +1,58 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
-    ViewData["HeaderTitle"] = "Dashboard";
+    if (ViewData["HeaderTitle"] == null)
+    {
+        ViewData["HeaderTitle"] = "Dashboard";
+    }
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
+@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    <!-- Viewport-Locked Outer Card -->
+    <div class="card shadow border-0 rounded-4 d-flex flex-column mt-2 mt-md-3 bg-white"
+         style="height: calc(100dvh - 130px); min-height: 540px;">
 
-<div class="card shadow border-0 rounded-4 mt-4">
-    <div class="card-body">
-        <div class="text-center py-5">
-            <div class="text-muted mb-3">
-                <i class="fa-solid fa-hand fa-3x text-secondary opacity-50"></i>
+        <!-- Pinned Top Brand Header -->
+        <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+             style="background-color: #1162a3;">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-home fs-5"></i>
+                <h5 class="mb-0 fw-bold">Dashboard</h5>
             </div>
-            <h4 class="fw-semibold text-secondary">Work in Progress</h4>
-            <p class="text-muted small">This site is currently under construction.</p>
         </div>
 
+        <!-- Interior Centered Content -->
+        <div class="card-body p-4 flex-grow-1 d-flex flex-column align-items-center justify-content-center" 
+             style="min-height: 0; background-color: #f8fafc; border-bottom-left-radius: var(--bs-border-radius-xl); border-bottom-right-radius: var(--bs-border-radius-xl); border-color: #cfe2f3 !important;;">
+
+            <div class="text-center p-4 p-md-5 bg-white shadow-sm rounded-4 border border-secondary border-opacity-10" style="max-width: 500px; width: 100%;">
+
+                <!-- Graphic/Icon -->
+                <div class="rounded-circle bg-opacity-10 d-inline-flex p-4 mb-4 border border-secondary border-opacity-25 shadow-sm"
+                     style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                    <i class="fa-solid fa-store-slash fa-3x text-primary opacity-75"></i>
+                </div>
+
+                <!-- Message -->
+                <h4 class="fw-bold text-primary mb-2">No Retail Store Assigned</h4>
+                <p class="text-muted mb-4 fw-medium" style="font-size: 0.95rem; line-height: 1.5;">
+                    Your account has not been assigned to a specific retail location yet. Please wait until an administrator assigns you to a store to access the checkout features.
+                </p>
+
+                <!-- Action Button -->
+                <button class="btn btn-primary fw-semibold px-4 py-2 rounded-pill shadow-sm d-inline-flex align-items-center gap-2"
+                        style="background-color: #1162a3; border-color: #1162a3;"
+                        onclick="location.reload();">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Refresh Status</span>
+                </button>
+
+            </div>
+
+        </div>
     </div>
-</div>
+}
+
+
+
 

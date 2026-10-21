@@ -3,6 +3,18 @@
     var retailId = ViewContext.RouteData.Values["retailid"]
                    ?? Context.Request.Query["retailid"].ToString()
                    ?? ViewData["RetailId"];
+
+    // Set the default return URL to Retails/Index
+    string returnUrl = Url.Action("Index", "Retails") ?? "/Retails/Index";
+
+    // Read the previous page URL from the request headers
+    string referer = Context.Request.Headers["Referer"].ToString();
+
+    // If they came from anywhere in the Users controller, change the return URL
+    if (!string.IsNullOrEmpty(referer) && referer.Contains("/Users", StringComparison.OrdinalIgnoreCase))
+    {
+        returnUrl = Url.Action("Index", "Users") ?? "/Users/Index";
+    }
 }
 
 @section Styles {
@@ -21,7 +33,7 @@
         </h5>
 
         <!-- Return Link -->
-        <a href="javascript:history.back()" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+        <a href="@returnUrl" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
            style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
             <i class="fa-solid fa-arrow-left me-1"></i>Return
         </a>

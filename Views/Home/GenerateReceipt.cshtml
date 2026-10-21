@@ -1,186 +1,312 @@
 ﻿@{
-    ViewData["Title"] = "Generate Receipt";
+    ViewData["Title"] = "Receipt";
+    if (ViewData["HeaderTitle"] == null)
+    {
+        ViewData["HeaderTitle"] = "Receipt";
+    }
 }
 
-@section Styles {
-    <style>
-        body {
-            background: #95CCDD;
-            min-height: 100vh;
-        }
+<!-- Viewport-Locked Outer Container -->
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white mx-auto"
+     style="height: calc(100dvh - 130px); min-height: 540px; max-width: 1200px;">
 
-        .receipt-card {
-            max-width: 450px;
-            margin: 0 auto;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .receipt-header {
-            background: #1b6ec2;
-            color: white;
-            padding: 15px;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .receipt-body {
-            background: white;
-            padding: 25px;
-        }
-
-        .item-list {
-            max-height: 250px;
-            overflow-y: auto;
-            margin: 20px 0;
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
-            padding: 10px 0;
-        }
-            /* Custom Scrollbar for long item lists */
-            .item-list::-webkit-scrollbar {
-                width: 6px;
-            }
-
-            .item-list::-webkit-scrollbar-thumb {
-                background-color: #ccc;
-                border-radius: 4px;
-            }
-
-        .btn-new-transaction {
-            background: #3498db;
-            color: white;
-            font-weight: bold;
-            border-radius: 8px;
-            padding: 12px;
-            border: none;
-            transition: 0.2s;
-        }
-
-            .btn-new-transaction:hover {
-                background: #2980b9;
-                color: white;
-            }
-    </style>
-}
-
-<div class="container mt-5">
-    <div class="receipt-card">
-        <div class="receipt-header d-flex align-items-center">
-            <i class="fa-solid fa-receipt me-2"></i> Transaction Complete
+    <!-- Top Navigation Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+         style="background-color: #1162a3;">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="mb-0 fw-bold">
+                <i class="fa-solid fa-receipt me-2"></i>Transaction Receipt
+            </h5>
+            <span class="badge bg-success bg-opacity-25 border border-success-subtle text-white rounded-pill px-3 ms-2">
+                <i class="fa-solid fa-circle-check me-1"></i>Completed
+            </span>
         </div>
 
-        <div class="receipt-body">
-            <h4 class="fw-bold mb-3">Customer Receipt</h4>
-
-            <div class="d-flex justify-content-between mb-1" style="font-size: 0.9rem; color: #555;">
-                <span>Transaction No:</span>
-                <strong class="text-dark" id="transactionNo">#0000-0000</strong>
-            </div>
-            <div class="d-flex justify-content-between mb-3" style="font-size: 0.9rem; color: #555;">
-                <span>Date:</span>
-                <strong class="text-dark" id="transactionDate">MM/DD/YYYY</strong>
-            </div>
-
-            <!-- Scrollable Item List -->
-            <div class="item-list" id="receiptItems">
-                <!-- Items populated via JavaScript -->
-                <div class="text-center text-muted py-3">Loading receipt details...</div>
+        <!-- Actions Pushed to the End -->
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <!-- Zoom Controls -->
+            <div class="bg-white bg-opacity-25 rounded-pill d-flex align-items-center p-1 shadow-sm border border-light border-opacity-25">
+                <button type="button" class="btn btn-sm btn-link text-white text-decoration-none px-2" onclick="changeZoom(-0.1)" title="Zoom Out">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <span id="zoomLevelDisplay" class="text-white fw-bold font-monospace px-1 text-center" style="font-size: 0.85rem; width: 45px; cursor: default;">100%</span>
+                <button type="button" class="btn btn-sm btn-link text-white text-decoration-none px-2" onclick="changeZoom(0.1)" title="Zoom In">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
             </div>
 
-            <div class="d-flex justify-content-between mb-1">
-                <span class="fw-bold text-secondary">TOTAL:</span>
-                <strong class="fs-5" id="receiptTotal">PHP 0.00</strong>
-            </div>
-
-            <!-- NEW: Amount Paid and Change (Hidden by default, shown for cash) -->
-            <div class="d-flex justify-content-between mb-1" id="amountPaidRow" style="display: none; font-size: 0.95rem;">
-                <span class="fw-bold text-secondary">Amount Paid:</span>
-                <strong id="receiptAmountPaid">PHP 0.00</strong>
-            </div>
-            <div class="d-flex justify-content-between mb-2" id="changeRow" style="display: none; font-size: 0.95rem;">
-                <span class="fw-bold text-secondary">Change:</span>
-                <strong class="text-success" id="receiptChange">PHP 0.00</strong>
-            </div>
-
-            <div class="d-flex justify-content-between mb-4 border-top pt-2 mt-2">
-                <span class="fw-bold text-secondary">PAID via:</span>
-                <strong id="receiptMethod">Method</strong>
-            </div>
-
-            <button class="btn w-100 btn-new-transaction shadow-sm" onclick="startNewTransaction()">
-                New Transaction
+            <!-- New Transaction Button -->
+            <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fw-semibold text-primary"
+                    style="background-color: #dbeafe; border-color: #cfe2f3 !important;"
+                    onclick="startNewTransaction()">
+                <i class="fa-solid fa-plus me-1"></i>New Transaction
             </button>
         </div>
+    </div>
+
+    <!-- Interior Workspace Split (1 Centered Column with Scrolling) -->
+    <div class="card-body p-3 p-lg-4 flex-grow-1 d-flex flex-column align-items-center bg-light bg-opacity-50 overflow-y-auto no-scrollbar" style="min-height: 0;">
+
+        <!-- Realistic Thermal POS Receipt Card -->
+        <div id="printableReceipt" class="receipt-paper w-100 p-4 border border-bottom-0 pb-5 mb-3" style="max-width: 440px;">
+
+            <!-- Store Branding & Meta -->
+            <div class="text-center mb-3">
+                <div class="d-inline-flex p-2 rounded-circle bg-opacity-10 text-primary mb-2">
+                    <img src="~/images/SmartScanLogo.png"
+                         alt="Smart Scan Logo"
+                         width="55"
+                         height="55"
+                         class="object-fit-contain flex-shrink-0"
+                         onerror="this.style.display='none'" />
+                </div>
+                <h5 class="fw-bold text-uppercase mb-0 text-dark" style="letter-spacing: 0.5px;">
+                    SmartScan Retail
+                </h5>
+                <p class="text-muted small mb-1">
+                    Automated Vision Checkout System
+                </p>
+                <span class="badge rounded-pill bg-light text-secondary border fw-medium px-3 py-1" style="font-size: 10px;">
+                    OFFICIAL TRANSACTION RECEIPT
+                </span>
+            </div>
+
+            <div class="receipt-dashed-line"></div>
+
+            <!-- Receipt Sub-Header Data -->
+            <div class="small text-secondary mb-2">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Receipt #:</span>
+                    <strong class="font-monospace text-dark" id="receiptNumberDisplay">#REC-000000</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Date & Time:</span>
+                    <span class="text-dark" id="receiptDateDisplay">YYYY-MM-DD 00:00 AM</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Cashier / POS:</span>
+                    <span class="text-dark">@(User.Identity?.Name ?? "Main Station")</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Customer:</span>
+                    <span class="text-dark fw-semibold" id="receiptCustomerDisplay">Walk-in Guest</span>
+                </div>
+            </div>
+
+            <div class="receipt-dashed-line"></div>
+
+            <!-- Itemized Purchase List -->
+            <div class="py-1">
+                <div class="d-flex justify-content-between text-muted fw-bold small text-uppercase mb-2" style="font-size: 11px;">
+                    <span>Item Description</span>
+                    <span class="text-end">Total</span>
+                </div>
+
+                <div id="receiptItemList" class="d-flex flex-column gap-2 mb-2">
+                    <div class="text-center text-muted small py-3">Loading receipt items...</div>
+                </div>
+            </div>
+
+            <div class="receipt-double-line"></div>
+
+            <!-- Financial Summary & Tender -->
+            <div class="small">
+                <div class="d-flex justify-content-between text-secondary mb-1">
+                    <span>Total Items Quantity:</span>
+                    <span class="fw-semibold text-dark" id="receiptTotalQty">0 units</span>
+                </div>
+                <div class="d-flex justify-content-between text-secondary mb-2">
+                    <span>Subtotal:</span>
+                    <span class="fw-semibold text-dark" id="receiptSubtotal">₱0.00</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fs-6 fw-bold text-dark">TOTAL PAID:</span>
+                    <span class="fs-4 fw-bold text-success font-monospace" id="receiptGrandTotal">₱0.00</span>
+                </div>
+
+                <!-- Cash Specific Tender Details -->
+                <div id="cashDetailsSection" style="display: none;">
+                    <div class="d-flex justify-content-between text-secondary mb-1">
+                        <span>Amount Paid:</span>
+                        <span class="fw-semibold text-dark" id="receiptAmountPaid">₱0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mb-2">
+                        <span>Change:</span>
+                        <span class="fw-bold text-success font-monospace" id="receiptChange">₱0.00</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between text-secondary pt-1">
+                    <span>Payment Tender:</span>
+                    <span class="badge rounded-pill bg-light text-primary border border-primary-subtle fw-semibold px-2" id="receiptPaymentMethodBadge">
+                        <i class="fa-solid fa-wallet me-1"></i>Cash
+                    </span>
+                </div>
+            </div>
+
+            <div class="receipt-dashed-line my-3"></div>
+
+            <!-- Barcode Stamp & Footer Thank You -->
+            <div class="text-center pt-2">
+                <div class="barcode-strip mb-2"></div>
+                <span class="font-monospace small text-muted d-block mb-2" id="barcodeNumber" style="letter-spacing: 2px;">
+                    *00000000*
+                </span>
+                <p class="small text-muted mb-0 fst-italic" style="font-size: 11px;">
+                    Thank you for shopping with us!<br />
+                    Verified by SmartScan Automated Vision System
+                </p>
+            </div>
+
+        </div>
+
     </div>
 </div>
 
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const transactionData = sessionStorage.getItem("smartScanLastTransaction");
+            const rawData = sessionStorage.getItem("smartScanLastTransaction");
 
-            if (!transactionData) {
-                alert("No recent transaction found.");
+            if (!rawData) {
+                alert("No recent transaction details were found.");
                 window.location.href = "/Home/Checkout";
                 return;
             }
 
             try {
-                const transaction = JSON.parse(transactionData);
+                const tx = JSON.parse(rawData);
 
-                // Use the real receipt number from the database if available
-                const randomId = Math.floor(1000 + Math.random() * 9000);
-                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-                document.getElementById("transactionNo").textContent = transaction.receiptNumber ? transaction.receiptNumber : `#${randomId}-${randomSuffix}`;
+                // 1. Receipt & Date Metadata
+                const receiptNum = tx.receiptNumber || ("REC" + Date.now().toString().slice(-8));
+                document.getElementById("receiptNumberDisplay").textContent = receiptNum;
+                document.getElementById("barcodeNumber").textContent = `*${receiptNum}*`;
 
-                // Format date to MM/DD/YYYY
-                const dateObj = new Date(transaction.date);
-                const formattedDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
-                document.getElementById("transactionDate").textContent = formattedDate;
-
-                // Load Items
-                let itemsHtml = "";
-                transaction.items.forEach(item => {
-                    const price = Number(item.price);
-                    itemsHtml += `
-                        <div class="d-flex justify-content-between mb-2" style="font-size: 0.9rem;">
-                            <span>${item.qty}x ${escapeHtml(item.name)}</span>
-                            <span>PHP ${price.toFixed(2)}</span>
-                        </div>
-                    `;
+                const txDate = tx.date ? new Date(tx.date) : new Date();
+                const formattedDate = txDate.toLocaleString("en-US", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true
                 });
-                document.getElementById("receiptItems").innerHTML = itemsHtml;
+                document.getElementById("receiptDateDisplay").textContent = formattedDate;
 
-                // Load Totals
-                document.getElementById("receiptTotal").textContent = `PHP ${Number(transaction.total).toFixed(2)}`;
-                document.getElementById("receiptMethod").textContent = transaction.paymentMethod;
-
-                // --- SHOW AMOUNT PAID AND CHANGE ONLY FOR CASH TRANSACTIONS ---
-                if (transaction.paymentMethod === "Cash In Hand" && transaction.amountPaid !== undefined) {
-                    document.getElementById("amountPaidRow").style.display = "flex";
-                    document.getElementById("changeRow").style.display = "flex";
-
-                    document.getElementById("receiptAmountPaid").textContent = `PHP ${Number(transaction.amountPaid).toFixed(2)}`;
-                    document.getElementById("receiptChange").textContent = `PHP ${Number(transaction.change).toFixed(2)}`;
+                // 2. Customer Name
+                if (tx.customerName && tx.customerName !== "Guest") {
+                    document.getElementById("receiptCustomerDisplay").textContent = tx.customerName;
                 }
 
-            } catch (error) {
-                console.error("Error loading receipt:", error);
+                // 3. Render Itemized Rows
+                const itemsContainer = document.getElementById("receiptItemList");
+                let itemsHtml = "";
+                let totalUnits = 0;
+                let calculatedSubtotal = 0;
+
+                if (Array.isArray(tx.items) && tx.items.length > 0) {
+                    tx.items.forEach(item => {
+                        const qty = Number(item.qty) || 0;
+                        const price = Number(item.price) || 0;
+                        const rowTotal = qty * price;
+
+                        totalUnits += qty;
+                        calculatedSubtotal += rowTotal;
+
+                        itemsHtml += `
+                            <div>
+                                <div class="d-flex justify-content-between text-dark fw-semibold small">
+                                    <span class="text-truncate pe-2" style="max-width: 250px;">${escapeHtml(item.name)}</span>
+                                    <span>₱${rowTotal.toFixed(2)}</span>
+                                </div>
+                                <div class="text-muted small d-flex align-items-center gap-1" style="font-size: 11px;">
+                                    <span>${qty} x</span>
+                                    <span>₱${price.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    itemsContainer.innerHTML = itemsHtml;
+                } else {
+                    itemsContainer.innerHTML = `<div class="text-center text-muted small py-2">No itemized products found.</div>`;
+                }
+
+                // 4. Financial Calculations
+                const grandTotal = Number(tx.total ?? calculatedSubtotal);
+                document.getElementById("receiptTotalQty").textContent = `${totalUnits} units`;
+                document.getElementById("receiptSubtotal").textContent = `₱${calculatedSubtotal.toFixed(2)}`;
+                document.getElementById("receiptGrandTotal").textContent = `₱${grandTotal.toFixed(2)}`;
+
+                // 5. Payment Tender Display
+                const method = tx.paymentMethod || "Cash In Hand";
+                const methodBadge = document.getElementById("receiptPaymentMethodBadge");
+
+                let iconClass = "fa-wallet";
+                if (method.includes("Cash")) iconClass = "fa-money-bill-wave";
+                else if (method.includes("Credit")) iconClass = "fa-credit-card";
+                else if (method.includes("GCash") || method.includes("E-Wallet")) iconClass = "fa-mobile-screen-button";
+                else if (method.includes("Store")) iconClass = "fa-coins";
+
+                methodBadge.innerHTML = `<i class="fa-solid ${iconClass} me-1"></i>${method}`;
+
+                // 6. Cash Tenders (Paid & Change)
+                if (method === "Cash In Hand" && tx.amountPaid !== undefined) {
+                    document.getElementById("cashDetailsSection").style.display = "block";
+                    document.getElementById("receiptAmountPaid").textContent = `₱${Number(tx.amountPaid).toFixed(2)}`;
+                    document.getElementById("receiptChange").textContent = `₱${Number(tx.change ?? 0).toFixed(2)}`;
+                }
+
+            } catch (err) {
+                console.error("Error loading receipt:", err);
             }
         });
 
         function escapeHtml(value) {
-            const element = document.createElement("div");
-            element.textContent = value ?? "";
-            return element.innerHTML;
+            const el = document.createElement("div");
+            el.textContent = value ?? "";
+            return el.innerHTML;
         }
 
-        // Clicking New Transaction redirects back to dashboard/checkout
         function startNewTransaction() {
             sessionStorage.removeItem("smartScanLastTransaction");
+            sessionStorage.removeItem("smartScanCart");
+            localStorage.removeItem("smartScanCustomerDisplay");
             window.location.href = "/Home/Checkout";
         }
+
+        // ================= ZOOM CONTROLS =================
+        let currentZoom = 1.0;
+
+        function changeZoom(step) {
+            currentZoom += step;
+
+            // Limit the zoom so they can't make it infinitely small or large
+            if (currentZoom < 0.5) currentZoom = 0.5;
+            if (currentZoom > 2.0) currentZoom = 2.0;
+
+            // Apply the zoom natively to the receipt container
+            document.getElementById("printableReceipt").style.zoom = currentZoom;
+
+            // Update the percentage text in the header
+            document.getElementById("zoomLevelDisplay").textContent = Math.round(currentZoom * 100) + "%";
+        }
+
+        // NEW: Ctrl + Scroll Wheel Zoom Listener
+        const receiptContainer = document.getElementById("printableReceipt");
+
+        // We must use { passive: false } to allow e.preventDefault() to block the browser's native zoom
+        receiptContainer.addEventListener('wheel', function (e) {
+            if (e.ctrlKey) {
+                e.preventDefault(); // Stop the entire browser tab from zooming
+
+                // e.deltaY < 0 means scrolling UP (Zoom In)
+                if (e.deltaY < 0) {
+                    changeZoom(0.05);
+                } else {
+                    changeZoom(-0.05);
+                }
+            }
+        }, { passive: false });
     </script>
 }

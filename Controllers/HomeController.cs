@@ -1,11 +1,12 @@
 using System.Diagnostics;
+using System.Security.Claims;
 using System.Text.Json;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartScan.Data;
 using SmartScan.Models;
-using System.Security.Claims;
 
 namespace SmartScan.Controllers
 {
@@ -24,11 +25,27 @@ namespace SmartScan.Controllers
         }
 
         [AllowAnonymous]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            if (User.Identity == null || !User.Identity.IsAuthenticated)
+            // If user is not logged in, just show the standard landing page
+            if (!User.Identity.IsAuthenticated)
             {
-                return Redirect("/Identity/Account/Login");
+                return View();
+            }
+
+            // Get the logged-in User's ID
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (User.IsInRole("Cashier"))
+            {
+                // Check if they are assigned to a store
+                bool isAssigned = await _context.RetailStaffs.AnyAsync(rs => rs.StaffId == currentUserId);
+
+                if (isAssigned)
+                {
+                    return RedirectToAction("Checkout", "Home");
+                }
+                return View();
             }
 
             if (User.IsInRole("Admin"))
@@ -36,37 +53,130 @@ namespace SmartScan.Controllers
                 return RedirectToAction("Index", "Users");
             }
 
-            if (User.IsInRole("Cashier"))
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Payment(string search)
+        {
+            ViewData["HeaderTitle"] = "Payment";
+
+            if (!string.IsNullOrEmpty(search))
             {
-                return RedirectToAction(nameof(Checkout));
+                ViewData["CustomerName"] = search;
             }
 
+            // Get logged in Cashier ID
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                // If the user is a cashier, verify their assignment
+                if (User.IsInRole("Cashier"))
+                {
+                    var staffAssignment = await _context.RetailStaffs
+                        .Include(rs => rs.Retail)
+                        .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+                    if (staffAssignment == null || staffAssignment.Retail == null)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                    ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
+                }
+            }
             return View();
         }
 
-        public IActionResult Checkout()
+        public async Task<IActionResult> CustomerDisplay()
         {
+            // Default fallback title
+            ViewData["HeaderTitle"] = "Customer View";
+
+            // Get logged in Cashier ID
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                // If the user is a cashier, verify their assignment
+                if (User.IsInRole("Cashier"))
+                {
+                    var staffAssignment = await _context.RetailStaffs
+                        .Include(rs => rs.Retail)
+                        .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+                    if (staffAssignment == null || staffAssignment.Retail == null)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                    ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
+                }
+            }
             return View();
         }
 
-        public IActionResult Payment()
+        public async Task<IActionResult> GenerateReceipt()
         {
+            ViewData["HeaderTitle"] = "Payment";
+
+            // Get logged in Cashier ID
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                // If the user is a cashier, verify their assignment
+                if (User.IsInRole("Cashier"))
+                {
+                    var staffAssignment = await _context.RetailStaffs
+                        .Include(rs => rs.Retail)
+                        .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+                    if (staffAssignment == null || staffAssignment.Retail == null)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                    ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
+                }
+            }
             return View();
         }
 
-        public IActionResult CustomerDisplay()
+        //GET: Display Checkout Page
+        public async Task<IActionResult> Checkout()
         {
-            return View();
-        }
+            // Default fallback title
+            ViewData["HeaderTitle"] = "Checkout";
 
-        public IActionResult GenerateReceipt()
-        {
+            // Get logged in Cashier ID
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                // If the user is a cashier, verify their assignment
+                if (User.IsInRole("Cashier"))
+                {
+                    var staffAssignment = await _context.RetailStaffs
+                        .Include(rs => rs.Retail)
+                        .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+                    if (staffAssignment == null || staffAssignment.Retail == null)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                    ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
+                }
+            }
             return View();
         }
 
         // ------------------------------------
         // Get product details for the scanner
         // ------------------------------------
+
 
         [HttpGet]
         public async Task<IActionResult> GetProductDetails(string productName)
@@ -112,15 +222,39 @@ namespace SmartScan.Controllers
 
         // -------------------- [CUSTOMER VERIFICATION] --------------------
 
+        // GET: Customer Verification Page
         [HttpGet]
-        public IActionResult CustomerVerification()
+        public async Task<IActionResult> CustomerVerification()
         {
+            // Default fallback title
+            ViewData["HeaderTitle"] = "Customer Verification";
+
+            // Get logged in Cashier ID
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                // If the user is a cashier, verify their assignment
+                if (User.IsInRole("Cashier"))
+                {
+                    var staffAssignment = await _context.RetailStaffs
+                        .Include(rs => rs.Retail)
+                        .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+                    if (staffAssignment == null || staffAssignment.Retail == null)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+
+                    ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
+                }
+            }
             return View();
         }
 
+        // POST: Authenticate Face
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Cashier")]
         public async Task<IActionResult> AuthenticateFace([FromBody] FaceAuthRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.CapturedEmbeddingJson))
@@ -148,6 +282,7 @@ namespace SmartScan.Controllers
                 {
                     c.CustomerId,
                     c.FullName,
+                    c.Age,
                     c.FaceEmbedding
                 })
                 .ToListAsync();
@@ -185,6 +320,7 @@ namespace SmartScan.Controllers
                         {
                             CustomerId = customer.CustomerId,
                             FullName = customer.FullName,
+                            Age = customer.Age,
                             Distance = distance,
                             SimilarityScore = similarity
                         };
@@ -202,12 +338,19 @@ namespace SmartScan.Controllers
             {
                 TempData["Success"] = $"Verified Customer: {bestMatch.FullName}";
 
+                // Check age directly
+                bool hasAge = bestMatch.Age.HasValue && bestMatch.Age.Value > 0;
+                bool isUnderage = hasAge && bestMatch.Age.Value < 18;
+
                 return Json(new
                 {
                     success = true,
                     customerId = bestMatch.CustomerId,
                     customerName = bestMatch.FullName,
                     confidence = $"{(bestMatch.SimilarityScore * 100):0.0}%",
+                    hasAge = hasAge,
+                    age = bestMatch.Age,
+                    isUnderage = isUnderage,
                     redirectUrl = Url.Action("Payment", "Home", new { search = bestMatch.FullName })
                 });
             }
@@ -216,6 +359,49 @@ namespace SmartScan.Controllers
             {
                 success = false,
                 message = "Face not recognized. This person is not enrolled in the customer registry."
+            });
+        }
+
+        // POST: /Home/NationalIDVerification
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult NationalIDVerification([FromBody] GovIdVerifyRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.RawPayload) || string.IsNullOrWhiteSpace(req.ManualDob))
+            {
+                return Json(new { isValid = false, message = "PCN and Date of Birth are required." });
+            }
+
+            string digitsOnly = new string(req.RawPayload.Where(char.IsDigit).ToArray());
+            if (digitsOnly.Length != 16)
+            {
+                return Json(new { isValid = false, message = "PCN must be exactly 16 digits long." });
+            }
+
+            if (!DateTime.TryParse(req.ManualDob, out DateTime dob))
+            {
+                return Json(new { isValid = false, message = "Invalid Date of Birth format." });
+            }
+
+            // Age calculation matching exact birthday passage
+            int age = DateTime.UtcNow.Year - dob.Year;
+            if (DateTime.UtcNow.Date < dob.Date.AddYears(age)) age--;
+
+            if (age < 5 || age > 120)
+            {
+                return Json(new { isValid = false, message = "Age calculation resulted in an invalid range. Please check the DOB." });
+            }
+
+            bool isUnderage = age < 18;
+            int statusId = isUnderage ? 3 : 1;
+
+            return Json(new
+            {
+                isValid = true,
+                idNumber = digitsOnly, // Returned solely for UI masking; never stored
+                age = age,
+                isUnderage = isUnderage,
+                assignedStatusId = statusId
             });
         }
 
@@ -463,19 +649,6 @@ namespace SmartScan.Controllers
             }
             return normA == 0.0 || normB == 0.0 ? 0.0 : sum / (Math.Sqrt(normA) * Math.Sqrt(normB));
         }
-
-        public class FaceAuthRequest
-        {
-            public string CapturedEmbeddingJson { get; set; } = string.Empty;
-        }
-
-        public class CustomerMatchResult
-        {
-            public int CustomerId { get; set; }
-            public string FullName { get; set; } = string.Empty;
-            public double Distance { get; set; }
-            public double SimilarityScore { get; set; }
-        }
     }
 
     // -------------------- [TRANSACTION DTOs] --------------------
@@ -491,5 +664,24 @@ namespace SmartScan.Controllers
         public string Name { get; set; } = string.Empty;
         public int Qty { get; set; }
         public decimal Price { get; set; }
+    }
+
+    public class GovIdVerifyRequest
+    {
+        public string? RawPayload { get; set; }
+        public string? ManualDob { get; set; }
+    }
+    public class FaceAuthRequest
+    {
+        public string CapturedEmbeddingJson { get; set; } = string.Empty;
+    }
+
+    public class CustomerMatchResult
+    {
+        public int CustomerId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public int? Age { get; set; }
+        public double Distance { get; set; }
+        public double SimilarityScore { get; set; }
     }
 }

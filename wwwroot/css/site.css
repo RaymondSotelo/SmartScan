@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    1. BASE & ROOT STYLES
    ========================================================================== */
 html {
@@ -154,11 +154,11 @@ html, body {
 
 /* Thermal Receipt Paper Styling */
 .receipt-paper {
-    background: #ffffff;
-    border-radius: 12px 12px 0 0;
+    background-color: #ffffff;
+    border-radius: 4px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    color: #212529;
     position: relative;
-    box-shadow: 0 10px 25px rgba(17, 98, 163, 0.12);
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
 }
 
     /* Jagged Sawtooth Receipt Bottom */
@@ -174,21 +174,23 @@ html, body {
     }
 
 .receipt-dashed-line {
-    border-top: 1.5px dashed #cbd5e1;
+    border-top: 1.5px dashed #b0b8c1;
     margin: 12px 0;
+    width: 100%;
 }
 
 .receipt-double-line {
-    border-top: 2px double #94a3b8;
+    border-top: 3px double #333;
     margin: 12px 0;
+    width: 100%;
 }
 
-/* Barcode Simulation Lines */
+/* Simulated Barcode Visual */
 .barcode-strip {
     height: 42px;
-    background: repeating-linear-gradient( 90deg, #1e293b, #1e293b 2px, transparent 2px, transparent 4px, #1e293b 4px, #1e293b 7px, transparent 7px, transparent 9px, #1e293b 9px, #1e293b 10px, transparent 10px, transparent 14px );
     width: 75%;
     margin: 0 auto;
+    background: repeating-linear-gradient(90deg, #212529, #212529 2px, transparent 2px, transparent 4px, #212529 4px, #212529 7px, transparent 7px, transparent 9px);
 }
 
 /* Invisible scrollbar while maintaining scroll functionality */
@@ -256,6 +258,48 @@ html, body {
     .form-switch .form-check-input.custom-toggle:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.25rem rgba(17, 98, 163, 0.25);
+    }
+
+/* Chrome, Safari, Edge, Opera */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+#cashAmountReceived::-webkit-outer-spin-button,
+#cashAmountReceived::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#cashAmountReceived {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.cash-focus-group {
+    border: 1.5px solid #ced4da !important;
+    min-height: 52px; /* Matches the computed height of .custom-input */
+    display: flex;
+    align-items: center;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+    .cash-focus-group:focus-within {
+        border-color: #1162a3 !important;
+        box-shadow: 0 0 0 0.25rem rgba(17, 98, 163, 0.25) !important;
+    }
+
+    .cash-focus-group .input-group-text,
+    .cash-focus-group input {
+        height: 100%;
     }
 
 /* ==========================================================================
@@ -332,6 +376,240 @@ html, body {
 .nav-pills .nav-link {
     color: #1162a3;
     font-weight: 500;
+}
+
+/* Modernized Payment Buttons */
+.pay-btn-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.pay-btn-modern {
+    position: relative;
+    height: 110px;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    background-color: white;
+    color: #495057;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+}
+
+    .pay-btn-modern:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+
+    .pay-btn-modern:active {
+        transform: translateY(1px);
+    }
+
+    .pay-btn-modern i {
+        font-size: 2rem;
+        transition: transform 0.2s;
+    }
+
+    .pay-btn-modern:hover i {
+        transform: scale(1.1);
+    }
+
+/* Specific Button Themes */
+.btn-cash {
+    border-color: #bae6fd;
+    color: #0369a1;
+}
+
+    .btn-cash i {
+        color: #0ea5e9;
+    }
+
+    .btn-cash:hover {
+        background-color: #0ea5e9;
+        border-color: #0ea5e9;
+        color: #ffffff;
+    }
+
+        .btn-cash:hover i {
+            color: #ffffff;
+        }
+
+.btn-credit {
+    border-color: #e9d5ff;
+    color: #6b21a8;
+}
+
+    .btn-credit i {
+        color: #a855f7;
+    }
+
+    .btn-credit:hover {
+        background-color: #a855f7;
+        border-color: #a855f7;
+        color: #ffffff;
+    }
+
+        .btn-credit:hover i {
+            color: #ffffff;
+        }
+
+.btn-ewallet {
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+    .btn-ewallet i {
+        color: #22c55e;
+    }
+
+    .btn-ewallet:hover {
+        background-color: #22c55e;
+        border-color: #22c55e;
+        color: #ffffff;
+    }
+
+        .btn-ewallet:hover i {
+            color: #ffffff;
+        }
+
+.btn-store {
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+    .btn-store i {
+        color: #f59e0b;
+    }
+
+    .btn-store:hover {
+        background-color: #f59e0b;
+        border-color: #f59e0b;
+        color: #ffffff;
+    }
+
+        .btn-store:hover i {
+            color: #ffffff;
+        }
+
+
+/* Modal Custom Styling */
+.modal-content {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.modal-custom-close {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #dee2e6;
+    z-index: 10;
+    font-size: 20px;
+    transition: all 0.2s;
+}
+
+    .modal-custom-close:hover {
+        background-color: #e9ecef;
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+.modal-title-custom {
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: #1162a3;
+}
+
+.modal-subtitle {
+    color: #6c757d;
+    font-size: 0.95rem;
+    margin-bottom: 25px;
+    line-height: 1.4;
+}
+
+.custom-input-label {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.custom-input {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 12px 15px;
+    font-weight: 600;
+    transition: border-color 0.2s;
+}
+
+    .custom-input:focus {
+        border-color: #1162a3;
+        box-shadow: 0 0 0 0.25rem rgba(17, 98, 163, 0.1);
+    }
+
+    .custom-input[readonly] {
+        background-color: #f8fafc;
+        color: #475569;
+        border-color: #e2e8f0;
+    }
+
+.btn-proceed {
+    background-color: #1162a3;
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    transition: background-color 0.2s;
+}
+
+    .btn-proceed:hover {
+        background-color: #0d4d82;
+        color: white;
+    }
+
+.ewallet-option-btn {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-weight: 700;
+    color: #495057;
+    background-color: white;
+    transition: all 0.2s;
+}
+
+    .ewallet-option-btn:hover {
+        border-color: #007bff;
+        background-color: #f8fbff;
+        transform: translateY(-2px);
+    }
+
+/* GCash QR Modal Styling */
+.gcash-modal-content {
+    background-color: #007bff;
+    color: white;
+    border-radius: 20px;
+    padding: 30px;
 }
 
 /* ==========================================================================
@@ -459,7 +737,7 @@ html, body {
     animation: pulse-ring 1.8s infinite;
 }
 
-@@keyframes pulse-ring {
+@keyframes pulse-ring {
     0% {
         box-shadow: 0 0 0 0 rgba(17, 98, 163, 0.45);
     }
@@ -470,5 +748,27 @@ html, body {
 
     100% {
         box-shadow: 0 0 0 0 rgba(17, 98, 163, 0);
+    }
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #printableReceipt, #printableReceipt * {
+        visibility: visible;
+    }
+
+    #printableReceipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        zoom: 1 !important; /* <--- ADD THIS to reset zoom before printing */
     }
 }
