@@ -33,6 +33,10 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 
 builder.Services.AddSignalR();
 
+// === ADDED YOLO SCANNER SERVICE ===
+builder.Services.AddSingleton<SmartScan.Services.YoloScannerService>();
+// ==================================
+
 var app = builder.Build();
 
 
@@ -97,7 +101,8 @@ if (app.Environment.IsDevelopment())
                             pythonProcess.Dispose();
                         }
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         Console.WriteLine($"[SmartScan] Error terminating Python process: {ex.Message}");
                     }
                 });

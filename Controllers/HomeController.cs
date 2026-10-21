@@ -63,6 +63,7 @@ namespace SmartScan.Controllers
         {
             return View();
         }
+
         // ------------------------------------
         // Get product details for the scanner
         // ------------------------------------
@@ -70,8 +71,16 @@ namespace SmartScan.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProductDetails(string productName)
         {
+            if (string.IsNullOrWhiteSpace(productName))
+            {
+                return NotFound();
+            }
+
+            string normalizedName = productName.Trim().ToLower().Replace(" ", "_");
+            string rawNameLower = productName.Trim().ToLower();
+
             var product = await _context.Products
-                .FirstOrDefaultAsync(p => p.ProductName == productName);
+                .FirstOrDefaultAsync(p => p.ProductName.ToLower() == normalizedName || p.ProductName.ToLower() == rawNameLower);
 
             if (product == null)
             {
@@ -133,7 +142,6 @@ namespace SmartScan.Controllers
                 return Json(new { success = false, message = "Malformed biometric data." });
             }
 
-            // Use AsNoTracking() so EF Core doesn't maintain tracking graphs for the embeddings
             var registeredCustomers = await _context.Customers
                 .AsNoTracking()
                 .Where(c => c.FaceEmbedding != null && c.FaceEmbedding != "").Select(c => new
@@ -156,7 +164,6 @@ namespace SmartScan.Controllers
             const double MAX_EUCLIDEAN_DISTANCE = 0.55;
             const double MIN_COSINE_SIMILARITY = 0.85;
 
-            // Fast-fail loop
             foreach (var customer in registeredCustomers)
             {
                 try
@@ -166,7 +173,6 @@ namespace SmartScan.Controllers
 
                     double distance = ComputeEuclideanDistance(capturedVector, storedVector);
 
-                    // Skip computing cosine similarity if Euclidean distance already fails
                     if (distance > MAX_EUCLIDEAN_DISTANCE) continue;
 
                     double similarity = ComputeCosineSimilarity(capturedVector, storedVector);
@@ -243,11 +249,16 @@ namespace SmartScan.Controllers
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // --- 1. PRE-CHECK STOCK BEFORE SAVING ANYTHING ---
+                // --- 1. PRE-CHECK STOCK ---
                 foreach (var item in request.Items)
                 {
-                    var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductName == item.Name);
-                    if (product == null) return Json(new { success = false, message = $"Product '{item.Name}' not found." });
+                    string normalizedItemName = item.Name.Trim().ToLower().Replace(" ", "_");
+                    string rawItemLower = item.Name.Trim().ToLower();
+
+                    var product = await _context.Products.FirstOrDefaultAsync(p =>
+                        p.ProductName.ToLower() == normalizedItemName || p.ProductName.ToLower() == rawItemLower);
+
+                    if (product == null) return Json(new { success = false, message = $"Product '{item.Name}' not found in database." });
 
                     var inventory = await _context.Inventories
                         .FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
@@ -265,25 +276,58 @@ namespace SmartScan.Controllers
                     }
                 }
 
-                // --- 2. IF STOCK IS GOOD, CREATE TRANSACTION ---
-                string receiptNum = "REC" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                // --- 2. CREATE TRANSACTION ---
+                string receiptNum = "TX" + DateTime.Now.ToString("HHmmssff");
 
-                // Map to the exact IDs in your SQL Database
                 int paymentId = 1; // Default to Cash
+                DateOnly? transactionDueDate = null; // ?? FIX: Using DateOnly to match your Model
+
                 if (request.PaymentMethod == "Cash In Hand") paymentId = 1;
                 else if (request.PaymentMethod == "GCash API") paymentId = 2;
                 else if (request.PaymentMethod == "Credit Card") paymentId = 3;
-                else if (request.PaymentMethod == "Store Credits") paymentId = 4;
+                else if (request.PaymentMethod == "Store Credits")
+                {
+                    paymentId = 4;
+
+                    var customer = await _context.Customers.FindAsync(2); // Hardcoded to Jhandy for now
+                    if (customer == null) return Json(new { success = false, message = "Customer not found." });
+
+                    if (string.IsNullOrWhiteSpace(customer.ContactNumber))
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = $"Cannot process Store Credit. {customer.FullName} does not have a registered contact number for SMS billing reminders."
+                        });
+                    }
+
+                    if (customer.CurrentDebt + request.Total > customer.CreditLimit)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = $"Store credit limit exceeded. {customer.FullName} already has PHP {customer.CurrentDebt:0.00} in debt. Adding PHP {request.Total:0.00} exceeds their PHP {customer.CreditLimit:0.00} limit."
+                        });
+                    }
+
+                    customer.CurrentDebt += request.Total;
+                    _context.Customers.Update(customer);
+
+                    // ?? FIX: Convert 3 days from now into a DateOnly
+                    transactionDueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(3));
+                }
+
                 var newTx = new Transaction
                 {
                     RetailStaffId = currentRetailStaffId,
-                    CustomerId = 2, // Note: If Customer 2 doesn't exist, this will throw an inner exception
+                    CustomerId = 2,
                     RetailId = currentRetailId,
                     TotalAmount = request.Total,
                     PaymentMethodId = paymentId,
                     StatusId = 1,
                     CreatedAt = DateTime.Now,
-                    ReceiptNumber = receiptNum
+                    ReceiptNumber = receiptNum,
+                    DueDate = transactionDueDate
                 };
 
                 _context.Transactions.Add(newTx);
@@ -292,7 +336,11 @@ namespace SmartScan.Controllers
                 // --- 3. DEDUCT STOCK AND ADD ITEMS ---
                 foreach (var item in request.Items)
                 {
-                    var product = await _context.Products.FirstAsync(p => p.ProductName == item.Name);
+                    string normalizedItemName = item.Name.Trim().ToLower().Replace(" ", "_");
+                    string rawItemLower = item.Name.Trim().ToLower();
+
+                    var product = await _context.Products.FirstAsync(p =>
+                        p.ProductName.ToLower() == normalizedItemName || p.ProductName.ToLower() == rawItemLower);
 
                     var txItem = new TransactionItem
                     {
@@ -318,8 +366,6 @@ namespace SmartScan.Controllers
             catch (Exception ex)
             {
                 await dbTransaction.RollbackAsync();
-
-                // This grabs the exact SQL error so we know what is missing!
                 string errorMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
                 return Json(new { success = false, message = errorMessage });
             }
@@ -336,7 +382,7 @@ namespace SmartScan.Controllers
             var transactions = await _context.Transactions
                 .Where(t => t.RetailId == retailStaff.RetailId)
                 .OrderByDescending(t => t.CreatedAt)
-                .Take(5) // Shows the 5 most recent receipts
+                .Take(5)
                 .Select(t => new {
                     receiptNumber = t.ReceiptNumber,
                     date = t.CreatedAt.ToString("MM/dd/yyyy hh:mm tt"),
@@ -345,6 +391,50 @@ namespace SmartScan.Controllers
                 .ToListAsync();
 
             return Json(new { success = true, transactions });
+        }
+
+        // -------------------- [STORE CREDIT PENALTIES] --------------------
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,Cashier")]
+        public async Task<IActionResult> ApplyLateFees()
+        {
+            // ?? FIX: Convert today's exact time to DateOnly for the comparison
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            var overdueTransactions = await _context.Transactions
+                .Where(t => t.PaymentMethodId == 4 && t.StatusId == 1 && t.DueDate < today)
+                .ToListAsync();
+
+            int updatedCount = 0;
+
+            foreach (var tx in overdueTransactions)
+            {
+                var customer = await _context.Customers.FindAsync(tx.CustomerId);
+
+                if (customer != null)
+                {
+                    decimal penaltyAmount = tx.TotalAmount * 0.05m;
+
+                    customer.CurrentDebt += penaltyAmount;
+                    tx.TotalAmount += penaltyAmount;
+
+                    // Extend the due date by another 3 days
+                    tx.DueDate = tx.DueDate.Value.AddDays(3);
+
+                    _context.Customers.Update(customer);
+                    _context.Transactions.Update(tx);
+                    updatedCount++;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = $"Successfully applied 5% late fees to {updatedCount} overdue transactions."
+            });
         }
 
         // -------------------- [BIOMETRICS HELPERS] --------------------

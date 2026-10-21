@@ -28,7 +28,7 @@
                     <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none;"></canvas>
                 </div>
 
-                <!-- Hidden canvas for sending frames to Python -->
+                <!-- Hidden canvas for capturing frames -->
                 <canvas id="captureCanvas" style="display: none;"></canvas>
 
                 <div id="cameraPlaceholder" class="text-center p-4">
@@ -148,7 +148,7 @@
                                 <button class="btn btn-warning btn-sm fw-bold text-dark py-1 px-2" style="font-size: 0.65rem;" onclick="openOldTransactions()">OLD<br>TRANSACTION</button>
                                 <button class="btn btn-danger btn-sm fw-bold py-1 px-2" id="btnVoidCart" style="font-size: 0.65rem;">VOID CART</button>
                             </div>
-                            <!-- Big Blue Button (ID ADDED HERE) -->
+                            <!-- Big Blue Button -->
                             <button class="btn btn-primary d-flex flex-column align-items-center justify-content-center fw-bold px-2" id="btnProceedToPayment" style="font-size: 0.75rem; background-color: #1b6ec2;">
                                 <i class="fa-solid fa-credit-card mb-1 fs-5"></i>
                                 PROCEED TO<br>PAYMENT
@@ -256,48 +256,29 @@
             const priceCache = {};
             let manualItems = [];
 
-            //  SEARCH HISTORY
-
-            const productSearchInput =
-                document.getElementById("manualProductInput");
-
-            const productSearchResults =
-                document.getElementById("productSearchResults");
-
-            let recentSearches =
-                JSON.parse(
-                    localStorage.getItem("smartScanRecentSearches") || "[]"
-                );
-
+            // SEARCH HISTORY
+            const productSearchInput = document.getElementById("manualProductInput");
+            const productSearchResults = document.getElementById("productSearchResults");
+            let recentSearches = JSON.parse(localStorage.getItem("smartScanRecentSearches") || "[]");
 
             // Show latest 3 searches
             function showRecentSearches() {
-
                 productSearchResults.innerHTML = "";
-
                 if (recentSearches.length === 0) {
                     productSearchResults.style.display = "none";
                     return;
                 }
 
-                productSearchResults.innerHTML =
-                    "<div class='px-3 py-2 fw-bold text-muted small'>Recent Searches</div>";
+                productSearchResults.innerHTML = "<div class='px-3 py-2 fw-bold text-muted small'>Recent Searches</div>";
 
                 recentSearches.slice(0, 3).forEach(search => {
-
                     const item = document.createElement("div");
-
                     item.className = "px-3 py-2";
-
                     item.style.cursor = "pointer";
-
-                    item.innerHTML =
-                        `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
+                    item.innerHTML = `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
 
                     item.addEventListener("click", () => {
-
                         productSearchInput.value = search;
-
                         productSearchResults.style.display = "none";
                     });
 
@@ -307,86 +288,44 @@
                 productSearchResults.style.display = "block";
             }
 
-
             // Save search
             function saveRecentSearch(search) {
-
                 search = search.trim();
-
                 if (!search) return;
 
                 // Remove duplicate
-                recentSearches =
-                    recentSearches.filter(
-                        item =>
-                            item.toLowerCase() !==
-                            search.toLowerCase()
-                    );
+                recentSearches = recentSearches.filter(item => item.toLowerCase() !== search.toLowerCase());
 
                 // Put newest search at the top
                 recentSearches.unshift(search);
 
                 // Keep only 3
-                recentSearches =
-                    recentSearches.slice(0, 3);
-
-                localStorage.setItem(
-                    "smartScanRecentSearches",
-                    JSON.stringify(recentSearches)
-                );
+                recentSearches = recentSearches.slice(0, 3);
+                localStorage.setItem("smartScanRecentSearches", JSON.stringify(recentSearches));
             }
 
-
             // Click search box
-            productSearchInput.addEventListener(
-                "focus",
-                () => {
-
-                    if (
-                        productSearchInput.value.trim() === ""
-                    ) {
-
-                        showRecentSearches();
-                    }
+            productSearchInput.addEventListener("focus", () => {
+                if (productSearchInput.value.trim() === "") {
+                    showRecentSearches();
                 }
-            );
-
+            });
 
             // Start typing = hide history
-            productSearchInput.addEventListener(
-                "input",
-                () => {
-
-                    if (
-                        productSearchInput.value.trim() !== ""
-                    ) {
-
-                        productSearchResults.style.display =
-                            "none";
-
-                    } else {
-
-                        showRecentSearches();
-                    }
+            productSearchInput.addEventListener("input", () => {
+                if (productSearchInput.value.trim() !== "") {
+                    productSearchResults.style.display = "none";
+                } else {
+                    showRecentSearches();
                 }
-            );
-
+            });
 
             // Click outside = hide history
-            document.addEventListener(
-                "click",
-                event => {
-
-                    if (
-                        !productSearchInput.contains(event.target) &&
-                        !productSearchResults.contains(event.target)
-                    ) {
-
-                        productSearchResults.style.display =
-                            "none";
-                    }
+            document.addEventListener("click", event => {
+                if (!productSearchInput.contains(event.target) && !productSearchResults.contains(event.target)) {
+                    productSearchResults.style.display = "none";
                 }
-            );
+            });
 
             // 1. POPULATE CONNECTED WEBCAMS
             async function loadCameras() {
@@ -503,7 +442,7 @@
                 buildCartAndRender({}, false);
             });
 
-            // 6. DETECTION LOOP (Adjusted to 100ms for stable performance)
+            // 6. DETECTION LOOP
             async function startDetectionLoop() {
                 while (isScanningActive) {
                     if (!isProcessingFrame && video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -519,8 +458,7 @@
             async function captureAndDetect() {
                 captureCanvas.width = video.videoWidth;
                 captureCanvas.height = video.videoHeight;
-                // Resizing a canvas clears it, so only update its backing size when
-                // the camera's actual resolution changes.
+
                 if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
                     overlay.width = video.videoWidth;
                     overlay.height = video.videoHeight;
@@ -537,7 +475,7 @@
                 const frameBase64 = captureCanvas.toDataURL("image/jpeg", 0.5);
 
                 try {
-                    const response = await fetch("http://localhost:5000/detect_frame", {
+                    const response = await fetch("/api/Scan/detect", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -552,8 +490,6 @@
                     const now = Date.now();
                     const currentDetections = detections.filter(d => d.box);
 
-                    // Keep a detection briefly through a single missed inference,
-                    // while redrawing from a clean canvas to avoid label trails.
                     for (const detected of currentDetections) {
                         const [x1, y1, x2, y2] = detected.box;
                         let previous = recentDetections.find(item =>
@@ -604,71 +540,80 @@
                     let hasLowConfidence = false;
 
                     for (const detected of detections) {
-
                         if (detected.confidence < 80) {
                             hasLowConfidence = true;
                         } else {
-                            yoloCounts[detected.name] =
-                                (yoloCounts[detected.name] || 0) + 1;
+                            yoloCounts[detected.name] = (yoloCounts[detected.name] || 0) + 1;
                         }
                     }
 
-                    await buildCartAndRender(
-                        yoloCounts,
-                        hasLowConfidence
-                    );
+                    await buildCartAndRender(yoloCounts, hasLowConfidence);
 
                 } catch (error) {
-
-                    console.error(
-                        "Cannot connect to Python Server:",
-                        error
-                    );
-
-                    list.innerHTML =
-                        "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
+                    console.error("Cannot connect to C# Server:", error);
+                    list.innerHTML = "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
                 }
             }
 
-            // Helper to fetch DB data safely and render the final table
+            // ==========================================
+            // 🔴 FIX: Intelligent Quantity Sync
+            // ==========================================
             window.buildCartAndRender = async function(yoloCounts, hasLowConfidence) {
                 let htmlOutput = "";
                 let currentTotal = 0;
 
                 // 1. Process YOLO Auto Items
                 for (const [itemName, qty] of Object.entries(yoloCounts)) {
-                    const formattedItemName = itemName.toLowerCase().replaceAll(" ", "_");
 
-                    if (!priceCache[formattedItemName]) {
+                    if (!priceCache[itemName]) {
                         try {
-                            const dbResponse = await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
+                            const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(itemName)}`);
                             if (dbResponse.ok) {
-                                priceCache[formattedItemName] = await dbResponse.json();
+                                const productData = await dbResponse.json();
+
+                                if (productData.success === false || productData.price === undefined) {
+                                    priceCache[itemName] = { name: itemName, notFound: true };
+                                } else {
+                                    priceCache[itemName] = productData;
+                                }
                             } else {
-                                priceCache[formattedItemName] = { name: itemName, notFound: true };
+                                priceCache[itemName] = { name: itemName, notFound: true };
                             }
                         } catch (err) {
-                            priceCache[formattedItemName] = { name: itemName, notFound: true };
+                            priceCache[itemName] = { name: itemName, notFound: true };
                         }
                     }
 
-                    const product = priceCache[formattedItemName];
+                    const product = priceCache[itemName];
                     if (!product.notFound) {
-                        const subtotal = product.price * qty;
-                        currentTotal += subtotal;
 
-                        htmlOutput += `
-                            <tr>
-                                <td>${product.name} <span class="badge bg-success ms-1">Auto</span></td>
-                                <td>${qty}</td>
-                                <td>PHP ${product.price.toFixed(2)}</td>
-                                <td class="text-success fw-bold">PHP ${subtotal.toFixed(2)}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="lockYoloItem('${formattedItemName}', '${product.name}', ${product.price}, ${qty})" title="Lock Item in Cart">
-                                        <i class="fa-solid fa-check"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                        // Calculate how many of this item are already in the "Saved" cart
+                        const savedItem = manualItems.find(i => i.name === product.name);
+                        const savedQty = savedItem ? savedItem.qty : 0;
+
+                        // Only prompt the Auto row for the NEW items on the tray
+                        const newQtyToLock = qty - savedQty;
+
+                        if (newQtyToLock > 0) {
+                            const subtotal = product.price * newQtyToLock;
+                            currentTotal += subtotal;
+
+                            const safeName = itemName.replace(/'/g, "\\'");
+                            const safeDbName = product.name.replace(/'/g, "\\'");
+
+                            htmlOutput += `
+                                <tr>
+                                    <td>${product.name} <span class="badge bg-success ms-1">Auto</span></td>
+                                    <td>${newQtyToLock}</td>
+                                    <td>PHP ${product.price.toFixed(2)}</td>
+                                    <td class="text-success fw-bold">PHP ${subtotal.toFixed(2)}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock})" title="Lock Item in Cart">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
+                                    </td>
+                                </tr>`;
+                        }
                     } else {
                         htmlOutput += `
                             <tr>
@@ -717,24 +662,19 @@
                 list.innerHTML = htmlOutput;
                 totalDueDisplay.innerText = `PHP ${currentTotal.toFixed(2)}`;
 
-                // =========================================================
-                // NEW: BROADCAST TO CUSTOMER DISPLAY (ONLY SAVED/CART ITEMS)
-                // =========================================================
+                // Broadcast to Customer Display
                 const broadcastItems = [];
-                let customerTotal = 0; // Calculate a separate total for the customer
+                let customerTotal = 0;
 
-                // Grab ONLY locked/manual items (officially in the cart)
                 manualItems.forEach(item => {
                     broadcastItems.push({ name: item.name, qty: item.qty, price: item.price });
                     customerTotal += (item.price * item.qty);
                 });
 
-                // Push to localStorage so the display page instantly updates
                 localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({
                     items: broadcastItems,
                     total: customerTotal
                 }));
-                // =========================================================
             }
 
             // 8. MANUAL ADD BUTTON LOGIC
@@ -745,30 +685,24 @@
 
                 if (!name) return;
 
-                const formattedItemName =
-                    name.toLowerCase().replaceAll(" ", "_");
-
                 try {
-
-                    const dbResponse =
-                        await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
+                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(name)}`);
 
                     if (dbResponse.ok) {
-
                         const product = await dbResponse.json();
 
-                        // Save product to recent searches
+                        if (product.success === false || product.price === undefined) {
+                            alert("Product not found in database.");
+                            return;
+                        }
+
                         saveRecentSearch(product.name);
 
-                        const existing =
-                            manualItems.find(i => i.name === product.name);
+                        const existing = manualItems.find(i => i.name === product.name);
 
                         if (existing) {
-
                             existing.qty++;
-
                         } else {
-
                             manualItems.push({
                                 name: product.name,
                                 price: product.price,
@@ -776,10 +710,7 @@
                             });
                         }
 
-                        // Clear search box
                         input.value = "";
-
-                        // Hide search history/results
                         productSearchResults.style.display = "none";
 
                         if (!isScanningActive) {
@@ -787,12 +718,10 @@
                         }
 
                     } else {
-
                         alert("Product not found in database.");
                     }
 
                 } catch (err) {
-
                     alert("Database connection error.");
                 }
             });
@@ -807,7 +736,7 @@
                 }
             });
 
-            // --- NEW GLOBAL FUNCTIONS ---
+            // --- GLOBAL FUNCTIONS ---
 
             // Displays Old Transactions Modal
             window.openOldTransactions = async function() {
@@ -857,16 +786,14 @@
             window.editManualItem = function (index) {
                 const item = manualItems[index];
 
-                // Fill the modal with the selected item's data
                 document.getElementById("editItemIndex").value = index;
                 document.getElementById("editProductName").value = item.name;
                 document.getElementById("editProductPrice").value = `PHP ${item.price.toFixed(2)}`;
 
                 const qtyInput = document.getElementById("editProductQuantity");
                 qtyInput.value = item.qty;
-                qtyInput.classList.remove("is-invalid"); // Clear old errors
+                qtyInput.classList.remove("is-invalid");
 
-                // Open the Bootstrap modal
                 const adjustModal = new bootstrap.Modal(document.getElementById("adjustQuantityModal"));
                 adjustModal.show();
             };
@@ -877,13 +804,11 @@
                 const qtyInput = document.getElementById("editProductQuantity");
                 const newQty = parseInt(qtyInput.value);
 
-                // Validation Rule 1.1: Error if invalid or missing
                 if (isNaN(newQty) || newQty <= 0) {
                     qtyInput.classList.add("is-invalid");
                     return;
                 }
 
-                // Update the quantity and close modal
                 qtyInput.classList.remove("is-invalid");
                 manualItems[index].qty = newQty;
 
@@ -891,7 +816,6 @@
                 const adjustModal = bootstrap.Modal.getInstance(adjustModalEl);
                 adjustModal.hide();
 
-                // Refresh the receipt
                 if (!isScanningActive) buildCartAndRender({}, false);
             });
 
@@ -908,14 +832,10 @@
                     return;
                 }
 
-                // Save the locked items to browser storage
                 sessionStorage.setItem("smartScanCart", JSON.stringify(manualItems));
-
-                // Redirect to the Payment page
                 window.location.href = "/Home/CustomerVerification";
             });
 
-            // Force initial render to sync empty cart state with customer display on load
             buildCartAndRender({}, false);
         });
     </script>
