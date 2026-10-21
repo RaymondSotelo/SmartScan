@@ -1,266 +1,163 @@
 ﻿@{
-    ViewData["Title"] = "Payment Page";
+    ViewData["Title"] = "Payment";
+    if (ViewData["HeaderTitle"] == null)
+    {
+        ViewData["HeaderTitle"] = "Checkout";
+    }
 }
 
-@section Styles {
-    <style>
-        body {
-            background: #95CCDD;
-            min-height: 100vh;
-        }
+<!-- Viewport-Locked Outer Container -->
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white mx-auto"
+     style="height: calc(100dvh - 130px); min-height: 540px; max-width: 1200px;">
 
-        .pay-btn {
-            height: 80px;
-            font-weight: bold;
-            color: white;
-            border-radius: 10px;
-            border: none;
-            font-size: 1rem;
-        }
-
-            .pay-btn:active {
-                transform: scale(0.97);
+    <!-- Top Navigation Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+         style="background-color: #1162a3;">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="mb-0 fw-bold">
+                <i class="fa-solid fa-money-check-dollar me-2"></i>Payment Processing
+            </h5>
+            @if (ViewData["CustomerName"] != null)
+            {
+                <span class="badge bg-light text-primary border rounded-pill px-3 ms-2">
+                    <i class="fa-solid fa-user me-1"></i> @ViewData["CustomerName"]
+                </span>
             }
+        </div>
 
-        .btn-cash {
-            background: #3498db;
-        }
+        <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+                style="background-color: #dbeafe; border-color: #cfe2f3 !important;"
+                onclick="cancelAndReturn()">
+            <i class="fa-solid fa-arrow-left me-1"></i>Cancel & Return
+        </button>
+    </div>
 
-        .btn-credit {
-            background: #9b59b6;
-        }
+    <!-- Interior Workspace Split -->
+    <div class="card-body p-3 px-lg-4 pb-lg-4 pt-3 flex-grow-1 d-flex flex-column bg-light bg-opacity-50 overflow-hidden" style="min-height: 0;">
+        <div class="row gx-4 gy-3 flex-grow-1 h-100">
 
-        .btn-ewallet {
-            background: #2ecc71;
-        }
+            <!-- ================= LEFT COLUMN | Transaction Summary ================= -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-2 pb-3">
+                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden flex-grow-1 d-flex flex-column h-100">
 
-        .btn-store {
-            background: #f1c40f;
-            color: #333;
-        }
+                    <!-- Header -->
+                    <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center flex-shrink-0">
+                        <h4 class="fw-bold mb-0" style="color: #1162a3;">
+                            <i class="fa-solid fa-receipt me-2"></i>Order Summary
+                        </h4>
+                    </div>
 
-        /* Modal Custom Styling */
-        .modal-content {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .modal-custom-close {
-            background-color: #dc3545;
-            color: white;
-            opacity: 1;
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            z-index: 10;
-            font-size: 20px;
-            font-weight: bold;
-            padding-bottom: 4px;
-        }
-
-            .modal-custom-close:hover {
-                background-color: #c82333;
-            }
-
-        .modal-title-custom {
-            font-weight: 800;
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-            color: #000;
-        }
-
-        .modal-subtitle {
-            color: #6c757d;
-            font-size: 0.95rem;
-            margin-bottom: 25px;
-            line-height: 1.3;
-        }
-
-        .custom-input-label {
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin-bottom: 4px;
-            color: #000;
-        }
-
-        .custom-input {
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            padding: 10px 15px;
-            font-weight: 700;
-        }
-
-            .custom-input[readonly] {
-                background-color: #e9ecef;
-                color: #495057;
-                border: none;
-            }
-
-        .btn-proceed {
-            background-color: #26b4e6;
-            border: none;
-            color: white;
-            font-weight: bold;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 1.1rem;
-        }
-
-            .btn-proceed:hover {
-                background-color: #1ea0cf;
-                color: white;
-            }
-
-        .ewallet-option-btn {
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            padding: 12px 20px;
-            font-weight: 700;
-            color: #000;
-            background-color: white;
-            transition: all 0.2s;
-        }
-
-            .ewallet-option-btn:hover {
-                background-color: #f8f9fa;
-                border-color: #adb5bd;
-            }
-
-        /* GCash QR Modal Styling */
-        .gcash-modal-content {
-            background-color: #007bff;
-            color: white;
-            border-radius: 12px;
-            padding: 25px;
-        }
-
-        .gcash-close {
-            background-color: white;
-            color: #007bff;
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            font-size: 20px;
-            font-weight: bold;
-            padding-bottom: 4px;
-        }
-    </style>
-}
-
-<div class="container mt-5">
-    <div class="row g-4 justify-content-center">
-
-        <!-- Transaction Summary -->
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header text-white fw-bold p-3"
-                     style="background:#1b6ec2;">
-                    <i class="fa-solid fa-receipt me-2"></i>
-                    Transaction Summary
-                </div>
-
-                <div class="card-body d-flex flex-column">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-sm align-middle">
-                            <thead>
+                    <!-- Table Container -->
+                    <div class="card-body p-0 flex-grow-1 overflow-y-auto no-scrollbar">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top shadow-sm">
                                 <tr>
-                                    <th>Product Name</th>
-                                    <th>Qty</th>
-                                    <th>Unit Price</th>
-                                    <th>Subtotal</th>
+                                    <th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 12px;">Product</th>
+                                    <th class="py-3 text-center text-secondary text-uppercase fw-bold" style="font-size: 12px; width: 80px;">Qty</th>
+                                    <th class="py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 12px; width: 120px;">Price</th>
+                                    <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 12px; width: 140px;">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody id="summaryList">
                                 <tr>
-                                    <td colspan="4" class="text-center">Loading items...</td>
+                                    <td colspan="4" class="text-center text-muted py-5">Loading items...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="mt-auto pt-3 border-top d-flex justify-content-between">
-                        <strong class="fs-5">Grand Total Due:</strong>
-                        <strong id="grandTotalDisplay" class="fs-5">PHP 0.00</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Payment Method -->
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header text-white fw-bold p-3"
-                     style="background:#1b6ec2;">
-                    <i class="fa-solid fa-money-bill-wave me-2"></i>
-                    Payment Method
-                </div>
-
-                <div class="card-body d-flex flex-column">
-                    <h6 class="fw-bold mb-4">Select Payment Method</h6>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-6">
-                            <button class="w-100 pay-btn btn-cash shadow-sm" onclick="openModal('cashModal')">CASH IN HAND</button>
-                        </div>
-                        <div class="col-6">
-                            <button class="w-100 pay-btn btn-credit shadow-sm" onclick="openModal('creditModal')">CREDIT CARD</button>
-                        </div>
-                        <div class="col-6">
-                            <button class="w-100 pay-btn btn-ewallet shadow-sm" onclick="openModal('ewalletModal')">E-WALLET</button>
-                        </div>
-                        <div class="col-6">
-                            <button class="w-100 pay-btn btn-store shadow-sm" onclick="openModal('storeCreditModal')">STORE CREDITS</button>
+                    <!-- Grand Total Footer -->
+                    <div class="card-footer bg-white border-top p-4 flex-shrink-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 13px; letter-spacing: 1px;">Amount Due</span>
+                            </div>
+                            <div class="text-end">
+                                <span id="grandTotalDisplay" class="fw-bold font-monospace" style="font-size: 2.0rem; color: #1162a3; line-height: 1;">
+                                    ₱0.00
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    <button class="btn btn-danger w-100 py-3 fw-bold mt-auto shadow-sm"
-                            style="border-radius: 10px;"
-                            onclick="cancelAndReturn()">
-                        CANCEL & RETURN
-                    </button>
                 </div>
             </div>
-        </div>
 
+            <!-- ================= RIGHT COLUMN | Payment Methods ================= -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-3">
+                <div class="card border-0 shadow-sm rounded-4 bg-white flex-grow-1 d-flex flex-column p-4 h-100">
+
+                    <h5 class="fw-bold text-dark mb-4 text-center">How would you like to pay?</h5>
+
+                    <div class="pay-btn-grid mb-auto">
+                        <!-- Cash -->
+                        <button class="pay-btn-modern btn-cash" onclick="openModal('cashModal')">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span>Cash in Hand</span>
+                        </button>
+
+                        <!-- Credit Card -->
+                        <button class="pay-btn-modern btn-credit" onclick="openModal('creditModal')">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>Credit Card</span>
+                        </button>
+
+                        <!-- E-Wallet -->
+                        <button class="pay-btn-modern btn-ewallet" onclick="openModal('ewalletModal')">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                            <span>E-Wallet</span>
+                        </button>
+
+                        <!-- Store Credits -->
+                        <button class="pay-btn-modern btn-store" onclick="openModal('storeCreditModal')">
+                            <i class="fa-solid fa-coins"></i>
+                            <span>Store Credits</span>
+                        </button>
+                    </div>
+
+                    <div class="alert alert-light border small text-muted mt-4 mb-0 py-3 text-center rounded-3">
+                        <i class="fa-solid fa-shield-check text-success me-1"></i> All transactions are secure and encrypted.
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
 <!-- ================= MODALS ================= -->
 <!-- Cash In Hand Modal -->
 <div class="modal fade" id="cashModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-        <div class="modal-content position-relative p-4">
-            <button type="button" data-bs-dismiss="modal" class="modal-custom-close">&times;</button>
-            <div class="modal-body text-center p-0 mt-3">
-                <h3 class="modal-title-custom">Cash in Hand</h3>
-                <p class="modal-subtitle">You've selected Cash In Hand as your<br>payment method</p>
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content position-relative p-2">
+            <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-body text-center p-4">
+                <h3 class="modal-title-custom">Cash Payment</h3>
+                <p class="modal-subtitle fw-medium mb-4">Enter the amount received from the customer.</p>
 
+                <!-- Total Due (Disabled) -->
                 <div class="text-start mb-3">
-                    <label class="custom-input-label">Total Due</label>
-                    <input type="text" class="form-control custom-input" id="cashTotalDue" readonly>
+                    <label class="custom-input-label text-secondary">Total Due</label>
+                    <input type="text" class="form-control custom-input fs-5 text-primary text-end font-monospace" id="cashTotalDue" readonly>
                 </div>
 
+                <!-- Amount Received -->
                 <div class="text-start mb-4">
                     <label class="custom-input-label">Amount Received</label>
-                    <input type="number" class="form-control custom-input bg-white border" id="cashAmountReceived" placeholder="PHP 0.00">
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white cash-focus-group">
+                        <span class="input-group-text bg-white border-0 fw-bold text-secondary ps-3 py-2 fs-5">₱</span>
+                        <input id="cashAmountReceived"
+                               class="form-control border-0 bg-white shadow-none fs-5 text-end font-monospace pe-3 ps-0 fw-semibold py-2"
+                               type="number"
+                               step="0.01"
+                               min="0.01"
+                               onwheel="this.blur()"
+                               placeholder="0.00">
+                    </div>
                 </div>
 
-                <button type="button" class="btn w-100 btn-proceed" onclick="proceedCashPayment()">Proceed</button>
+                <button type="button" class="btn w-100 btn-proceed shadow-sm" onclick="proceedCashPayment()">Complete Transaction</button>
             </div>
         </div>
     </div>
@@ -268,35 +165,64 @@
 
 <!-- Credit Card Modal -->
 <div class="modal fade" id="creditModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-        <div class="modal-content position-relative p-4">
-            <button type="button" data-bs-dismiss="modal" class="modal-custom-close">&times;</button>
-            <div class="modal-body text-center p-0 mt-3">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+        <div class="modal-content position-relative p-2">
+            <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-body text-center p-4">
                 <h3 class="modal-title-custom">Credit Card</h3>
-                <p class="modal-subtitle">You've selected Credit Card as your<br>payment method</p>
+                <p class="modal-subtitle mb-4 fw-medium">Swipe, insert, or enter card details.</p>
 
+                <!-- Card Number -->
                 <div class="text-start mb-3">
-                    <label class="custom-input-label">Credit Card Number</label>
-                    <input type="text" class="form-control custom-input bg-white border" id="ccNumber" placeholder="XXXX-XXXX-XXXX-8014">
-                </div>
-
-                <div class="text-start mb-3">
-                    <label class="custom-input-label">Card Holder Name</label>
-                    <input type="text" class="form-control custom-input bg-white border" id="ccName" placeholder="Carlo Cruz">
-                </div>
-
-                <div class="row mb-4">
-                    <div class="col-6 text-start">
-                        <label class="custom-input-label">Expiry</label>
-                        <input type="text" class="form-control custom-input bg-white border" id="ccExpiry" placeholder="06/28">
-                    </div>
-                    <div class="col-6 text-start">
-                        <label class="custom-input-label">CVV</label>
-                        <input type="text" class="form-control custom-input bg-white border" id="ccCvv" placeholder="XXX">
+                    <label class="custom-input-label">Card Number</label>
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white custom-focus-group">
+                        <span class="input-group-text bg-white border-0 text-muted ps-3 py-2">
+                            <i class="fa-regular fa-credit-card"></i>
+                        </span>
+                        <input type="text"
+                               class="form-control border-0 bg-white shadow-none font-monospace ps-2 py-2"
+                               id="ccNumber"
+                               inputmode="numeric"
+                               maxlength="19"
+                               placeholder="0000 0000 0000 0000">
                     </div>
                 </div>
 
-                <button type="button" class="btn w-100 btn-proceed" onclick="proceedCreditCard()">Proceed</button>
+                <!-- Cardholder Name -->
+                <div class="text-start mb-3">
+                    <label class="custom-input-label">Cardholder Name</label>
+                    <input type="text"
+                           class="form-control custom-input text-uppercase"
+                           id="ccName"
+                           maxlength="50"
+                           placeholder="Full Name on Card" />
+                </div>
+
+                <div class="row mb-4 g-3">
+                    <!-- Expiry Date -->
+                    <div class="col-6 text-start">
+                        <label class="custom-input-label">Expiry Date</label>
+                        <input type="text"
+                               class="form-control custom-input font-monospace"
+                               id="ccExpiry"
+                               inputmode="numeric"
+                               maxlength="5"
+                               placeholder="MM/YY">
+                    </div>
+
+                    <!-- CVV / CVC -->
+                    <div class="col-6 text-start">
+                        <label class="custom-input-label">CVV / CVC</label>
+                        <input type="password"
+                               class="form-control custom-input font-monospace"
+                               id="ccCvv"
+                               inputmode="numeric"
+                               placeholder="***"
+                               maxlength="4">
+                    </div>
+                </div>
+
+                <button type="button" class="btn w-100 btn-proceed shadow-sm" onclick="proceedCreditCard()">Process Card</button>
             </div>
         </div>
     </div>
@@ -304,30 +230,34 @@
 
 <!-- Store Credits Modal -->
 <div class="modal fade" id="storeCreditModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-        <div class="modal-content position-relative p-4">
-            <button type="button" data-bs-dismiss="modal" class="modal-custom-close">&times;</button>
-            <div class="modal-body text-center p-0 mt-3">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content position-relative p-2">
+            <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-body text-center p-4">
                 <h3 class="modal-title-custom">Store Credits</h3>
-                <p class="modal-subtitle">You've selected Store Credits as your<br>payment method</p>
+                <p class="modal-subtitle mb-4 fw-medium">Pay using accumulated customer loyalty points.</p>
 
-                <div class="d-flex justify-content-between mb-1">
-                    <label class="custom-input-label">Store Credit Balance</label>
-                    <span class="text-danger fw-bold" style="font-size: 0.8rem;">Limits at PHP 300.00</span>
-                </div>
-                <input type="text" class="form-control custom-input mb-3" id="storeBalance" value="PHP 109.00" readonly>
-
-                <div class="text-start mb-3">
-                    <label class="custom-input-label">Total Due</label>
-                    <input type="text" class="form-control custom-input" id="storeTotalDue" readonly>
+                <!-- Store Balance -->
+                <div class="text-start mb-3 p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted fw-bold small text-uppercase">Available Balance</span>
+                        <span class="badge bg-danger">Max ₱300.00</span>
+                    </div>
+                    <h4 class="mb-0 fw-bold text-dark font-monospace" id="storeBalance">₱109.00</h4>
                 </div>
 
-                <!-- UI Error Display (Hidden by default) -->
-                <div id="storeCreditError" class="alert alert-danger py-2 px-3 text-start mb-3" style="display: none; font-size: 0.85rem; font-weight: bold;">
+                <!-- Total Due -->
+                <div class="text-start mb-4">
+                    <label class="custom-input-label text-secondary">Total Due</label>
+                    <input type="text" class="form-control custom-input fs-5 text-primary text-end font-monospace" id="storeTotalDue" readonly>
+                </div>
+
+                <!-- Error Display -->
+                <div id="storeCreditError" class="alert alert-danger py-2 px-3 text-start mb-4 shadow-sm" style="display: none; font-size: 0.85rem; font-weight: bold; border-left: 4px solid #dc3545;">
                     <i class="fa-solid fa-circle-exclamation me-1"></i> <span id="storeCreditErrorText"></span>
                 </div>
 
-                <button type="button" class="btn w-100 btn-proceed" onclick="proceedStoreCredit()">Proceed</button>
+                <button type="button" class="btn w-100 btn-proceed shadow-sm" onclick="proceedStoreCredit()">Apply Credits</button>
             </div>
         </div>
     </div>
@@ -335,34 +265,38 @@
 
 <!-- E-Wallet Selection Modal -->
 <div class="modal fade" id="ewalletModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-        <div class="modal-content position-relative p-4">
-            <button type="button" data-bs-dismiss="modal" class="modal-custom-close">&times;</button>
-            <div class="modal-body text-center p-0 mt-3">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content position-relative p-2">
+            <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-body text-center p-4">
                 <h3 class="modal-title-custom">E-Wallet</h3>
-                <p class="modal-subtitle">You've selected E-wallet as your<br>payment method</p>
-                <button class="w-100 ewallet-option-btn d-flex align-items-center justify-content-start" onclick="openGCashQR()">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="24" class="me-3"> GCash
+                <p class="modal-subtitle mb-4 fw-medium">Select an e-wallet provider to generate a QR.</p>
+
+                <button class="w-100 ewallet-option-btn d-flex align-items-center shadow-sm" onclick="openGCashQR()">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="24" class="me-3">
+                    <span class="fs-5">GCash App</span>
+                    <i class="fa-solid fa-chevron-right ms-auto text-muted"></i>
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- GCash QR API Modal -->
+<!-- GCash QR Modal -->
 <div class="modal fade" id="gcashQRModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 350px;">
-        <div class="modal-content gcash-modal-content position-relative">
-            <button type="button" data-bs-dismiss="modal" class="gcash-close">&times;</button>
-            <div class="modal-body text-center p-0 mt-2">
-                <h3 class="fw-bolder mb-1">GCash</h3>
-                <p class="mb-4" style="font-size: 0.95rem; line-height: 1.2;">Please scan this QR code to<br>quickly redirect you to your account.</p>
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content gcash-modal-content position-relative border-0 shadow-lg">
+            <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2" style="border: none;"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-body text-center p-2 mt-2">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="30" class="mb-3" style="filter: brightness(0) invert(1);">
+                <p class="mb-4 text-white text-opacity-75 fw-medium" style="font-size: 0.95rem;">Ask customer to scan the QR code using their GCash App to pay.</p>
 
-                <div class="bg-white p-3 d-inline-block rounded mb-4" style="cursor:pointer;" onclick="simulateGCashSuccess()" title="Click to simulate scan">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" width="160" height="160" alt="QR Code" />
+                <div class="bg-white p-4 d-inline-block rounded-4 shadow mb-4 cursor-pointer transition-all hover-scale" onclick="simulateGCashSuccess()" title="Click to simulate successful scan">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" width="180" height="180" alt="QR Code" />
                 </div>
 
-                <h4 class="fw-bold m-0" id="gcashTotalAmount">PHP 0.00</h4>
+                <h2 class="fw-bold text-white mb-0 font-monospace" id="gcashTotalAmount">₱0.00</h2>
+                <small class="text-white text-opacity-50">Amount to send</small>
             </div>
         </div>
     </div>
@@ -370,9 +304,93 @@
 
 @section Scripts {
     <script>
+            document.addEventListener("DOMContentLoaded", function () {
+            const ccNumberInput = document.getElementById('ccNumber');
+            const ccNameInput = document.getElementById('ccName');
+            const ccExpiryInput = document.getElementById('ccExpiry');
+            const ccCvvInput = document.getElementById('ccCvv');
+
+            // Card Number: Digits only, max 16 digits formatted into 4-4-4-4 blocks (19 chars total)
+            ccNumberInput.addEventListener('input', function (e) {
+                let val = e.target.value.replace(/\D/g, ''); // strip non-numeric
+                if (val.length > 16) val = val.substring(0, 16);
+
+                // Group into blocks of 4 digits
+                const parts = val.match(/.{1,4}/g);
+                e.target.value = parts ? parts.join(' ') : '';
+            });
+
+            // Cardholder Name: Letters, spaces, periods, and hyphens only
+            ccNameInput.addEventListener('input', function (e) {
+                e.target.value = e.target.value.replace(/[^a-zA-Z\s\.\-]/g, '').toUpperCase();
+            });
+
+            // Expiry Date: Digits only, auto-formats to MM/YY with valid month bounds (01-12)
+            ccExpiryInput.addEventListener('input', function (e) {
+                let val = e.target.value.replace(/\D/g, '');
+                if (val.length > 4) val = val.substring(0, 4);
+
+                if (val.length >= 1) {
+                    // First digit can only be 0 or 1
+                    if (val[0] > '1') val = '0' + val;
+                }
+                if (val.length >= 2) {
+                    let month = parseInt(val.substring(0, 2), 10);
+                    if (month === 0) val = '01' + val.substring(2);
+                    else if (month > 12) val = '12' + val.substring(2);
+                }
+
+                if (val.length > 2) {
+                    e.target.value = val.substring(0, 2) + '/' + val.substring(2);
+                } else {
+                    e.target.value = val;
+                }
+            });
+
+            // Prevent deletion glitch when backspacing past the slash '/'
+            ccExpiryInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && this.value.length === 3) {
+                    this.value = this.value.substring(0, 2);
+                }
+            });
+
+            // CVV / CVC: Exactly digits only, max 4
+            ccCvvInput.addEventListener('input', function (e) {
+                let val = e.target.value.replace(/\D/g, '');
+                if (val.length > 4) val = val.substring(0, 4);
+                e.target.value = val;
+            });
+        });
+
+        // ================= CART GUARD =================
+        // Instantly check if the cart has items. If empty, kick them back to Checkout.
+        (function checkCartStatus() {
+            const savedCart = sessionStorage.getItem("smartScanCart");
+            let isEmpty = true;
+
+            if (savedCart) {
+                try {
+                    const cartData = JSON.parse(savedCart);
+                    if (Array.isArray(cartData) && cartData.length > 0) {
+                        isEmpty = false;
+                    }
+                } catch (e) { }
+            }
+
+            if (isEmpty) {
+                alert("Cannot proceed to payment: The shopping cart is empty.");
+                window.location.replace('/Home/Checkout');
+            }
+        })();
+
+        // ================= PAYMENT LOGIC =================
         let cart = [];
         let total = 0;
         let cashModalInstance, creditModalInstance, storeCreditModalInstance, ewalletModalInstance, gcashQRModalInstance;
+
+        // Parse search params to catch Customer ID from Verification Page
+        const urlParams = new URLSearchParams(window.location.search);
+        const verifiedCustomerName = urlParams.get('search');
 
         document.addEventListener("DOMContentLoaded", function () {
             cashModalInstance = new bootstrap.Modal(document.getElementById('cashModal'));
@@ -384,20 +402,12 @@
             const summaryList = document.getElementById("summaryList");
             const cartData = sessionStorage.getItem("smartScanCart");
 
-            if (!cartData) {
-                summaryList.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Cart is empty. Please return to Checkout.</td></tr>`;
-                return;
-            }
+            if (!cartData) return;
 
             try {
                 cart = JSON.parse(cartData);
-                if (!Array.isArray(cart) || cart.length === 0) {
-                    summaryList.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Cart is empty. Please return to Checkout.</td></tr>`;
-                    cart = [];
-                    return;
-                }
-
                 let html = "";
+
                 cart.forEach(item => {
                     const price = Number(item.price);
                     const qty = Number(item.qty);
@@ -408,22 +418,18 @@
 
                     html += `
                         <tr>
-                            <td>${escapeHtml(item.name)}</td>
-                            <td>${qty}</td>
-                            <td>PHP ${price.toFixed(2)}</td>
-                            <td class="fw-bold">PHP ${subtotal.toFixed(2)}</td>
+                            <td class="ps-4 py-3"><span class="fw-bold text-dark">${escapeHtml(item.name)}</span></td>
+                            <td class="text-center py-3"><span class="badge bg-light text-dark border px-2 py-1">${qty}</span></td>
+                            <td class="text-end text-secondary py-3">₱${price.toFixed(2)}</td>
+                            <td class="pe-4 text-end fw-bold text-dark py-3">₱${subtotal.toFixed(2)}</td>
                         </tr>`;
                 });
 
-                if (!html) {
-                    summaryList.innerHTML = `<tr><td colspan="4" class="text-center text-danger">No valid items in cart.</td></tr>`;
-                    cart = [];
-                    return;
+                if (html) {
+                    summaryList.innerHTML = html;
                 }
 
-                summaryList.innerHTML = html;
-
-                const formattedTotal = `PHP ${total.toFixed(2)}`;
+                const formattedTotal = `₱${total.toFixed(2)}`;
                 document.getElementById("grandTotalDisplay").textContent = formattedTotal;
 
                 // Pre-fill fields
@@ -432,8 +438,7 @@
                 document.getElementById("gcashTotalAmount").textContent = formattedTotal;
 
             } catch (error) {
-                cart = [];
-                summaryList.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Invalid cart data. Please return to Checkout.</td></tr>`;
+                console.error("Cart error", error);
             }
         });
 
@@ -458,17 +463,16 @@
             const amountInput = document.getElementById("cashAmountReceived").value;
 
             if (!amountInput || amountInput.trim() === "") {
-                alert("Error: Amount received field is empty.");
+                alert("Error: Please enter the amount received from the customer.");
                 return;
             }
 
             const amountReceived = parseFloat(amountInput);
             if (isNaN(amountReceived) || amountReceived < total) {
-                alert(`Insufficient amount. The total due is PHP ${total.toFixed(2)}.`);
+                alert(`Insufficient amount. The total due is ₱${total.toFixed(2)}.`);
                 return;
             }
 
-            // --- CALCULATE CHANGE HERE ---
             const changeAmount = amountReceived - total;
             finalizeTransaction("Cash In Hand", amountReceived, changeAmount);
         }
@@ -484,7 +488,6 @@
                 return;
             }
 
-            // No change for card payments
             finalizeTransaction("Credit Card", total, 0);
         }
 
@@ -494,14 +497,12 @@
             const errorText = document.getElementById("storeCreditErrorText");
 
             if (total > storeCreditLimit) {
-                errorText.textContent = `Total Due (PHP ${total.toFixed(2)}) exceeds the PHP ${storeCreditLimit.toFixed(2)} limit.`;
+                errorText.textContent = `Total Due (₱${total.toFixed(2)}) exceeds the ₱${storeCreditLimit.toFixed(2)} limit.`;
                 errorBox.style.display = "block";
                 return;
             }
 
             errorBox.style.display = "none";
-
-            // No change for store credits
             finalizeTransaction("Store Credits", total, 0);
         }
 
@@ -512,12 +513,12 @@
 
         function simulateGCashSuccess() {
             gcashQRModalInstance.hide();
-
-            // No change for exact GCash transfers
             finalizeTransaction("GCash API", total, 0);
         }
 
         async function finalizeTransaction(method, amountPaid, changeAmount) {
+
+            // Create payload, attaching customer name if verified
             const payload = {
                 items: cart.map(i => ({
                     name: i.name,
@@ -525,8 +526,18 @@
                     price: parseFloat(i.price)
                 })),
                 total: parseFloat(total),
-                paymentMethod: method
+                paymentMethod: method,
+                customerName: verifiedCustomerName || "Guest" // Forward name to backend if needed
             };
+
+            // Basic button loading state
+            const activeModal = document.querySelector('.modal.show');
+            const btn = activeModal ? activeModal.querySelector('.btn-proceed') : null;
+            if(btn) {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+                btn.disabled = true;
+            }
 
             try {
                 const response = await fetch('/Home/SaveTransaction', {
@@ -538,7 +549,6 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // --- SAVE AMOUNT PAID AND CHANGE TO SESSION STORAGE ---
                     payload.date = new Date().toISOString();
                     payload.status = "Completed";
                     payload.receiptNumber = result.receiptNumber;
@@ -548,12 +558,17 @@
                     sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
                     sessionStorage.removeItem("smartScanCart");
 
+                    // Clear Customer Display Monitor
+                    localStorage.removeItem("smartScanCustomerDisplay");
+
                     window.location.href = "/Home/GenerateReceipt";
                 } else {
                     alert("Transaction Failed: " + result.message);
+                    if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
                 }
             } catch (error) {
                 alert("Network Error: Could not connect to the database.");
+                if(btn) { btn.innerHTML = "Proceed"; btn.disabled = false; }
             }
         }
 
@@ -561,5 +576,4 @@
             window.location.href = "/Home/Checkout";
         }
     </script>
-
 }

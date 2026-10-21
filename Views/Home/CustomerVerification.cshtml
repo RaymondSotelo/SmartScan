@@ -1,249 +1,571 @@
 ﻿@{
-    ViewData["Title"] = "Customer Face Verification";
+    ViewData["Title"] = "Customer Verification";
+    if (ViewData["HeaderTitle"] == null)
+    {
+        ViewData["HeaderTitle"] = "Customer Verification";
+    }
 }
 
 @Html.AntiForgeryToken()
 
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-7 col-lg-6">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-0" style="color:#1162a3;">
-                            <i class="fa-solid fa-user-shield me-2"></i>Live Face Verification
-                        </h5>
-                        <p class="text-muted small mb-0">Auto-scans continuously for 15 seconds.</p>
-                    </div>
-                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
-                        <i class="fa-solid fa-xmark"></i> Cancel
-                    </a>
-                </div>
+<!-- Viewport-Locked Outer Container -->
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+     style="height: calc(100dvh - 130px); min-height: 540px;">
 
-                <div class="card-body p-4 text-center">
+    <!-- Top Navigation Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+         style="background-color: #1162a3;">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="mb-0 fw-bold">
+                <i class="fa-solid fa-user-shield me-2"></i>Customer Verification
+            </h5>
+        </div>
+        <a asp-action="Checkout" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+           style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+            <i class="fa-solid fa-arrow-left me-1"></i>Return to Checkout
+        </a>
+    </div>
 
-                    <!-- REAL-TIME MATCH BAR -->
-                    <div id="liveMatchBar" class="alert alert-secondary py-2 fw-bold mb-3 fs-5">
-                        <i class="fa-solid fa-video-slash me-1"></i> Camera off
-                    </div>
+    <!-- Interior Workspace Split -->
+    <div class="card-body p-3 p-lg-4 flex-grow-1 d-flex flex-column" style="min-height: 0;">
+        <div class="row g-3 flex-grow-1 m-0" style="min-height: 0;">
 
-                    <!-- Video Frame Container -->
-                    <div class="position-relative d-inline-block bg-dark rounded-3 overflow-hidden shadow-inner mb-4"
-                         style="width: 100%; max-width: 420px; height: 320px;">
+            <!-- ================= LEFT COLUMN | Controls & Forms ================= -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-3 pb-3" style="min-height: 0;">               
 
-                        <video id="videoFeed" autoplay playsinline muted
-                               style="width: 100%; height: 100%; object-fit: cover;"></video>
+                <!-- Verification Tabs -->
+                <ul class="nav nav-pills mb-3 flex-shrink-0 gap-2" id="verificationTabs" role="tablist">
+					
+                    <p class="fw-medium text-secondary text-center" style="font-size: 16.5px;">
+                        <i class="fa-solid fa-info-circle me-2"></i>Select a Verification Method in order to proceed to the payment process.
+					</p>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill fw-semibold border shadow-sm px-4"
+                                style="width: 280px;"
+                                id="facial-tab" data-bs-toggle="pill" data-bs-target="#facial-pane" type="button" role="tab">
+                            <i class="fa-solid fa-camera-viewfinder me-2"></i>Face ID
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill fw-semibold border shadow-sm px-4"
+                                style="width: 280px;"
+                                id="nationalid-tab" data-bs-toggle="pill" data-bs-target="#nationalid-pane" type="button" role="tab">
+                            <i class="fa-solid fa-address-card me-2"></i>National ID
+                        </button>
+                    </li>
+                </ul>
 
-                        <!-- Hardcoded Canvas -->
-                        <canvas id="faceCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;"></canvas>
+                <!-- Tab Content Area -->
+                <div class="tab-content flex-grow-1 overflow-y-auto no-scrollbar pe-2">
 
-                        <!-- Scanning Visual Overlay -->
-                        <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
-                             style="width: 200px; height: 240px; pointer-events: none; opacity: 0.6; transition: border-color 0.3s;">
+                    <!-- PANE 1: FACE VERIFICATION -->
+                    <div class="tab-pane fade show active h-100 flex-column" id="facial-pane" role="tabpanel">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3"
+                                     style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                                    <i class="fa-solid fa-user-check fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-primary fs-5">Live Face Verification</h6>
+                                    <small class="text-muted fw-medium">Auto-scans continuously for registered customers.</small>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                <i class="fa-solid fa-shield-halved text-success me-1"></i>
+                                <strong>Privacy Secured:</strong> Facial features are converted to a mathematical vector; raw video frames are never saved.
+                            </p>
                         </div>
                     </div>
 
-                    <!-- Controls -->
-                    <div class="d-flex justify-content-center gap-2">
-                        <button type="button" id="btnToggleCamera" class="btn btn-outline-secondary fw-semibold px-4">
-                            <i class="fa-solid fa-video me-1"></i> Start Camera
-                        </button>
-                    </div>
-                </div>
+                    <!-- PANE 2: NATIONAL ID VERIFICATION -->
+                    <div class="tab-pane fade h-100 flex-column" id="nationalid-pane" role="tabpanel">
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3"
+                                     style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                                    <i class="fa-solid fa-id-card fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-primary fs-5">PhilSys Age Verification</h6>
+                                    <small class="text-muted fw-medium">Scan QR in the viewer or enter PCN manually.</small>
+                                </div>
+                            </div>
 
-                <div class="card-footer bg-light py-2 text-center text-muted small">
-                    <i class="fa-solid fa-bolt me-1"></i> Automatically identifying... No click required.
+                            <!-- Manual Inputs -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary mb-1">16-Digit PCN</label>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                                    <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-hashtag"></i></span>
+                                    <input type="text" id="digitalIdInput" class="form-control border-0 shadow-none fw-semibold font-monospace" placeholder="e.g. 1234567891234567" />
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold small text-secondary mb-1">Date of Birth</label>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                                    <span class="input-group-text bg-white border-0 text-muted"><i class="fa-regular fa-calendar"></i></span>
+                                    <input type="date" id="manualDobInput" class="form-control border-0 shadow-none fw-semibold" />
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex flex-column gap-2">
+                                <button type="button" class="btn btn-primary rounded-pill fw-bold py-2 shadow-sm" style="background-color: #1162a3; border-color: #1162a3;" onclick="verifyGovernmentId()">
+                                    <i class="fa-solid fa-shield-check me-2"></i>Verify Age
+                                </button>
+                                <label class="btn btn-outline-secondary rounded-pill fw-semibold shadow-sm mb-0 cursor-pointer">
+                                    <i class="fa-solid fa-image me-1"></i>Upload QR Image File
+                                    <input type="file" id="qrImageUpload" class="d-none" accept="image/*">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
+            <!-- ================= RIGHT COLUMN | Camera Viewport ================= -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-3" style="min-height: 0;">
+
+                <div class="card border-0 bg-dark text-white rounded-4 flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden shadow-sm"
+                     style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate;">
+
+                    <!-- Camera Off Placeholder -->
+                    <div id="cameraPlaceholder" class="text-center p-4 z-2">
+                        <div class="border-2 rounded-circle bg-black bg-opacity-25 p-4 d-inline-flex mb-3 border border-secondary border-opacity-25">
+                            <i class="fa-solid fa-spinner fa-spin fa-3x text-secondary"></i>
+                        </div>
+                        <h5 class="fw-bold text-secondary mb-1">Scanner Idle</h5>
+                        <p class="text-muted small mb-0">Press start to activate the lens.</p>
+                    </div>
+
+                    <!-- Face Video Stream Container -->
+                    <div id="faceVideoContainer" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; z-index: 1;">
+                        <video id="videoFeed" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
+                        <canvas id="faceCanvas" class="position-absolute top-0 start-0 pointer-events-none"></canvas>
+                        <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
+                             style="width: 220px; height: 280px; opacity: 0.5; transition: border-color 0.3s; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);">
+                        </div>
+                    </div>
+
+                    <!-- QR Scanner Container (Html5-Qrcode) -->
+                    <div id="qrVideoContainer" class="position-absolute top-0 start-0 w-100 h-100 bg-white" style="display: none; z-index: 1;">
+                        <div id="qrReader" class="w-100 h-100 border-0"></div>
+                    </div>
+
+                    <!-- OVERLAY: Transparent Status Display (Bottom Left) -->
+                    <div class="position-absolute bottom-0 start-0 p-3 z-3 w-100 d-flex flex-column gap-1 bg-transparent"
+                         style="pointer-events: none; text-shadow: 1px 1px 4px rgba(0,0,0,0.9), -1px -1px 4px rgba(0,0,0,0.9);">
+
+                        <!-- Face Status -->
+                        <div class="d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                            <i id="faceStatusIcon" class="fa-solid fa-user text-light" style="width: 20px; text-align: center;"></i>
+                            <span id="faceStatusText" class="fw-bold text-light">Face: Idle</span>
+                        </div>
+
+                        <!-- Age Status -->
+                        <div class="d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                            <i id="ageStatusIcon" class="fa-solid fa-id-card text-light" style="width: 20px; text-align: center;"></i>
+                            <span id="ageStatusText" class="fw-bold text-light">Age: Unverified</span>
+                        </div>
+                    </div>
+
+                    <!-- OVERLAY: Camera Activation Buttons (Bottom Center) -->
+                    <div class="position-absolute bottom-0 start-50 translate-middle-x pb-3 z-3">
+
+                        <!-- Face Cam Button -->
+                        <button type="button" id="btnToggleFaceCam" class="btn btn-primary rounded-pill fw-bold px-4 shadow-lg"
+                                style="background-color: #1162a3; border-color: #1162a3; font-size: 0.9rem;">
+                            <i class="fa-solid fa-video me-2"></i>Start Face Scanner
+                        </button>
+
+                        <!-- QR Cam Button (Hidden by default) -->
+                        <button type="button" id="btnToggleQrCam" class="btn btn-primary rounded-pill fw-bold px-4 shadow-lg"
+                                style="display: none; background-color: #1162a3; border-color: #1162a3; font-size: 0.9rem;"
+                                onclick="toggleQrScanner()">
+                            <i class="fa-solid fa-qrcode me-2"></i>Scan QR
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script>
+        // ================= GLOBAL UI CONTROLS =================
+        const placeholder = document.getElementById('cameraPlaceholder');
+        const faceContainer = document.getElementById('faceVideoContainer');
+        const qrContainer = document.getElementById('qrVideoContainer');
+
+        const btnToggleFaceCam = document.getElementById('btnToggleFaceCam');
+        const btnToggleQrCam = document.getElementById('btnToggleQrCam');
+
+        function updateFaceStatus(theme, iconClass, text) {
+            const icon = document.getElementById('faceStatusIcon');
+            const span = document.getElementById('faceStatusText');
+            icon.className = `fa-solid ${iconClass} text-${theme}`;
+            span.className = `fw-bold text-${theme}`;
+            span.textContent = text;
+        }
+
+        function updateAgeStatus(theme, iconClass, text) {
+            const icon = document.getElementById('ageStatusIcon');
+            const span = document.getElementById('ageStatusText');
+            icon.className = `fa-solid ${iconClass} text-${theme}`;
+            span.className = `fw-bold text-${theme}`;
+            span.textContent = text;
+        }
+
+        function showPlaceholder() {
+            placeholder.style.display = 'block';
+            faceContainer.style.display = 'none';
+            qrContainer.style.display = 'none';
+        }
+
+        // Handle Tab Switching (Stop Active Cameras and Swap Buttons)
+        document.querySelectorAll('button[data-bs-toggle="pill"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', event => {
+                stopFaceCamera();
+                stopQrScanner();
+
+                // Reset Indicators
+                updateFaceStatus('light', 'fa-user', 'Face: Idle');
+                updateAgeStatus('light', 'fa-id-card', 'Age: Unverified');
+                showPlaceholder();
+
+                // Swap bottom buttons based on active tab
+                if (event.target.id === 'facial-tab') {
+                    btnToggleFaceCam.style.display = 'block';
+                    btnToggleQrCam.style.display = 'none';
+                } else {
+                    btnToggleFaceCam.style.display = 'none';
+                    btnToggleQrCam.style.display = 'block';
+                }
+            });
+        });
+
+        // ================= RESTRICT ACCESS =================
+        // Instantly check if the cart has items. If empty, kick them back to Checkout.
+        (function checkCartStatus() {
+            const savedCart = localStorage.getItem("smartScanCustomerDisplay");
+            let isEmpty = true;
+
+            if (savedCart) {
+                try {
+                    const cartData = JSON.parse(savedCart);
+                    if (cartData.items && cartData.items.length > 0) {
+                        isEmpty = false;
+                    }
+                } catch (e) { }
+            }
+
+            if (isEmpty) {
+                alert("Cannot proceed: The shopping cart is empty. Please scan items first.");
+                window.location.replace('/Home/Checkout'); // Redirect immediately
+            }
+        })();
+
+        // ================= FACE API LOGIC =================
         const video = document.getElementById('videoFeed');
         const canvas = document.getElementById('faceCanvas');
-        const btnToggleCamera = document.getElementById('btnToggleCamera');
-        const liveMatchBar = document.getElementById('liveMatchBar');
         const scanGuide = document.getElementById('scanGuide');
 
-        let currentStream = null;
+        let faceStream = null;
         let isModelReady = false;
-        let isScanningActive = false;
+        let isFaceScanning = false;
         let isAuthenticating = false;
         let scanSessionTimeout = null;
 
         const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
         const AUTO_STOP_MS = 15000;
 
-        // 1. Initialize Lightweight Fast Models
         async function loadModels() {
-            liveMatchBar.className = 'alert alert-secondary py-2 fw-bold mb-3 fs-5 border-0';
-            liveMatchBar.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Loading models...';
-
+            updateFaceStatus('info', 'fa-spinner fa-spin', 'Face: Loading Models...');
             try {
                 await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
                 isModelReady = true;
-                liveMatchBar.innerHTML = '<i class="fa-solid fa-power-off me-1"></i> Ready. Start Camera.';
+                updateFaceStatus('light', 'fa-user-check', 'Face: Ready');
             } catch (err) {
-                liveMatchBar.className = 'alert alert-danger py-2 fw-bold mb-3 fs-5 border-0';
-                liveMatchBar.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Engine failed to load.';
+                updateFaceStatus('danger', 'fa-triangle-exclamation', 'Face: Engine Error');
             }
         }
         loadModels();
 
-        // 2. Stop Camera
-        function stopCamera() {
-            isScanningActive = false;
+        function stopFaceCamera() {
+            isFaceScanning = false;
             isAuthenticating = false;
             if (scanSessionTimeout) clearTimeout(scanSessionTimeout);
 
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
+            if (faceStream) {
+                faceStream.getTracks().forEach(track => track.stop());
+                faceStream = null;
             }
             video.srcObject = null;
 
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if(canvas.width > 0) {
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            }
 
-            btnToggleCamera.className = 'btn btn-outline-secondary fw-semibold px-4';
-            btnToggleCamera.innerHTML = '<i class="fa-solid fa-video me-1"></i> Start Camera';
-
+            btnToggleFaceCam.className = 'btn btn-primary rounded-pill fw-bold px-4 shadow-lg';
+            btnToggleFaceCam.innerHTML = '<i class="fa-solid fa-video me-2"></i>Start Face Scanner';
+            btnToggleFaceCam.style.backgroundColor = '#1162a3';
+            btnToggleFaceCam.style.borderColor = '#1162a3';
             scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
         }
 
-        // 3. Start Camera Toggle
-        btnToggleCamera.addEventListener('click', async () => {
-            if (currentStream) {
-                stopCamera();
-                liveMatchBar.className = 'alert alert-secondary py-2 fw-bold mb-3 fs-5 border-0';
-                liveMatchBar.innerHTML = '<i class="fa-solid fa-video-slash me-1"></i> Camera off';
+        btnToggleFaceCam.addEventListener('click', async () => {
+            if (faceStream) {
+                stopFaceCamera();
+                showPlaceholder();
+                updateFaceStatus('light', 'fa-video-slash', 'Face: Idle');
                 return;
             }
-
             if (!isModelReady) return;
 
             try {
-                currentStream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-                video.srcObject = currentStream;
+                faceStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } });
+                video.srcObject = faceStream;
 
-                btnToggleCamera.className = 'btn btn-danger fw-semibold px-4';
-                btnToggleCamera.innerHTML = '<i class="fa-solid fa-video-slash me-1"></i> Stop Camera';
+                placeholder.style.display = 'none';
+                faceContainer.style.display = 'block';
 
-                isScanningActive = true;
+                btnToggleFaceCam.className = 'btn btn-danger rounded-pill fw-bold px-4 shadow-lg';
+                btnToggleFaceCam.innerHTML = '<i class="fa-solid fa-video-slash me-2"></i>Stop Scanner';
+                btnToggleFaceCam.style.backgroundColor = '';
+                btnToggleFaceCam.style.borderColor = '';
+
+                isFaceScanning = true;
                 isAuthenticating = false;
 
                 video.onplay = () => {
-                    const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-                    faceapi.matchDimensions(canvas, displaySize);
+                    updateFaceStatus('info', 'fa-eye fa-fade', 'Face: Scanning...');
 
                     scanSessionTimeout = setTimeout(() => {
-                        if (isScanningActive) {
-                            stopCamera();
-                            liveMatchBar.className = 'alert alert-warning py-2 fw-bold mb-3 fs-5 border-0 text-dark';
-                            liveMatchBar.innerHTML = '<i class="fa-solid fa-clock me-1"></i> Scan timed out. Try again.';
+                        if (isFaceScanning) {
+                            stopFaceCamera();
+                            showPlaceholder();
+                            updateFaceStatus('warning', 'fa-clock', 'Face: Timeout');
                         }
                     }, AUTO_STOP_MS);
 
                     runDetectionLoop();
                 };
-
             } catch (err) {
-                liveMatchBar.className = 'alert alert-danger py-2 fw-bold mb-3 fs-5 border-0';
-                liveMatchBar.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Camera error';
+                updateFaceStatus('danger', 'fa-camera', 'Face: Hardware Denied');
             }
         });
 
-        // 4. Controlled Detection Loop (Sequential & Non-blocking)
         async function runDetectionLoop() {
-            const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
-
-            while (isScanningActive) {
-                if (video.readyState === 4 && !isAuthenticating) {
+            while (isFaceScanning) {
+                if (video.readyState >= 3 && !isAuthenticating) {
                     try {
-                        const detection = await faceapi.detectSingleFace(video, detectorOptions)
-                                                       .withFaceLandmarks()
-                                                       .withFaceDescriptor();
+                        const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+
+                        const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                        faceapi.matchDimensions(canvas, displaySize);
 
                         const ctx = canvas.getContext('2d');
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                         if (detection) {
-                            const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-                            const resizedDetection = faceapi.resizeResults(detection, displaySize);
-                            faceapi.draw.drawFaceLandmarks(canvas, resizedDetection, { drawLines: true, color: '#00ff00', lineWidth: 1 });
-
-                            // Found face: trigger verification
-                            await verifyWithServer(detection.descriptor);
-                        } else {
-                            liveMatchBar.className = 'alert alert-info py-2 fw-bold mb-3 fs-5 border-0 text-dark';
-                            liveMatchBar.innerHTML = '<i class="fa-solid fa-crosshairs fa-fade me-1"></i> Center face in oval...';
-                            scanGuide.classList.replace('border-danger', 'border-warning') || scanGuide.classList.replace('border-primary', 'border-warning');
+                            await verifyFaceWithServer(detection.descriptor);
                         }
-                    } catch (err) {
-                        console.error('Detection frame drop:', err);
-                    }
+                    } catch (err) {}
                 }
-
-                // Throttle frame processing to save CPU cycles (~80ms gap)
-                await new Promise(r => setTimeout(r, 80));
+                await new Promise(r => setTimeout(r, 100));
             }
         }
 
-        // 5. Backend Verification Request
-        async function verifyWithServer(descriptorArray) {
+        async function verifyFaceWithServer(descriptorArray) {
             isAuthenticating = true;
+            updateFaceStatus('info', 'fa-microchip fa-spin', 'Face: Verifying...');
+
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-
-            liveMatchBar.className = 'alert alert-primary py-2 fw-bold mb-3 fs-5 border-0';
-            liveMatchBar.innerHTML = '<i class="fa-solid fa-microchip fa-spin me-1"></i> Verifying...';
-
             const capturedVectorJson = JSON.stringify(Array.from(descriptorArray));
 
             try {
-                // Corrected endpoint to Home controller
                 const response = await fetch('/Home/AuthenticateFace', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': token
-                    },
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
                     body: JSON.stringify({ capturedEmbeddingJson: capturedVectorJson })
                 });
 
                 const result = await response.json();
 
                 if (result.success) {
-                    isScanningActive = false;
+                    isFaceScanning = false;
                     clearTimeout(scanSessionTimeout);
+                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-3 border-success rounded-circle';
 
-                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-success rounded-circle';
-                    liveMatchBar.className = 'alert alert-success py-2 fw-bold mb-3 fs-5 border-0 shadow-sm';
-                    liveMatchBar.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${result.customerName}`;
+                    updateFaceStatus('success', 'fa-user-check', `User: ${result.customerName}`);
 
-                    setTimeout(() => { window.location.href = result.redirectUrl; }, 800);
+                    if(result.hasAge){
+                        const ageMsg = result.isUnderage ? `Age: ${result.age} (Underage)` : `Age: ${result.age} (Adult)`;
+                        const ageTheme = result.isUnderage ? 'warning' : 'success';
+                        const ageIcon = result.isUnderage ? 'fa-triangle-exclamation' : 'fa-id-card-clip';
+
+                        updateAgeStatus(ageTheme, ageIcon, ageMsg);
+                    } else {
+                        updateAgeStatus('secondary', 'fa-circle-question', 'Age: Unknown in DB');
+                    }
+
+                    setTimeout(() => { window.location.href = result.redirectUrl; }, 1500);
                 } else {
                     scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-danger rounded-circle';
-                    liveMatchBar.className = 'alert alert-danger py-2 fw-bold mb-3 fs-5 border-0';
-                    liveMatchBar.innerHTML = '<i class="fa-solid fa-user-xmark me-1"></i> Unregistered Face';
-
-                    // Cool-down before retrying next frame
-                    setTimeout(() => { isAuthenticating = false; }, 1000);
+                    updateFaceStatus('danger', 'fa-user-xmark', 'Face: Unregistered');
+                    setTimeout(() => {
+                        isAuthenticating = false;
+                        updateFaceStatus('info', 'fa-eye fa-fade', 'Face: Scanning...');
+                        scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
+                    }, 1200);
                 }
             } catch (err) {
                 setTimeout(() => { isAuthenticating = false; }, 1000);
             }
         }
 
-        window.addEventListener('beforeunload', stopCamera);
+
+        // ================= NATIONAL ID / QR SCANNER LOGIC =================
+        let html5QrScanner = null;
+
+        async function toggleQrScanner() {
+            if (html5QrScanner) {
+                await stopQrScanner();
+                showPlaceholder();
+                updateAgeStatus('light', 'fa-qrcode', 'Age: Unverified');
+                return;
+            }
+
+            placeholder.style.display = 'none';
+            faceContainer.style.display = 'none';
+            qrContainer.style.display = 'block';
+
+            btnToggleQrCam.className = 'btn btn-danger rounded-pill fw-bold px-4 shadow-lg';
+            btnToggleQrCam.innerHTML = '<i class="fa-solid fa-camera-slash me-2"></i>Stop Camera';
+
+            updateAgeStatus('info', 'fa-qrcode fa-fade', 'Age: Scanning QR...');
+
+            html5QrScanner = new Html5Qrcode("qrReader");
+            html5QrScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                async (decodedText) => { await processScannedQrData(decodedText); },
+                (err) => { /* ignore */ }
+            ).catch(err => {
+                showPlaceholder();
+                updateAgeStatus('danger', 'fa-triangle-exclamation', 'Age: Camera Error');
+            });
+        }
+
+        async function stopQrScanner() {
+            if (html5QrScanner) {
+                await html5QrScanner.stop();
+                html5QrScanner.clear();
+                html5QrScanner = null;
+            }
+            btnToggleQrCam.className = 'btn btn-primary rounded-pill fw-bold px-4 shadow-lg';
+            btnToggleQrCam.innerHTML = '<i class="fa-solid fa-qrcode me-2"></i>Scan QR';
+            btnToggleQrCam.style.backgroundColor = '#1162a3';
+            btnToggleQrCam.style.borderColor = '#1162a3';
+        }
+
+        async function processScannedQrData(decodedText) {
+            try {
+                let jsonString = decodedText;
+                if (decodedText.split('.').length === 3 && !decodedText.startsWith("{")) {
+                    const base64Url = decodedText.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    jsonString = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                }
+
+                const qrData = JSON.parse(jsonString);
+                const subject = qrData.subject || qrData;
+
+                const rawPcn = subject.pcn || subject.PCN || "";
+                const rawDob = subject.bd || subject.DOB || subject.dob || subject.DateOfBirth || subject.birthDate || "";
+
+                document.getElementById('digitalIdInput').value = rawPcn.replace(/[^0-9]/g, '');
+
+                if (rawDob) {
+                    const dateObj = new Date(rawDob);
+                    if (!isNaN(dateObj)) document.getElementById('manualDobInput').value = dateObj.toISOString().split('T')[0];
+                }
+
+                if (html5QrScanner) await toggleQrScanner();
+                await verifyGovernmentId();
+
+            } catch (error) {
+                updateAgeStatus('danger', 'fa-qrcode', 'Age: Invalid QR');
+                if (html5QrScanner) await toggleQrScanner();
+                showPlaceholder();
+            }
+        }
+
+        // Image Upload fallback
+        document.getElementById('qrImageUpload').addEventListener('change', async function(e) {
+            if (e.target.files.length === 0) return;
+            const file = e.target.files[0];
+            const tempQrCode = new Html5Qrcode("qrReader"); // Uses div invisibly
+            try {
+                updateAgeStatus('info', 'fa-image', 'Age: Parsing Image...');
+                const decodedText = await tempQrCode.scanFile(file, true);
+                await processScannedQrData(decodedText);
+            } catch (err) {
+                updateAgeStatus('danger', 'fa-image', 'Age: No QR Found');
+            }
+            e.target.value = '';
+        });
+
+        // PhilSys Verification Backend Call
+        async function verifyGovernmentId() {
+            const pcnValue = document.getElementById('digitalIdInput').value.trim();
+            const dobValue = document.getElementById('manualDobInput').value;
+
+            if (!pcnValue || !dobValue) {
+                updateAgeStatus('warning', 'fa-circle-exclamation', 'Age: Missing Info');
+                return;
+            }
+
+            updateAgeStatus('info', 'fa-spinner fa-spin', 'Age: Verifying...');
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+            try {
+                const response = await fetch('/Home/NationalIDVerification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                    body: JSON.stringify({ rawPayload: pcnValue, manualDob: dobValue })
+                });
+
+                const res = await response.json();
+
+                if (res.isValid) {
+                    const statusMsg = res.isUnderage ? `Age: ${res.age} (Underage)` : `Age: ${res.age} (Adult)`;
+                    const theme = res.isUnderage ? 'warning' : 'success';
+                    const icon = res.isUnderage ? 'fa-triangle-exclamation' : 'fa-id-card-clip';
+
+                    updateAgeStatus(theme, icon, statusMsg);
+                } else {
+                    updateAgeStatus('danger', 'fa-circle-xmark', 'Age: Failed');
+                }
+            } catch (err) {
+                updateAgeStatus('danger', 'fa-server', 'Age: API Error');
+            }
+        }
+
+        window.addEventListener('beforeunload', () => {
+            stopFaceCamera();
+            if(html5QrScanner) html5QrScanner.stop();
+        });
     </script>
 }

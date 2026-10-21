@@ -31,26 +31,26 @@
 		</a>
 
         <!-- Search Bar -->
-		<form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
-			<div class="input-group shadow-sm rounded-3 overflow-hidden border">
-				<span class="input-group-text bg-white border-0">
-					<i class="fa-solid fa-magnifying-glass text-muted"></i>
-				</span>
-				<input type="text"
-					   name="search"
-					   value="@ViewData["CurrentFilter"]"
-					   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-					   placeholder="Search product..."
-					   aria-label="Search products" />
-			</div>
+        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+            <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                <span class="input-group-text bg-white border-0">
+                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                </span>
+                <input type="text"
+                       name="search"
+                       value="@ViewData["CurrentFilter"]"
+                       class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                       placeholder="Search product..."
+                       aria-label="Search products" />
+            </div>
 
-			@if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-			{
-				<a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
-					<i class="fa-solid fa-xmark"></i>
-				</a>
-			}
-		</form>
+            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+            }
+        </form>
     </div>
 
     <!-- Overhead TempData Alert -->

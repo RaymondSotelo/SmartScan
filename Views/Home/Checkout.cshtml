@@ -1,183 +1,238 @@
 ﻿@{
-    ViewData["Title"] = "Checkout Page";
-    ViewData["HeaderTitle"] = "Checkout";
+    ViewData["Title"] = "Checkout";
+    if (ViewData["HeaderTitle"] == null)
+    {
+        ViewData["HeaderTitle"] = "Checkout";
+    }
 }
 
-@section Styles {
-    <style>
-        body {
-            background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
-}
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+     style="height: calc(100dvh - 130px); min-height: 540px;">
 
-<div class="container-fluid mt-3">
-    <div class="row g-4" style="height: calc(100vh - 130px);">
+     <!-- Top Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+         style="background-color: #1162a3;">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-cash-register fs-5"></i>
+            <h5 class="mb-0 fw-bold">Automated Checkout Counter</h5>
+        </div>
+        <button type="button"
+                class="btn btn-sm btn-light fw-bold rounded-pill px-3 shadow-sm text-primary d-flex align-items-center gap-2"
+                onclick="window.open('/Home/CustomerDisplay', 'CustomerDisplay', 'width=1000,height=700')">
+            <i class="fa-solid fa-display"></i>
+            <span>Customer Display</span>
+        </button>
+    </div>
 
-        <!-- Left Column: Camera View -->
-        <div class="col-md-7 d-flex flex-column h-100">
-            <div class="card shadow-lg border-0 bg-dark text-white flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden rounded-3">
+    <!-- Interior Workspace Split -->
+    <div class="card-body p-3 p-lg-4 flex-grow-1 d-flex flex-column" style="min-height: 0;">
+        <div class="row g-3 flex-grow-1 m-0" style="min-height: 0;">
 
-                <!-- Container to hold camera feed and overlay bounding boxes -->
-                <div id="videoContainer" class="position-relative w-100 h-100" style="display: none;">
-                    <video id="webcamFeed" autoplay playsinline class="w-100 h-100" style="object-fit: cover;"></video>
+            <!-- LEFT COLUMN | Camera View -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-2 pb-3" style="min-height: 0;">
 
-                    <!-- Transparent canvas overlay for drawing boxes & labels -->
-                    <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none;"></canvas>
-                </div>
+                <!-- Camera Card -->
+                <div class="card border-0 bg-dark text-white rounded-4 flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden shadow-sm"
+                     style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate;">
 
-                <!-- Hidden canvas for sending frames to Python -->
-                <canvas id="captureCanvas" style="display: none;"></canvas>
+                    <!-- Live Video Stream Container -->
+                    <div id="videoContainer" class="position-relative w-100 h-100 rounded-4 overflow-hidden" style="display: none;">
+                        <video id="webcamFeed" autoplay playsinline class="w-100 h-100 rounded-4" style="object-fit: cover;"></video>
 
-                <div id="cameraPlaceholder" class="text-center p-4">
-                    <i class="fa-solid fa-video-slash fa-4x text-secondary mb-3"></i>
-                    <h4 class="text-secondary fw-semibold">Webcam Disabled</h4>
-                    <p class="text-muted small">Select your webcam and click the button below to connect to the scanner.</p>
-                </div>
+                        <!-- Canvas overlay for bounding boxes & labels -->
+                        <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100 rounded-4" style="pointer-events: none;"></canvas>
+                    </div>
 
-                <!-- Action Controls: Camera Dropdown + Enable/Stop Buttons -->
-                <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 z-3 d-flex gap-2 align-items-center">
-                    <select id="cameraSelect" class="form-select form-select-sm shadow-sm" style="max-width: 220px;">
-                        <option value="">Detecting cameras...</option>
-                    </select>
+                    <!-- Hidden canvas for sending frames -->
+                    <canvas id="captureCanvas" style="display: none;"></canvas>
 
-                    <button id="startCamBtn" class="btn fw-semibold shadow px-4 py-2 text-white" style="background-color:#1ca9e1">
-                        <i class="fa-solid fa-camera me-2"></i> Enable Webcam
-                    </button>
-                    <button id="stopCamBtn" class="btn btn-danger fw-semibold shadow px-4 py-2 d-none">
-                        <i class="fa-solid fa-video-slash me-2"></i> Stop Feed
-                    </button>
+                    <!-- Idle / Disabled State Placeholder -->
+                    <div id="cameraPlaceholder" class="text-center p-4">
+                        <div class="border-2 rounded-circle bg-black bg-opacity-25 p-4 d-inline-flex mb-3 border border-secondary border-opacity-25">
+                            <i class="fa-solid fa-video-slash fa-3x text-secondary"></i>
+                        </div>
+                        <h5 class="fw-bold text-secondary mb-1">Webcam Disabled</h5>
+                        <p class="text-muted small mb-0" style="max-width: 320px;">
+                            Select your video source and enable the camera to start scanning products on the counter.
+                        </p>
+                    </div>
+
+                    <!-- Enable/Disable Webcam Button -->
+                    <div class="position-absolute start-50 translate-middle-x z-3 shadow-lg" style="bottom: 24px;">
+                        <div class="btn-group rounded-pill overflow-hidden border border-white border-opacity-25 shadow" role="group">
+
+                            <!-- Start Button -->
+                            <button id="startCamBtn"
+                                    type="button"
+                                    class="btn btn-sm text-white fw-semibold px-3 py-2 d-flex align-items-center gap-2 border-0"
+                                    style="background-color: #1162a3;">
+                                <i class="fa-solid fa-play small"></i>
+                                <span>Enable Scanner</span>
+                            </button>
+
+                            <!-- Stop Button -->
+                            <button id="stopCamBtn"
+                                    type="button"
+                                    class="btn btn-sm btn-danger fw-semibold px-3 py-2 d-none d-flex align-items-center gap-2 border-0">
+                                <i class="fa-solid fa-stop small"></i>
+                                <span>Stop Feed</span>
+                            </button>
+
+                            <!-- Divider & Caret Combobox Trigger -->
+                            <div class="position-relative d-flex align-items-center border-start border-white border-opacity-25"
+                                 id="cameraDropdownWrapper"
+                                 style="background-color: #1162a3; transition: background-color 0.2s ease;">
+
+                                <!-- Visible Down Chevron (v) -->
+                                <button type="button"
+                                        tabindex="-1"
+                                        class="btn btn-sm text-white px-2 py-2 border-0 h-100 d-flex align-items-center justify-content-center"
+                                        style="pointer-events: none; width: 34px;">
+                                    <i class="fa-solid fa-chevron-down small"></i>
+                                </button>
+
+                                <!-- Invisible Overlay Select -->
+                                <select id="cameraSelect"
+                                        class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                        style="cursor: pointer;"
+                                        title="Choose camera device">
+                                    <option value="">Detecting cameras...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
+            <!-- RIGHT COLUMN | Transaction Queue -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-3 pos-queue-pane" style="min-height: 0;">
+                <div class="card border-0 rounded-4 bg-white d-flex flex-column h-100 shadow-sm overflow-hidden">
 
-        <!-- Right Column: Transaction Queue -->
-        <div class="col-md-5 d-flex flex-column h-100">
-            <div class="card shadow-sm border-0 h-100" style="background-color: #e9ecef;">
+                    <!-- Queue Header -->
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom flex-shrink-0"
+                         style="background-color: #f8fafc;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-receipt text-primary"></i>
+                            <span class="fw-bold text-primary small text-uppercase">Receipt Queue</span>
+                        </div>
+                        <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1" style="font-size: 11px;">
+                            Live Cart
+                        </span>
+                    </div>
 
-                <!-- Blue Header -->
-                <div class="card-header text-white fw-bold p-3 d-flex justify-content-between align-items-center"
-                     style="background-color: #1b6ec2;">
-
-                    <span>
-                        <i class="fa-solid fa-list-ul me-2"></i>
-                        Transaction Queue
-                    </span>
-
-                    <button type="button"
-                            class="btn btn-light btn-sm fw-bold"
-                            onclick="window.open('/Home/CustomerDisplay', 'CustomerDisplay', 'width=1000,height=700')">
-                        <i class="fa-solid fa-display me-1"></i>
-                        Customer Display
-                    </button>
-
-                </div>
-
-
-                <div class="card-body bg-white m-2 rounded d-flex flex-column">
-                    <h6 class="fw-bold mb-3 text-start">Digital Receipt</h6>
-
-                    <!-- Receipt Table -->
-                    <div class="table-responsive flex-grow-1" style="max-height: 100%; overflow-y: auto;">
-                        <table class="table table-striped table-hover table-sm align-middle" style="font-size: 0.85rem;">
-                            <thead class="table-light text-muted">
+                    <!-- Scrollable Receipt Item Table -->
+                    <div class="flex-grow-1 overflow-y-auto no-scrollbar p-2 p-md-3 pos-queue-table-container">
+                        <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.82rem;">
+                            <thead class="table-light text-muted position-sticky top-0 z-2">
                                 <tr>
-                                    <th>Product Name</th>
-                                    <th>Qty</th>
-                                    <th>Unit Price</th>
-                                    <th>Subtotal</th>
-                                    <th></th> <!-- For Buttons -->
+                                    <th class="border-0 pb-2">Item</th>
+                                    <th class="border-0 pb-2 text-center" style="width: 45px;">Qty</th>
+                                    <th class="border-0 pb-2 text-end">Price</th>
+                                    <th class="border-0 pb-2 text-end">Subtotal</th>
+                                    <th class="border-0 pb-2 text-center" style="width: 45px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="identifiedItemsList">
                                 <tr>
-                                    <td colspan="5" class="text-muted text-center py-3">Waiting for scanner to start...</td>
+                                    <td colspan="5" class="text-muted text-center py-4">Waiting for optical scanner...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Manual Product Search -->
-                    <div class="position-relative mt-3 mb-3">
-
-                        <div class="input-group input-group-sm">
+                    <!-- Manual Product Search Input -->
+                    <div class="px-2 px-md-3 pt-2 pb-2 border-top bg-light flex-shrink-0 position-relative">
+                        <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border bg-white">
+                            <span class="input-group-text bg-white border-0 text-muted ps-3 pe-1">
+                                <i class="fa-solid fa-barcode"></i>
+                            </span>
                             <input type="text"
-                                   class="form-control"
-                                   placeholder="Enter product name"
+                                   class="form-control border-0 bg-white shadow-none ps-2 fw-medium"
+                                   placeholder="Manual entry (product name)..."
                                    id="manualProductInput"
-                                   autocomplete="off">
-
-                            <button class="btn btn-success fw-bold px-3"
+                                   autocomplete="off" />
+                            <button class="btn btn-primary fw-semibold px-3"
                                     type="button"
                                     id="btnAddProduct"
-                                    style="border-radius: 20px;">
-                                Add
+                                    style="background-color: #1162a3; border-color: #1162a3;">
+                                <i class="fa-solid fa-plus me-1"></i> Add
                             </button>
                         </div>
 
-                        <!-- Search Suggestions -->
+                        <!-- Autocomplete Suggestions -->
                         <div id="productSearchResults"
-                             class="position-absolute bg-white border rounded shadow-sm w-100"
-                             style="
-                               display: none;
-                               z-index: 1050;
-                              max-height: 220px;
-                               overflow-y: auto;
-                                  top: 100%;
-                                 left: 0;
-                           ">
+                             class="position-absolute bg-white border rounded-3 shadow-lg w-100 start-0 px-1 py-1"
+                             style="display: none; z-index: 1050; max-height: 180px; overflow-y: auto; bottom: 100%; margin-bottom: 4px;">
                         </div>
-
                     </div>
 
-                    <!-- Total and Actions Row -->
-                    <div class="d-flex justify-content-between align-items-center p-2 border rounded shadow-sm bg-white mt-auto">
-                        <!-- Total Due -->
-                        <div class="text-start">
-                            <span class="text-dark fw-bold d-block" style="font-size: 0.75rem;">TOTAL DUE:</span>
-                            <span class="fw-bold text-dark" id="totalDueDisplay" style="font-size: 1.3rem;">PHP 0.00</span>
-                        </div>
+                    <!-- Bottom Settlement Bar -->
+                    <div class="p-2 p-md-1 border-0 flex-shrink-0 bg-white rounded-bottom-4">
+                        <div class="d-flex justify-content-between align-items-center p-2 px-3 border rounded-4 shadow-sm bg-white">
 
-                        <!-- Action Buttons -->
-                        <div class="d-flex gap-2">
-                            <!-- Stacked Buttons -->
-                            <div class="d-flex flex-column gap-1">
-                                <button class="btn btn-warning btn-sm fw-bold text-dark py-1 px-2" style="font-size: 0.65rem;" onclick="openOldTransactions()">OLD<br>TRANSACTION</button>
-                                <button class="btn btn-danger btn-sm fw-bold py-1 px-2" id="btnVoidCart" style="font-size: 0.65rem;">VOID CART</button>
+                            <!-- Total Due -->
+                            <div class="text-start">
+                                <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.70rem; letter-spacing: 0.5px;">Total Amount</span>
+                                <span class="fw-bold text-dark lh-1" id="totalDueDisplay" style="font-size: 1.5rem;">₱ 0.00</span>
                             </div>
-                            <!-- Big Blue Button (ID ADDED HERE) -->
-                            <button class="btn btn-primary d-flex flex-column align-items-center justify-content-center fw-bold px-2" id="btnProceedToPayment" style="font-size: 0.75rem; background-color: #1b6ec2;">
-                                <i class="fa-solid fa-credit-card mb-1 fs-5"></i>
-                                PROCEED TO<br>PAYMENT
-                            </button>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2">
+
+                                <!-- Stacked Secondary Buttons -->
+                                <div class="d-flex flex-column gap-2 justify-content-center">
+                                    <button class="btn btn-warning border-secondary border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm"
+                                            style="font-size: 0.85rem; height: 38px;"
+                                            onclick="openOldTransactions()">
+                                        <i class="fa-solid fa-clock-rotate-left me-2"></i>History
+                                    </button>
+
+                                    <button class="btn btn-danger border-danger border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm"
+                                            id="btnVoidCart"
+                                            style="font-size: 0.85rem; height: 38px;">
+                                        <i class="fa-solid fa-trash-can me-2"></i>Void Cart
+                                    </button>
+                                </div>
+
+                                <!-- Big Primary Button -->
+                                <button class="btn btn-primary d-flex flex-column align-items-center justify-content-center fw-bold px-3 px-sm-4 rounded-3 shadow-sm"
+                                        id="btnProceedToPayment"
+                                        style="background-color: #1162a3; border-color: #1162a3;">
+                                    <i class="fa-solid fa-credit-card mb-1" style="font-size: 1.4rem;"></i>
+                                    <span class="text-center" style="font-size: 0.85rem; letter-spacing: 0.3px; line-height: 1.2;">PROCEED TO<br>PAYMENT</span>
+                                </button>
+
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- Old Transactions Modal -->
+<!-- Modal: Recent Transactions -->
 <div class="modal fade" id="oldTransactionsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-clock-rotate-left"></i> Recent Transactions</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+
+            <!-- Top Header -->
+            <div class="modal-header text-white p-3" style="background-color: #1162a3;">
+                <h6 class="modal-title fw-bold mb-0">
+                    <i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Transactions
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
+
+            <!-- Table -->
+            <div class="modal-body p-2">
+                <div class="table-responsive" style="max-height: 380px;">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-light text-muted">
                             <tr>
-                                <th>Receipt #</th>
-                                <th>Date</th>
-                                <th>Total</th>
+                                <th class="ps-3 py-2">Receipt #</th>
+                                <th class="py-2">Date</th>
+                                <th class="text-end pe-3 py-2">Total</th>
                             </tr>
                         </thead>
                         <tbody id="oldTransactionsList">
@@ -190,36 +245,35 @@
     </div>
 </div>
 
-<!-- Adjust Product Quantity Modal -->
+<!-- Modal: Adjust Product Quantity -->
 <div class="modal fade" id="adjustQuantityModal" tabindex="-1" aria-labelledby="adjustQuantityModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-        <div class="modal-content shadow-lg border-0 rounded-3">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h6 class="modal-title fw-bold" id="adjustQuantityModalLabel">
-                    <i class="fa-solid fa-pen-to-square me-2"></i>Adjusting product quantity
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header text-white p-3" style="background-color: #1162a3;">
+                <h6 class="modal-title fw-bold mb-0" id="adjustQuantityModalLabel">
+                    <i class="fa-solid fa-pen-to-square me-2"></i>Adjust Quantity
                 </h6>
-                <button type="button" class="btn-close text-danger fw-bold" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <!-- Hidden field to track which item we are editing -->
-                <input type="hidden" id="editItemIndex">
+            <div class="modal-body p-3 p-lg-4">
+                <input type="hidden" id="editItemIndex" />
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted mb-1">Product Name</label>
-                    <input type="text" class="form-control bg-light" id="editProductName" readonly>
+                    <label class="form-label fw-semibold small text-muted mb-1">Product</label>
+                    <input type="text" class="form-control form-control-sm bg-light fw-medium border-0" id="editProductName" readonly />
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted mb-1">Price</label>
-                    <input type="text" class="form-control bg-light" id="editProductPrice" readonly>
+                    <label class="form-label fw-semibold small text-muted mb-1">Unit Price</label>
+                    <input type="text" class="form-control form-control-sm bg-light fw-medium border-0" id="editProductPrice" readonly />
                 </div>
                 <div class="mb-4">
-                    <label class="form-label fw-bold small text-muted mb-1">Quantity</label>
-                    <input type="number" class="form-control" id="editProductQuantity" min="1">
-                    <div class="invalid-feedback">Please enter a valid quantity greater than 0.</div>
+                    <label class="form-label fw-semibold small text-muted mb-1">Quantity</label>
+                    <input type="number" class="form-control shadow-sm" id="editProductQuantity" min="1" inputmode="numeric" />
+                    <div class="invalid-feedback">Enter a valid quantity (1 or more).</div>
                 </div>
 
-                <button type="button" class="btn w-100 fw-bold text-white shadow-sm" id="btnConfirmAdjust" style="background-color: #1ca9e1; border-radius: 8px;">
-                    Confirm
+                <button type="button" class="btn w-100 fw-bold text-white shadow-sm rounded-3 py-2" id="btnConfirmAdjust" style="background-color: #1162a3;">
+                    Update Quantity
                 </button>
             </div>
         </div>
@@ -227,9 +281,10 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
+
     <script type="text/javascript">
         document.addEventListener("DOMContentLoaded", function () {
-            // Force the customer display to start completely empty on page load
             localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({ items: [], total: 0 }));
 
             const video = document.getElementById("webcamFeed");
@@ -252,143 +307,68 @@
             const recentDetections = [];
             const detectionHoldMs = 300;
 
-            // CART & CACHE STATE
             const priceCache = {};
             let manualItems = [];
 
-            //  SEARCH HISTORY
-
-            const productSearchInput =
-                document.getElementById("manualProductInput");
-
-            const productSearchResults =
-                document.getElementById("productSearchResults");
-
-            let recentSearches =
-                JSON.parse(
-                    localStorage.getItem("smartScanRecentSearches") || "[]"
-                );
-
+            const productSearchInput = document.getElementById("manualProductInput");
+            const productSearchResults = document.getElementById("productSearchResults");
+            let recentSearches = JSON.parse(localStorage.getItem("smartScanRecentSearches") || "[]");
 
             // Show latest 3 searches
             function showRecentSearches() {
-
                 productSearchResults.innerHTML = "";
-
                 if (recentSearches.length === 0) {
                     productSearchResults.style.display = "none";
                     return;
                 }
 
-                productSearchResults.innerHTML =
-                    "<div class='px-3 py-2 fw-bold text-muted small'>Recent Searches</div>";
-
+                productSearchResults.innerHTML = "<div class='px-3 py-1 fw-bold text-muted small border-bottom'>Recent Searches</div>";
                 recentSearches.slice(0, 3).forEach(search => {
-
                     const item = document.createElement("div");
-
-                    item.className = "px-3 py-2";
-
+                    item.className = "px-3 py-2 small rounded hover-bg cursor-pointer d-flex align-items-center";
                     item.style.cursor = "pointer";
-
-                    item.innerHTML =
-                        `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
-
+                    item.innerHTML = `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
                     item.addEventListener("click", () => {
-
                         productSearchInput.value = search;
-
                         productSearchResults.style.display = "none";
                     });
-
                     productSearchResults.appendChild(item);
                 });
-
                 productSearchResults.style.display = "block";
             }
 
-
             // Save search
             function saveRecentSearch(search) {
-
                 search = search.trim();
-
                 if (!search) return;
-
-                // Remove duplicate
-                recentSearches =
-                    recentSearches.filter(
-                        item =>
-                            item.toLowerCase() !==
-                            search.toLowerCase()
-                    );
-
-                // Put newest search at the top
+                recentSearches = recentSearches.filter(item => item.toLowerCase() !== search.toLowerCase());
                 recentSearches.unshift(search);
-
-                // Keep only 3
-                recentSearches =
-                    recentSearches.slice(0, 3);
-
-                localStorage.setItem(
-                    "smartScanRecentSearches",
-                    JSON.stringify(recentSearches)
-                );
+                recentSearches = recentSearches.slice(0, 3);
+                localStorage.setItem("smartScanRecentSearches", JSON.stringify(recentSearches));
             }
 
-
             // Click search box
-            productSearchInput.addEventListener(
-                "focus",
-                () => {
-
-                    if (
-                        productSearchInput.value.trim() === ""
-                    ) {
-
-                        showRecentSearches();
-                    }
-                }
-            );
-
+            productSearchInput.addEventListener("focus", () => {
+                if (productSearchInput.value.trim() === "") showRecentSearches();
+            });
 
             // Start typing = hide history
-            productSearchInput.addEventListener(
-                "input",
-                () => {
-
-                    if (
-                        productSearchInput.value.trim() !== ""
-                    ) {
-
-                        productSearchResults.style.display =
-                            "none";
-
-                    } else {
-
-                        showRecentSearches();
-                    }
+            productSearchInput.addEventListener("input", () => {
+                if (productSearchInput.value.trim() !== "") {
+                    productSearchResults.style.display = "none";
+                } else {
+                    showRecentSearches();
                 }
-            );
-
+            });
 
             // Click outside = hide history
-            document.addEventListener(
-                "click",
-                event => {
-
-                    if (
-                        !productSearchInput.contains(event.target) &&
-                        !productSearchResults.contains(event.target)
-                    ) {
-
-                        productSearchResults.style.display =
-                            "none";
-                    }
+            document.addEventListener("click", event => {
+                if (!productSearchInput.contains(event.target) && !productSearchResults.contains(event.target)) {
+                    productSearchResults.style.display = "none";
                 }
-            );
+            });
 
-            // 1. POPULATE CONNECTED WEBCAMS
+            // POPULATE CONNECTED WEBCAMS
             async function loadCameras() {
                 try {
                     const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -402,12 +382,12 @@
                         const option = document.createElement("option");
                         option.value = device.deviceId;
                         option.text = device.label || `Camera ${index + 1}`;
-
                         const lowerLabel = (device.label || "").toLowerCase();
-                        if (lowerLabel.includes("usb") || lowerLabel.includes("external") || lowerLabel.includes("webcam")) {
+                        if (lowerLabel.includes("back") || lowerLabel.includes("rear") || lowerLabel.includes("environment")) {
+                            option.selected = true;
+                        } else if (lowerLabel.includes("usb") || lowerLabel.includes("external") || lowerLabel.includes("webcam")) {
                             option.selected = true;
                         }
-
                         cameraSelect.appendChild(option);
                     });
 
@@ -421,7 +401,7 @@
             }
             loadCameras();
 
-            // 2. START SELECTED CAMERA
+            // START SELECTED CAMERA
             async function startSelectedCamera() {
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(track => track.stop());
@@ -431,46 +411,39 @@
                 const constraints = {
                     video: {
                         deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+                        facingMode: selectedDeviceId ? undefined : { ideal: "environment" },
                         width: { ideal: 1280, min: 640 },
                         height: { ideal: 720, min: 480 },
-                        frameRate: { ideal: 30, max: 30 },
-                        focusMode: { ideal: "continuous" }
+                        frameRate: { ideal: 30, max: 30 }
                     }
                 };
 
                 mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = mediaStream;
-
-                const track = mediaStream.getVideoTracks()[0];
-                const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-                if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
-                    try {
-                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
-                    } catch (e) {
-                        console.warn("Autofocus constraint not applied:", e);
-                    }
-                }
             }
 
-            // 3. START WEBCAM BUTTON
+            // START WEBCAM BUTTON
             startBtn.addEventListener("click", async function () {
-                try {
-                    await startSelectedCamera();
+            try {
+                await startSelectedCamera();
 
-                    placeholder.style.display = "none";
-                    videoContainer.style.display = "block";
-                    startBtn.classList.add("d-none");
-                    stopBtn.classList.remove("d-none");
+                placeholder.style.display = "none";
+                videoContainer.style.display = "block";
+                startBtn.classList.add("d-none");
+                stopBtn.classList.remove("d-none");
 
-                    isScanningActive = true;
-                    startDetectionLoop();
-                } catch (err) {
-                    console.error("Camera access error:", err);
-                    alert("Failed to access camera: " + err.message);
-                }
-            });
+                // Turn dropdown red to match btn-danger
+                document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#dc3545";
 
-            // 4. SWITCH WEBCAM ON THE FLY
+                isScanningActive = true;
+                startDetectionLoop();
+            } catch (err) {
+                console.error("Camera access error:", err);
+                alert("Failed to access camera: " + err.message);
+            }
+        });
+
+            // SWITCH WEBCAM ON THE FLY
             cameraSelect.addEventListener("change", async function () {
                 if (mediaStream) {
                     try {
@@ -481,70 +454,54 @@
                 }
             });
 
-            // 5. STOP WEBCAM
+            // STOP WEBCAM
             stopBtn.addEventListener("click", function () {
-                isScanningActive = false;
-                isProcessingFrame = false;
+            isScanningActive = false;
+            isProcessingFrame = false;
 
-                if (mediaStream) {
-                    mediaStream.getTracks().forEach(track => track.stop());
-                    mediaStream = null;
-                }
-                video.srcObject = null;
-
-                overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-                recentDetections.length = 0;
-
-                videoContainer.style.display = "none";
-                placeholder.style.display = "block";
-                stopBtn.classList.add("d-none");
-                startBtn.classList.remove("d-none");
-
-                buildCartAndRender({}, false);
-            });
-
-            // 6. DETECTION LOOP (Adjusted to 100ms for stable performance)
-            async function startDetectionLoop() {
-                while (isScanningActive) {
-                    if (!isProcessingFrame && video.readyState === video.HAVE_ENOUGH_DATA) {
-                        isProcessingFrame = true;
-                        await captureAndDetect();
-                        isProcessingFrame = false;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
             }
+            video.srcObject = null;
 
-            // 7. CAPTURE, DETECT, & UPDATE UI
+            overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+            recentDetections.length = 0;
+
+            videoContainer.style.display = "none";
+            placeholder.style.display = "block";
+            stopBtn.classList.add("d-none");
+            startBtn.classList.remove("d-none");
+
+            // Turn dropdown blue to match startCamBtn
+            document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#1162a3";
+
+            buildCartAndRender({}, false);
+        });
+
+            // DETECTION LOOP (Adjusted to 100ms for stable performance)
             async function captureAndDetect() {
+
+                // Guard block
+                if (video.videoWidth === 0 || video.videoHeight === 0) {
+                    return;
+                }
+
                 captureCanvas.width = video.videoWidth;
                 captureCanvas.height = video.videoHeight;
-                // Resizing a canvas clears it, so only update its backing size when
-                // the camera's actual resolution changes.
                 if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
                     overlay.width = video.videoWidth;
                     overlay.height = video.videoHeight;
                 }
 
-                captureCtx.drawImage(
-                    video,
-                    0,
-                    0,
-                    captureCanvas.width,
-                    captureCanvas.height
-                );
-
+                captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
                 const frameBase64 = captureCanvas.toDataURL("image/jpeg", 0.5);
 
                 try {
                     const response = await fetch("http://localhost:5000/detect_frame", {
                         method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            image: frameBase64
-                        })
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ image: frameBase64 })
                     });
 
                     const data = await response.json();
@@ -552,8 +509,6 @@
                     const now = Date.now();
                     const currentDetections = detections.filter(d => d.box);
 
-                    // Keep a detection briefly through a single missed inference,
-                    // while redrawing from a clean canvas to avoid label trails.
                     for (const detected of currentDetections) {
                         const [x1, y1, x2, y2] = detected.box;
                         let previous = recentDetections.find(item =>
@@ -604,29 +559,18 @@
                     let hasLowConfidence = false;
 
                     for (const detected of detections) {
-
                         if (detected.confidence < 80) {
                             hasLowConfidence = true;
                         } else {
-                            yoloCounts[detected.name] =
-                                (yoloCounts[detected.name] || 0) + 1;
+                            yoloCounts[detected.name] = (yoloCounts[detected.name] || 0) + 1;
                         }
                     }
 
-                    await buildCartAndRender(
-                        yoloCounts,
-                        hasLowConfidence
-                    );
+                    await buildCartAndRender(yoloCounts, hasLowConfidence);
 
                 } catch (error) {
-
-                    console.error(
-                        "Cannot connect to Python Server:",
-                        error
-                    );
-
-                    list.innerHTML =
-                        "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
+                    console.error("Cannot connect to Python Server:", error);
+                    list.innerHTML = "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
                 }
             }
 
@@ -659,46 +603,48 @@
 
                         htmlOutput += `
                             <tr>
-                                <td>${product.name} <span class="badge bg-success ms-1">Auto</span></td>
-                                <td>${qty}</td>
-                                <td>PHP ${product.price.toFixed(2)}</td>
-                                <td class="text-success fw-bold">PHP ${subtotal.toFixed(2)}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="lockYoloItem('${formattedItemName}', '${product.name}', ${product.price}, ${qty})" title="Lock Item in Cart">
-                                        <i class="fa-solid fa-check"></i>
+                                <td class="fw-medium text-truncate" style="max-width: 140px;">${product.name} <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span></td>
+                                <td class="text-center fw-bold">${qty}</td>
+                                <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
+                                <td class="text-end text-dark fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${formattedItemName}', '${product.name}', ${product.price}, ${qty})" title="Lock Item in Cart">
+                                        <i class="fa-solid fa-check" style="font-size: 14px;"></i>
                                     </button>
                                 </td>
                             </tr>`;
                     } else {
                         htmlOutput += `
                             <tr>
-                                <td class="text-warning fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>${itemName}</td>
-                                <td>${qty}</td>
-                                <td>-</td>
-                                <td class="text-danger">Not in DB</td>
+                                <td class="text-warning fw-bold text-truncate" style="max-width: 140px;"><i class="fa-solid fa-triangle-exclamation me-1"></i>${itemName}</td>
+                                <td class="text-center">${qty}</td>
+                                <td class="text-end">-</td>
+                                <td class="text-end text-danger small">Unknown</td>
                                 <td></td>
                             </tr>`;
                     }
                 }
 
-                // 2. Process Manual/Saved Items
+                // Process Manual/Saved Items
                 manualItems.forEach((item, index) => {
                     const subtotal = item.price * item.qty;
                     currentTotal += subtotal;
 
                     htmlOutput += `
                         <tr>
-                            <td>${item.name} <span class="badge bg-secondary ms-1">Saved</span></td>
-                            <td>${item.qty}</td>
-                            <td>PHP ${item.price.toFixed(2)}</td>
-                            <td class="text-success fw-bold">PHP ${subtotal.toFixed(2)}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary py-0 px-1 me-1" onclick="editManualItem(${index})" title="Edit Qty">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeManualItem(${index})" title="Delete">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
+                            <td class="fw-medium text-truncate" style="max-width: 140px;">${item.name} <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;">Cart</span></td>
+                            <td class="text-center fw-bold">${item.qty}</td>
+                            <td class="text-end text-muted small">₱${item.price.toFixed(2)}</td>
+                            <td class="text-end text-primary fw-bold small">₱${subtotal.toFixed(2)}</td>
+                            <td class="text-center">
+                                <div class="d-inline-flex gap-1">
+                                    <button class="btn btn-sm btn-outline-primary rounded-circle p-1" style="width: 22px; height: 22px; display: inline-grid; place-items: center;" onclick="editManualItem(${index})" title="Edit Qty">
+                                        <i class="fa-solid fa-pen" style="font-size: 9px;"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-circle p-1" style="width: 22px; height: 22px; display: inline-grid; place-items: center;" onclick="removeManualItem(${index})" title="Delete">
+                                        <i class="fa-solid fa-xmark" style="font-size: 9px;"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>`;
                 });
@@ -706,20 +652,18 @@
                 if (hasLowConfidence) {
                     htmlOutput += `
                         <tr class="table-warning">
-                            <td colspan="5" class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Item Unclear. Hold steady.</td>
+                            <td colspan="5" class="text-danger fw-semibold text-center small py-1" style="font-size: 11px;"><i class="fa-solid fa-triangle-exclamation me-1"></i>Hold item steady over tray.</td>
                         </tr>`;
                 }
 
                 if (htmlOutput === "" && manualItems.length === 0) {
-                    htmlOutput = "<tr><td colspan='5' class='text-muted text-center py-3'>No items detected on tray...</td></tr>";
+                    htmlOutput = "<tr><td colspan='5' class='text-muted text-center py-4'>No products detected on checkout tray...</td></tr>";
                 }
 
                 list.innerHTML = htmlOutput;
-                totalDueDisplay.innerText = `PHP ${currentTotal.toFixed(2)}`;
+                totalDueDisplay.innerText = `₱ ${currentTotal.toFixed(2)}`;
 
-                // =========================================================
-                // NEW: BROADCAST TO CUSTOMER DISPLAY (ONLY SAVED/CART ITEMS)
-                // =========================================================
+                // BROADCAST: to Customer Display (Only SAVED/CART ITEMS)
                 const broadcastItems = [];
                 let customerTotal = 0; // Calculate a separate total for the customer
 
@@ -737,73 +681,42 @@
                 // =========================================================
             }
 
-            // 8. MANUAL ADD BUTTON LOGIC
+            // MANUAL ADD BUTTON LOGIC
             document.getElementById("btnAddProduct").addEventListener("click", async () => {
-
                 const input = document.getElementById("manualProductInput");
                 const name = input.value.trim();
-
                 if (!name) return;
 
-                const formattedItemName =
-                    name.toLowerCase().replaceAll(" ", "_");
-
+                const formattedItemName = name.toLowerCase().replaceAll(" ", "_");
                 try {
-
-                    const dbResponse =
-                        await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
-
+                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
                     if (dbResponse.ok) {
-
                         const product = await dbResponse.json();
-
-                        // Save product to recent searches
                         saveRecentSearch(product.name);
 
-                        const existing =
-                            manualItems.find(i => i.name === product.name);
-
+                        const existing = manualItems.find(i => i.name === product.name);
                         if (existing) {
-
                             existing.qty++;
-
                         } else {
-
-                            manualItems.push({
-                                name: product.name,
-                                price: product.price,
-                                qty: 1
-                            });
+                            manualItems.push({ name: product.name, price: product.price, qty: 1 });
                         }
 
-                        // Clear search box
                         input.value = "";
-
-                        // Hide search history/results
                         productSearchResults.style.display = "none";
-
-                        if (!isScanningActive) {
-                            buildCartAndRender({}, false);
-                        }
-
+                        if (!isScanningActive) buildCartAndRender({}, false);
                     } else {
-
                         alert("Product not found in database.");
                     }
-
                 } catch (err) {
-
                     alert("Database connection error.");
                 }
             });
 
-            // 9. VOID CART BUTTON
+            // VOID CART BUTTON
             document.getElementById("btnVoidCart").addEventListener("click", () => {
                 if (confirm("Are you sure you want to void all saved items?")) {
                     manualItems = [];
-                    if (!isScanningActive) {
-                        buildCartAndRender({}, false);
-                    }
+                    if (!isScanningActive) buildCartAndRender({}, false);
                 }
             });
 
@@ -815,7 +728,7 @@
                 modal.show();
 
                 const tbody = document.getElementById('oldTransactionsList');
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center">Loading...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Loading transactions...</td></tr>';
 
                 try {
                     const response = await fetch('/Home/GetOldTransactions');
@@ -826,18 +739,18 @@
                         data.transactions.forEach(tx => {
                             html += `
                                 <tr>
-                                    <td class="fw-bold">${tx.receiptNumber}</td>
+                                    <td class="fw-semibold ps-3">${tx.receiptNumber}</td>
                                     <td><small class="text-muted">${tx.date}</small></td>
-                                    <td class="text-success fw-bold">PHP ${tx.total.toFixed(2)}</td>
+                                    <td class="text-end pe-3 fw-bold text-dark">PHP ${tx.total.toFixed(2)}</td>
                                 </tr>
                             `;
                         });
                         tbody.innerHTML = html;
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No recent transactions found.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">No recent transactions found.</td></tr>';
                     }
                 } catch (error) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error loading transactions.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger py-3">Error loading transactions.</td></tr>';
                 }
             };
 
@@ -849,41 +762,35 @@
                 } else {
                     manualItems.push({ name: displayName, price: price, qty: qty });
                 }
-
                 if (!isScanningActive) buildCartAndRender({}, false);
             };
 
-            // 10. EDIT MODAL LOGIC
+            // EDIT MODAL LOGIC
             window.editManualItem = function (index) {
                 const item = manualItems[index];
-
-                // Fill the modal with the selected item's data
                 document.getElementById("editItemIndex").value = index;
                 document.getElementById("editProductName").value = item.name;
                 document.getElementById("editProductPrice").value = `PHP ${item.price.toFixed(2)}`;
 
                 const qtyInput = document.getElementById("editProductQuantity");
                 qtyInput.value = item.qty;
-                qtyInput.classList.remove("is-invalid"); // Clear old errors
+                qtyInput.classList.remove("is-invalid");
 
-                // Open the Bootstrap modal
                 const adjustModal = new bootstrap.Modal(document.getElementById("adjustQuantityModal"));
                 adjustModal.show();
             };
 
-            // 11. CONFIRM ADJUSTMENT BUTTON
+            // CONFIRM ADJUSTMENT BUTTON
             document.getElementById("btnConfirmAdjust").addEventListener("click", function() {
                 const index = document.getElementById("editItemIndex").value;
                 const qtyInput = document.getElementById("editProductQuantity");
                 const newQty = parseInt(qtyInput.value);
 
-                // Validation Rule 1.1: Error if invalid or missing
                 if (isNaN(newQty) || newQty <= 0) {
                     qtyInput.classList.add("is-invalid");
                     return;
                 }
 
-                // Update the quantity and close modal
                 qtyInput.classList.remove("is-invalid");
                 manualItems[index].qty = newQty;
 
@@ -891,7 +798,6 @@
                 const adjustModal = bootstrap.Modal.getInstance(adjustModalEl);
                 adjustModal.hide();
 
-                // Refresh the receipt
                 if (!isScanningActive) buildCartAndRender({}, false);
             });
 
@@ -901,7 +807,7 @@
                 if (!isScanningActive) buildCartAndRender({}, false);
             };
 
-            // 12. PROCEED TO PAYMENT BUTTON
+            // PROCEED TO PAYMENT BUTTON
             document.getElementById("btnProceedToPayment").addEventListener("click", () => {
                 if (manualItems.length === 0) {
                     alert("The cart is empty! Please add or lock items before proceeding.");
@@ -917,6 +823,20 @@
 
             // Force initial render to sync empty cart state with customer display on load
             buildCartAndRender({}, false);
+        });
+
+        // BACKGROUND PRE-FETCHER: Download AI models into browser cache while scanning items
+        window.addEventListener('load', () => {
+            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
+
+            console.log("Pre-fetching Biometric Models in background...");
+            Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]).then(() => {
+                console.log("Biometric Models cached! Verification page will now load instantly.");
+            }).catch(err => console.warn("Background model fetch delayed.", err));
         });
     </script>
 }

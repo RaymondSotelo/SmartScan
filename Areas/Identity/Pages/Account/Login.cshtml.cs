@@ -16,6 +16,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.SignalR;
 using SmartScan.Hubs;
+using SmartScan.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace SmartScan.Areas.Identity.Pages.Account
 {
@@ -25,16 +27,19 @@ namespace SmartScan.Areas.Identity.Pages.Account
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
         private readonly IHubContext<UserSessionHub> _hubContext;
+        private readonly ApplicationDbContext _context;
 
         public LoginModel(SignInManager<IdentityUser> signInManager,
                           ILogger<LoginModel> logger,
                           UserManager<IdentityUser> userManager,
-                          IHubContext<UserSessionHub> hubContext)
+                          IHubContext<UserSessionHub> hubContext,
+                          ApplicationDbContext context)
         {
             _signInManager = signInManager;
             _logger = logger;
             _userManager = userManager;
             _hubContext = hubContext;
+            _context = context;
         }
 
         /// <summary>
@@ -146,7 +151,6 @@ namespace SmartScan.Areas.Identity.Pages.Account
                             await _signInManager.SignInAsync(user, isPersistent: Input.RememberMe);
 
                         // ----[ LOGIN LOGIC ]----
-
                         // If user was intentionally redirected here from an internal page, honor that URL first
                         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
                         {
@@ -161,7 +165,16 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
                         if (await _userManager.IsInRoleAsync(user, "Cashier"))
                         {
-                            return RedirectToAction("Checkout", "Home", new { area = "" });
+                            bool isAssigned = await _context.RetailStaffs.AnyAsync(rs => rs.StaffId == user.Id);
+
+                            if (isAssigned)
+                            {
+                                return RedirectToAction("Checkout", "Home", new { area = "" });
+                            }
+                            else
+                            {
+                                return RedirectToAction("Index", "Home", new { area = "" });
+                            }
                         }
                     }
 
