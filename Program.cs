@@ -39,7 +39,7 @@ builder.Services.AddSingleton<SmartScan.Services.YoloScannerService>();
 
 var app = builder.Build();
 
-<<<<<<< HEAD
+
 
 // AUTOMATIC LOCAL YOLO SCANNER LAUNCHER
 // ==========================================
@@ -123,9 +123,6 @@ else
 }
 // -------------------------------------
 
-=======
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
