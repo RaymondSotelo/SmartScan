@@ -9,7 +9,7 @@
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
      style="height: calc(100dvh - 130px); min-height: 540px;">
 
-     <!-- Top Header -->
+    <!-- Top Header -->
     <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
          style="background-color: #1162a3;">
         <div class="d-flex align-items-center gap-2">
@@ -35,14 +35,9 @@
                 <div class="card border-0 bg-dark text-white rounded-4 flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden shadow-sm"
                      style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate;">
 
-<<<<<<< HEAD
-                <!-- Hidden canvas for capturing frames -->
-                <canvas id="captureCanvas" style="display: none;"></canvas>
-=======
                     <!-- Live Video Stream Container -->
                     <div id="videoContainer" class="position-relative w-100 h-100 rounded-4 overflow-hidden" style="display: none;">
                         <video id="webcamFeed" autoplay playsinline class="w-100 h-100 rounded-4" style="object-fit: cover;"></video>
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
 
                         <!-- Canvas overlay for bounding boxes & labels -->
                         <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100 rounded-4" style="pointer-events: none;"></canvas>
@@ -206,16 +201,7 @@
                                     <i class="fa-solid fa-credit-card mb-1" style="font-size: 1.4rem;"></i>
                                     <span class="text-center" style="font-size: 0.85rem; letter-spacing: 0.3px; line-height: 1.2;">PROCEED TO<br>PAYMENT</span>
                                 </button>
-
                             </div>
-<<<<<<< HEAD
-                            <!-- Big Blue Button -->
-                            <button class="btn btn-primary d-flex flex-column align-items-center justify-content-center fw-bold px-2" id="btnProceedToPayment" style="font-size: 0.75rem; background-color: #1b6ec2;">
-                                <i class="fa-solid fa-credit-card mb-1 fs-5"></i>
-                                PROCEED TO<br>PAYMENT
-                            </button>
-=======
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                         </div>
                     </div>
                 </div>
@@ -323,10 +309,7 @@
             const priceCache = {};
             let manualItems = [];
 
-<<<<<<< HEAD
             // SEARCH HISTORY
-=======
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
             const productSearchInput = document.getElementById("manualProductInput");
             const productSearchResults = document.getElementById("productSearchResults");
             let recentSearches = JSON.parse(localStorage.getItem("smartScanRecentSearches") || "[]");
@@ -339,23 +322,12 @@
                     return;
                 }
 
-<<<<<<< HEAD
-                productSearchResults.innerHTML = "<div class='px-3 py-2 fw-bold text-muted small'>Recent Searches</div>";
-
-                recentSearches.slice(0, 3).forEach(search => {
-                    const item = document.createElement("div");
-                    item.className = "px-3 py-2";
-                    item.style.cursor = "pointer";
-                    item.innerHTML = `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
-
-=======
                 productSearchResults.innerHTML = "<div class='px-3 py-1 fw-bold text-muted small border-bottom'>Recent Searches</div>";
                 recentSearches.slice(0, 3).forEach(search => {
                     const item = document.createElement("div");
                     item.className = "px-3 py-2 small rounded hover-bg cursor-pointer d-flex align-items-center";
                     item.style.cursor = "pointer";
                     item.innerHTML = `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                     item.addEventListener("click", () => {
                         productSearchInput.value = search;
                         productSearchResults.style.display = "none";
@@ -369,32 +341,17 @@
             function saveRecentSearch(search) {
                 search = search.trim();
                 if (!search) return;
-<<<<<<< HEAD
 
-                // Remove duplicate
-                recentSearches = recentSearches.filter(item => item.toLowerCase() !== search.toLowerCase());
-
-                // Put newest search at the top
-                recentSearches.unshift(search);
-
-                // Keep only 3
-=======
+                // Remove duplicate & keep only latest 3
                 recentSearches = recentSearches.filter(item => item.toLowerCase() !== search.toLowerCase());
                 recentSearches.unshift(search);
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                 recentSearches = recentSearches.slice(0, 3);
                 localStorage.setItem("smartScanRecentSearches", JSON.stringify(recentSearches));
             }
 
             // Click search box
             productSearchInput.addEventListener("focus", () => {
-<<<<<<< HEAD
-                if (productSearchInput.value.trim() === "") {
-                    showRecentSearches();
-                }
-=======
                 if (productSearchInput.value.trim() === "") showRecentSearches();
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
             });
 
             // Start typing = hide history
@@ -469,24 +426,24 @@
 
             // START WEBCAM BUTTON
             startBtn.addEventListener("click", async function () {
-            try {
-                await startSelectedCamera();
+                try {
+                    await startSelectedCamera();
 
-                placeholder.style.display = "none";
-                videoContainer.style.display = "block";
-                startBtn.classList.add("d-none");
-                stopBtn.classList.remove("d-none");
+                    placeholder.style.display = "none";
+                    videoContainer.style.display = "block";
+                    startBtn.classList.add("d-none");
+                    stopBtn.classList.remove("d-none");
 
-                // Turn dropdown red to match btn-danger
-                document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#dc3545";
+                    // Turn dropdown red to match btn-danger
+                    document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#dc3545";
 
-                isScanningActive = true;
-                startDetectionLoop();
-            } catch (err) {
-                console.error("Camera access error:", err);
-                alert("Failed to access camera: " + err.message);
-            }
-        });
+                    isScanningActive = true;
+                    startDetectionLoop();
+                } catch (err) {
+                    console.error("Camera access error:", err);
+                    alert("Failed to access camera: " + err.message);
+                }
+            });
 
             // SWITCH WEBCAM ON THE FLY
             cameraSelect.addEventListener("change", async function () {
@@ -501,10 +458,9 @@
 
             // STOP WEBCAM
             stopBtn.addEventListener("click", function () {
-            isScanningActive = false;
-            isProcessingFrame = false;
+                isScanningActive = false;
+                isProcessingFrame = false;
 
-<<<<<<< HEAD
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(track => track.stop());
                     mediaStream = null;
@@ -519,6 +475,9 @@
                 stopBtn.classList.add("d-none");
                 startBtn.classList.remove("d-none");
 
+                // Turn dropdown blue to match startCamBtn
+                document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#1162a3";
+
                 buildCartAndRender({}, false);
             });
 
@@ -532,42 +491,16 @@
                     }
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
-=======
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-                mediaStream = null;
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
             }
-            video.srcObject = null;
 
-            overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-            recentDetections.length = 0;
-
-            videoContainer.style.display = "none";
-            placeholder.style.display = "block";
-            stopBtn.classList.add("d-none");
-            startBtn.classList.remove("d-none");
-
-            // Turn dropdown blue to match startCamBtn
-            document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#1162a3";
-
-            buildCartAndRender({}, false);
-        });
-
-            // DETECTION LOOP (Adjusted to 100ms for stable performance)
+            // DETECTION LOGIC
             async function captureAndDetect() {
-
                 // Guard block
-                if (video.videoWidth === 0 || video.videoHeight === 0) {
-                    return;
-                }
+                if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
                 captureCanvas.width = video.videoWidth;
                 captureCanvas.height = video.videoHeight;
-<<<<<<< HEAD
 
-=======
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                 if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
                     overlay.width = video.videoWidth;
                     overlay.height = video.videoHeight;
@@ -648,11 +581,7 @@
                     await buildCartAndRender(yoloCounts, hasLowConfidence);
 
                 } catch (error) {
-<<<<<<< HEAD
-                    console.error("Cannot connect to C# Server:", error);
-=======
                     console.error("Cannot connect to Python Server:", error);
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                     list.innerHTML = "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
                 }
             }
@@ -689,7 +618,6 @@
                     const product = priceCache[itemName];
                     if (!product.notFound) {
 
-<<<<<<< HEAD
                         // Calculate how many of this item are already in the "Saved" cart
                         const savedItem = manualItems.find(i => i.name === product.name);
                         const savedQty = savedItem ? savedItem.qty : 0;
@@ -706,31 +634,17 @@
 
                             htmlOutput += `
                                 <tr>
-                                    <td>${product.name} <span class="badge bg-success ms-1">Auto</span></td>
-                                    <td>${newQtyToLock}</td>
-                                    <td>PHP ${product.price.toFixed(2)}</td>
-                                    <td class="text-success fw-bold">PHP ${subtotal.toFixed(2)}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock})" title="Lock Item in Cart">
-                                            <i class="fa-solid fa-check"></i>
+                                    <td class="fw-medium text-truncate" style="max-width: 140px;">${product.name} <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span></td>
+                                    <td class="text-center fw-bold">${newQtyToLock}</td>
+                                    <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
+                                    <td class="text-end text-dark fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock})" title="Lock Item in Cart">
+                                            <i class="fa-solid fa-check" style="font-size: 14px;"></i>
                                         </button>
                                     </td>
                                 </tr>`;
                         }
-=======
-                        htmlOutput += `
-                            <tr>
-                                <td class="fw-medium text-truncate" style="max-width: 140px;">${product.name} <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span></td>
-                                <td class="text-center fw-bold">${qty}</td>
-                                <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
-                                <td class="text-end text-dark fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${formattedItemName}', '${product.name}', ${product.price}, ${qty})" title="Lock Item in Cart">
-                                        <i class="fa-solid fa-check" style="font-size: 14px;"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                     } else {
                         htmlOutput += `
                             <tr>
@@ -781,11 +695,7 @@
                 list.innerHTML = htmlOutput;
                 totalDueDisplay.innerText = `₱ ${currentTotal.toFixed(2)}`;
 
-<<<<<<< HEAD
-                // Broadcast to Customer Display
-=======
                 // BROADCAST: to Customer Display (Only SAVED/CART ITEMS)
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                 const broadcastItems = [];
                 let customerTotal = 0;
 
@@ -806,7 +716,6 @@
                 const name = input.value.trim();
                 if (!name) return;
 
-<<<<<<< HEAD
                 try {
                     const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(name)}`);
 
@@ -830,20 +739,6 @@
                                 price: product.price,
                                 qty: 1
                             });
-=======
-                const formattedItemName = name.toLowerCase().replaceAll(" ", "_");
-                try {
-                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${formattedItemName}`);
-                    if (dbResponse.ok) {
-                        const product = await dbResponse.json();
-                        saveRecentSearch(product.name);
-
-                        const existing = manualItems.find(i => i.name === product.name);
-                        if (existing) {
-                            existing.qty++;
-                        } else {
-                            manualItems.push({ name: product.name, price: product.price, qty: 1 });
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                         }
 
                         input.value = "";
@@ -913,10 +808,6 @@
             // EDIT MODAL LOGIC
             window.editManualItem = function (index) {
                 const item = manualItems[index];
-<<<<<<< HEAD
-
-=======
->>>>>>> 816fe500a7d84af274cdf015cb0a4f2ba32ec339
                 document.getElementById("editItemIndex").value = index;
                 document.getElementById("editProductName").value = item.name;
                 document.getElementById("editProductPrice").value = `PHP ${item.price.toFixed(2)}`;
