@@ -27,31 +27,18 @@ namespace SmartScan.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
-            // If user is not logged in, just show the standard landing page
-            if (!User.Identity.IsAuthenticated)
-            {
-                return View();
-            }
+            if (!User.Identity.IsAuthenticated) return View();
 
-            // Get the logged-in User's ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (User.IsInRole("Cashier"))
             {
-                // Check if they are assigned to a store
                 bool isAssigned = await _context.RetailStaffs.AnyAsync(rs => rs.StaffId == currentUserId);
-
-                if (isAssigned)
-                {
-                    return RedirectToAction("Checkout", "Home");
-                }
+                if (isAssigned) return RedirectToAction("Checkout", "Home");
                 return View();
             }
 
-            if (User.IsInRole("Admin"))
-            {
-                return RedirectToAction("Index", "Users");
-            }
+            if (User.IsInRole("Admin")) return RedirectToAction("Index", "Users");
 
             return View();
         }
@@ -60,29 +47,18 @@ namespace SmartScan.Controllers
         public async Task<IActionResult> Payment(string search)
         {
             ViewData["HeaderTitle"] = "Payment";
+            if (!string.IsNullOrEmpty(search)) ViewData["CustomerName"] = search;
 
-            if (!string.IsNullOrEmpty(search))
-            {
-                ViewData["CustomerName"] = search;
-            }
-
-            // Get logged in Cashier ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (!string.IsNullOrEmpty(currentUserId))
             {
-                // If the user is a cashier, verify their assignment
                 if (User.IsInRole("Cashier"))
                 {
                     var staffAssignment = await _context.RetailStaffs
                         .Include(rs => rs.Retail)
                         .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
 
-                    if (staffAssignment == null || staffAssignment.Retail == null)
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-
+                    if (staffAssignment == null || staffAssignment.Retail == null) return RedirectToAction("Index", "Home");
                     ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
                 }
             }
@@ -91,26 +67,17 @@ namespace SmartScan.Controllers
 
         public async Task<IActionResult> CustomerDisplay()
         {
-            // Default fallback title
             ViewData["HeaderTitle"] = "Customer View";
-
-            // Get logged in Cashier ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (!string.IsNullOrEmpty(currentUserId))
             {
-                // If the user is a cashier, verify their assignment
                 if (User.IsInRole("Cashier"))
                 {
                     var staffAssignment = await _context.RetailStaffs
                         .Include(rs => rs.Retail)
                         .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
 
-                    if (staffAssignment == null || staffAssignment.Retail == null)
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-
+                    if (staffAssignment == null || staffAssignment.Retail == null) return RedirectToAction("Index", "Home");
                     ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
                 }
             }
@@ -120,71 +87,45 @@ namespace SmartScan.Controllers
         public async Task<IActionResult> GenerateReceipt()
         {
             ViewData["HeaderTitle"] = "Payment";
-
-            // Get logged in Cashier ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (!string.IsNullOrEmpty(currentUserId))
             {
-                // If the user is a cashier, verify their assignment
                 if (User.IsInRole("Cashier"))
                 {
                     var staffAssignment = await _context.RetailStaffs
                         .Include(rs => rs.Retail)
                         .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
 
-                    if (staffAssignment == null || staffAssignment.Retail == null)
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-
+                    if (staffAssignment == null || staffAssignment.Retail == null) return RedirectToAction("Index", "Home");
                     ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
                 }
             }
             return View();
         }
 
-        //GET: Display Checkout Page
         public async Task<IActionResult> Checkout()
         {
-            // Default fallback title
             ViewData["HeaderTitle"] = "Checkout";
-
-            // Get logged in Cashier ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (!string.IsNullOrEmpty(currentUserId))
             {
-                // If the user is a cashier, verify their assignment
                 if (User.IsInRole("Cashier"))
                 {
                     var staffAssignment = await _context.RetailStaffs
                         .Include(rs => rs.Retail)
                         .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
 
-                    if (staffAssignment == null || staffAssignment.Retail == null)
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-
+                    if (staffAssignment == null || staffAssignment.Retail == null) return RedirectToAction("Index", "Home");
                     ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
                 }
             }
             return View();
         }
-
-        // ------------------------------------
-        // Get product details for the scanner
-        // ------------------------------------
-
 
         [HttpGet]
         public async Task<IActionResult> GetProductDetails(string productName)
         {
-            if (string.IsNullOrWhiteSpace(productName))
-            {
-                return NotFound();
-            }
+            if (string.IsNullOrWhiteSpace(productName)) return NotFound();
 
             string normalizedName = productName.Trim().ToLower().Replace(" ", "_");
             string rawNameLower = productName.Trim().ToLower();
@@ -192,84 +133,129 @@ namespace SmartScan.Controllers
             var product = await _context.Products
                 .FirstOrDefaultAsync(p => p.ProductName.ToLower() == normalizedName || p.ProductName.ToLower() == rawNameLower);
 
-            if (product == null)
+            if (product == null) return NotFound();
+
+            decimal localizedPrice = product.Price;
+            int currentStock = 0;
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(currentUserId))
             {
-                return NotFound();
+                var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+                if (retailStaff != null)
+                {
+                    var inventory = await _context.Inventories
+                        .FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == retailStaff.RetailId);
+
+                    if (inventory != null)
+                    {
+                        currentStock = inventory.Stock;
+                        localizedPrice = inventory.LocalPrice;
+                    }
+                }
             }
 
-            return Json(new
-            {
-                name = product.ProductName,
-                price = product.Price
-            });
+            return Json(new { name = product.ProductName, price = localizedPrice, stock = currentStock });
         }
 
         [AllowAnonymous]
-        [ResponseCache(
-            Duration = 0,
-            Location = ResponseCacheLocation.None,
-            NoStore = true
-        )]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(
-                new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
-                }
-            );
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        // -------------------- [CUSTOMER VERIFICATION] --------------------
-
-        // GET: Customer Verification Page
         [HttpGet]
         public async Task<IActionResult> CustomerVerification()
         {
-            // Default fallback title
             ViewData["HeaderTitle"] = "Customer Verification";
-
-            // Get logged in Cashier ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (!string.IsNullOrEmpty(currentUserId))
             {
-                // If the user is a cashier, verify their assignment
                 if (User.IsInRole("Cashier"))
                 {
                     var staffAssignment = await _context.RetailStaffs
                         .Include(rs => rs.Retail)
                         .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
 
-                    if (staffAssignment == null || staffAssignment.Retail == null)
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-
+                    if (staffAssignment == null || staffAssignment.Retail == null) return RedirectToAction("Index", "Home");
                     ViewData["HeaderTitle"] = staffAssignment.Retail.RetailName;
                 }
             }
             return View();
         }
 
-        // POST: Authenticate Face
+        // --- FETCH LIVE CREDIT & EARLIEST DUE DATE ---
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerCredit(string customerName)
+        {
+            if (string.IsNullOrWhiteSpace(customerName)) return Json(new { success = false });
+
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.FullName.ToLower() == customerName.ToLower());
+
+            if (customer == null) return Json(new { success = false });
+
+            decimal available = customer.CreditLimit - customer.CurrentDebt;
+
+            var earliestTx = await _context.Transactions
+                .Where(t => t.CustomerId == customer.CustomerId && t.PaymentMethodId == 4 && t.StatusId == 1 && t.DueDate != null)
+                .OrderBy(t => t.DueDate)
+                .FirstOrDefaultAsync();
+
+            string nextDueDate = earliestTx != null && earliestTx.DueDate.HasValue
+                ? earliestTx.DueDate.Value.ToString("MMM dd, yyyy")
+                : "No pending dues";
+
+            return Json(new
+            {
+                success = true,
+                customerId = customer.CustomerId,
+                creditLimit = customer.CreditLimit,
+                currentDebt = customer.CurrentDebt,
+                availableBalance = available > 0 ? available : 0,
+                nextDueDate = nextDueDate
+            });
+        }
+
+        // --- NEW API: INCREASE LIMIT & EXTEND DUES ---
+        [HttpPost]
+        public async Task<IActionResult> IncreaseCreditLimit([FromBody] IncreaseLimitRequest req)
+        {
+            var customer = await _context.Customers.FindAsync(req.CustomerId);
+            if (customer == null) return Json(new { success = false, message = "Customer not found." });
+
+            customer.CreditLimit += 300;
+            _context.Customers.Update(customer);
+
+            var activeTransactions = await _context.Transactions
+                .Where(t => t.CustomerId == customer.CustomerId && t.PaymentMethodId == 4 && t.StatusId == 1 && t.DueDate != null)
+                .ToListAsync();
+
+            foreach (var tx in activeTransactions)
+            {
+                tx.DueDate = tx.DueDate.Value.AddDays(3);
+                _context.Transactions.Update(tx);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, newLimit = customer.CreditLimit });
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AuthenticateFace([FromBody] FaceAuthRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.CapturedEmbeddingJson))
-            {
                 return Json(new { success = false, message = "No facial biometric data captured." });
-            }
 
             float[]? capturedVector;
             try
             {
                 capturedVector = JsonSerializer.Deserialize<float[]>(request.CapturedEmbeddingJson);
                 if (capturedVector == null || capturedVector.Length != 128)
-                {
                     return Json(new { success = false, message = "Invalid face embedding dimensions. Must be 128 features." });
-                }
             }
             catch
             {
@@ -288,9 +274,7 @@ namespace SmartScan.Controllers
                 .ToListAsync();
 
             if (!registeredCustomers.Any())
-            {
                 return Json(new { success = false, message = "Access Denied: No customers are enrolled in the biometric registry." });
-            }
 
             CustomerMatchResult? bestMatch = null;
             double lowestEuclideanDistance = double.MaxValue;
@@ -307,7 +291,6 @@ namespace SmartScan.Controllers
                     if (storedVector == null || storedVector.Length != 128) continue;
 
                     double distance = ComputeEuclideanDistance(capturedVector, storedVector);
-
                     if (distance > MAX_EUCLIDEAN_DISTANCE) continue;
 
                     double similarity = ComputeCosineSimilarity(capturedVector, storedVector);
@@ -326,19 +309,13 @@ namespace SmartScan.Controllers
                         };
                     }
                 }
-                catch
-                {
-                    continue;
-                }
+                catch { continue; }
             }
 
-            if (bestMatch != null &&
-                bestMatch.Distance <= MAX_EUCLIDEAN_DISTANCE &&
-                bestMatch.SimilarityScore >= MIN_COSINE_SIMILARITY)
+            if (bestMatch != null && bestMatch.Distance <= MAX_EUCLIDEAN_DISTANCE && bestMatch.SimilarityScore >= MIN_COSINE_SIMILARITY)
             {
                 TempData["Success"] = $"Verified Customer: {bestMatch.FullName}";
 
-                // Check age directly
                 bool hasAge = bestMatch.Age.HasValue && bestMatch.Age.Value > 0;
                 bool isUnderage = hasAge && bestMatch.Age.Value < 18;
 
@@ -355,42 +332,28 @@ namespace SmartScan.Controllers
                 });
             }
 
-            return Json(new
-            {
-                success = false,
-                message = "Face not recognized. This person is not enrolled in the customer registry."
-            });
+            return Json(new { success = false, message = "Face not recognized. This person is not enrolled in the customer registry." });
         }
 
-        // POST: /Home/NationalIDVerification
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult NationalIDVerification([FromBody] GovIdVerifyRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.RawPayload) || string.IsNullOrWhiteSpace(req.ManualDob))
-            {
                 return Json(new { isValid = false, message = "PCN and Date of Birth are required." });
-            }
 
             string digitsOnly = new string(req.RawPayload.Where(char.IsDigit).ToArray());
             if (digitsOnly.Length != 16)
-            {
                 return Json(new { isValid = false, message = "PCN must be exactly 16 digits long." });
-            }
 
             if (!DateTime.TryParse(req.ManualDob, out DateTime dob))
-            {
                 return Json(new { isValid = false, message = "Invalid Date of Birth format." });
-            }
 
-            // Age calculation matching exact birthday passage
             int age = DateTime.UtcNow.Year - dob.Year;
             if (DateTime.UtcNow.Date < dob.Date.AddYears(age)) age--;
 
             if (age < 5 || age > 120)
-            {
                 return Json(new { isValid = false, message = "Age calculation resulted in an invalid range. Please check the DOB." });
-            }
 
             bool isUnderage = age < 18;
             int statusId = isUnderage ? 3 : 1;
@@ -398,75 +361,48 @@ namespace SmartScan.Controllers
             return Json(new
             {
                 isValid = true,
-                idNumber = digitsOnly, // Returned solely for UI masking; never stored
+                idNumber = digitsOnly,
                 age = age,
                 isUnderage = isUnderage,
                 assignedStatusId = statusId
             });
         }
 
-        // -------------------- [TRANSACTION & INVENTORY] --------------------
-
         [HttpPost]
         public async Task<IActionResult> SaveTransaction([FromBody] TransactionPayload request)
         {
-            if (request == null || !request.Items.Any())
-            {
-                return Json(new { success = false, message = "Cart is empty." });
-            }
+            if (request == null || !request.Items.Any()) return Json(new { success = false, message = "Cart is empty." });
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                return Json(new { success = false, message = "Session expired. Please log in again." });
-            }
+            if (string.IsNullOrEmpty(currentUserId)) return Json(new { success = false, message = "Session expired. Please log in again." });
 
-            var retailStaff = await _context.RetailStaffs
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
-
-            if (retailStaff == null)
-            {
-                return Json(new { success = false, message = "Error: Your account is not assigned to a retail store." });
-            }
+            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            if (retailStaff == null) return Json(new { success = false, message = "Error: Your account is not assigned to a retail store." });
 
             int currentRetailId = retailStaff.RetailId;
             int currentRetailStaffId = retailStaff.RetailStaffId;
+            int actualCustomerId = request.CustomerId > 0 ? request.CustomerId : 2;
 
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // --- 1. PRE-CHECK STOCK ---
                 foreach (var item in request.Items)
                 {
                     string normalizedItemName = item.Name.Trim().ToLower().Replace(" ", "_");
                     string rawItemLower = item.Name.Trim().ToLower();
 
-                    var product = await _context.Products.FirstOrDefaultAsync(p =>
-                        p.ProductName.ToLower() == normalizedItemName || p.ProductName.ToLower() == rawItemLower);
-
+                    var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductName.ToLower() == normalizedItemName || p.ProductName.ToLower() == rawItemLower);
                     if (product == null) return Json(new { success = false, message = $"Product '{item.Name}' not found in database." });
 
-                    var inventory = await _context.Inventories
-                        .FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
+                    var inventory = await _context.Inventories.FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
+                    if (inventory == null) return Json(new { success = false, message = $"Product '{product.ProductName}' does not exist in this store's inventory." });
 
-                    if (inventory == null)
-                        return Json(new { success = false, message = $"Product '{product.ProductName}' does not exist in this store's inventory." });
-
-                    if (inventory.Stock < item.Qty)
-                    {
-                        return Json(new
-                        {
-                            success = false,
-                            message = $"Insufficient stock for '{product.ProductName}'. You tried to checkout {item.Qty}, but only {inventory.Stock} are left."
-                        });
-                    }
+                    if (inventory.Stock < item.Qty) return Json(new { success = false, message = $"Insufficient stock for '{product.ProductName}'." });
                 }
 
-                // --- 2. CREATE TRANSACTION ---
                 string receiptNum = "TX" + DateTime.Now.ToString("HHmmssff");
-
-                int paymentId = 1; // Default to Cash
-                DateOnly? transactionDueDate = null; // ?? FIX: Using DateOnly to match your Model
+                int paymentId = 1;
+                DateOnly? transactionDueDate = null;
 
                 if (request.PaymentMethod == "Cash In Hand") paymentId = 1;
                 else if (request.PaymentMethod == "GCash API") paymentId = 2;
@@ -475,38 +411,24 @@ namespace SmartScan.Controllers
                 {
                     paymentId = 4;
 
-                    var customer = await _context.Customers.FindAsync(2); // Hardcoded to Jhandy for now
+                    var customer = await _context.Customers.FindAsync(actualCustomerId);
                     if (customer == null) return Json(new { success = false, message = "Customer not found." });
 
                     if (string.IsNullOrWhiteSpace(customer.ContactNumber))
-                    {
-                        return Json(new
-                        {
-                            success = false,
-                            message = $"Cannot process Store Credit. {customer.FullName} does not have a registered contact number for SMS billing reminders."
-                        });
-                    }
+                        return Json(new { success = false, message = $"Cannot process Store Credit. {customer.FullName} does not have a registered contact number for SMS reminders." });
 
                     if (customer.CurrentDebt + request.Total > customer.CreditLimit)
-                    {
-                        return Json(new
-                        {
-                            success = false,
-                            message = $"Store credit limit exceeded. {customer.FullName} already has PHP {customer.CurrentDebt:0.00} in debt. Adding PHP {request.Total:0.00} exceeds their PHP {customer.CreditLimit:0.00} limit."
-                        });
-                    }
+                        return Json(new { success = false, message = $"Store credit limit exceeded. {customer.FullName} already has PHP {customer.CurrentDebt:0.00} in debt." });
 
                     customer.CurrentDebt += request.Total;
                     _context.Customers.Update(customer);
-
-                    // ?? FIX: Convert 3 days from now into a DateOnly
                     transactionDueDate = DateOnly.FromDateTime(DateTime.Now.AddDays(3));
                 }
 
                 var newTx = new Transaction
                 {
                     RetailStaffId = currentRetailStaffId,
-                    CustomerId = 2,
+                    CustomerId = actualCustomerId,
                     RetailId = currentRetailId,
                     TotalAmount = request.Total,
                     PaymentMethodId = paymentId,
@@ -519,15 +441,12 @@ namespace SmartScan.Controllers
                 _context.Transactions.Add(newTx);
                 await _context.SaveChangesAsync();
 
-                // --- 3. DEDUCT STOCK AND ADD ITEMS ---
                 foreach (var item in request.Items)
                 {
                     string normalizedItemName = item.Name.Trim().ToLower().Replace(" ", "_");
                     string rawItemLower = item.Name.Trim().ToLower();
 
-                    var product = await _context.Products.FirstAsync(p =>
-                        p.ProductName.ToLower() == normalizedItemName || p.ProductName.ToLower() == rawItemLower);
-
+                    var product = await _context.Products.FirstAsync(p => p.ProductName.ToLower() == normalizedItemName || p.ProductName.ToLower() == rawItemLower);
                     var txItem = new TransactionItem
                     {
                         TransactionId = newTx.TransactionId,
@@ -537,9 +456,7 @@ namespace SmartScan.Controllers
                     };
                     _context.TransactionItems.Add(txItem);
 
-                    var inventory = await _context.Inventories
-                        .FirstAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
-
+                    var inventory = await _context.Inventories.FirstAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
                     inventory.Stock -= item.Qty;
                     _context.Inventories.Update(inventory);
                 }
@@ -579,13 +496,10 @@ namespace SmartScan.Controllers
             return Json(new { success = true, transactions });
         }
 
-        // -------------------- [STORE CREDIT PENALTIES] --------------------
-
         [HttpPost]
         [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> ApplyLateFees()
         {
-            // ?? FIX: Convert today's exact time to DateOnly for the comparison
             var today = DateOnly.FromDateTime(DateTime.Now);
 
             var overdueTransactions = await _context.Transactions
@@ -604,8 +518,6 @@ namespace SmartScan.Controllers
 
                     customer.CurrentDebt += penaltyAmount;
                     tx.TotalAmount += penaltyAmount;
-
-                    // Extend the due date by another 3 days
                     tx.DueDate = tx.DueDate.Value.AddDays(3);
 
                     _context.Customers.Update(customer);
@@ -616,14 +528,8 @@ namespace SmartScan.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Json(new
-            {
-                success = true,
-                message = $"Successfully applied 5% late fees to {updatedCount} overdue transactions."
-            });
+            return Json(new { success = true, message = $"Successfully applied 5% late fees to {updatedCount} overdue transactions." });
         }
-
-        // -------------------- [BIOMETRICS HELPERS] --------------------
 
         private static double ComputeEuclideanDistance(float[] vA, float[] vB)
         {
@@ -651,12 +557,13 @@ namespace SmartScan.Controllers
         }
     }
 
-    // -------------------- [TRANSACTION DTOs] --------------------
     public class TransactionPayload
     {
         public List<CartItemPayload> Items { get; set; } = new();
         public decimal Total { get; set; }
         public string PaymentMethod { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public int CustomerId { get; set; }
     }
 
     public class CartItemPayload
@@ -683,5 +590,11 @@ namespace SmartScan.Controllers
         public int? Age { get; set; }
         public double Distance { get; set; }
         public double SimilarityScore { get; set; }
+    }
+
+    // --- PAYLOAD MODEL REQUIRED FOR THE LIMIT EXTENSION API ---
+    public class IncreaseLimitRequest
+    {
+        public int CustomerId { get; set; }
     }
 }

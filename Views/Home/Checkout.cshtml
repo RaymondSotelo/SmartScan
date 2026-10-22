@@ -314,7 +314,6 @@
             const productSearchResults = document.getElementById("productSearchResults");
             let recentSearches = JSON.parse(localStorage.getItem("smartScanRecentSearches") || "[]");
 
-            // Show latest 3 searches
             function showRecentSearches() {
                 productSearchResults.innerHTML = "";
                 if (recentSearches.length === 0) {
@@ -337,24 +336,19 @@
                 productSearchResults.style.display = "block";
             }
 
-            // Save search
             function saveRecentSearch(search) {
                 search = search.trim();
                 if (!search) return;
-
-                // Remove duplicate & keep only latest 3
                 recentSearches = recentSearches.filter(item => item.toLowerCase() !== search.toLowerCase());
                 recentSearches.unshift(search);
                 recentSearches = recentSearches.slice(0, 3);
                 localStorage.setItem("smartScanRecentSearches", JSON.stringify(recentSearches));
             }
 
-            // Click search box
             productSearchInput.addEventListener("focus", () => {
                 if (productSearchInput.value.trim() === "") showRecentSearches();
             });
 
-            // Start typing = hide history
             productSearchInput.addEventListener("input", () => {
                 if (productSearchInput.value.trim() !== "") {
                     productSearchResults.style.display = "none";
@@ -363,7 +357,6 @@
                 }
             });
 
-            // Click outside = hide history
             document.addEventListener("click", event => {
                 if (!productSearchInput.contains(event.target) && !productSearchResults.contains(event.target)) {
                     productSearchResults.style.display = "none";
@@ -403,7 +396,6 @@
             }
             loadCameras();
 
-            // START SELECTED CAMERA
             async function startSelectedCamera() {
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(track => track.stop());
@@ -424,7 +416,6 @@
                 video.srcObject = mediaStream;
             }
 
-            // START WEBCAM BUTTON
             startBtn.addEventListener("click", async function () {
                 try {
                     await startSelectedCamera();
@@ -434,7 +425,6 @@
                     startBtn.classList.add("d-none");
                     stopBtn.classList.remove("d-none");
 
-                    // Turn dropdown red to match btn-danger
                     document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#dc3545";
 
                     isScanningActive = true;
@@ -445,7 +435,6 @@
                 }
             });
 
-            // SWITCH WEBCAM ON THE FLY
             cameraSelect.addEventListener("change", async function () {
                 if (mediaStream) {
                     try {
@@ -456,7 +445,6 @@
                 }
             });
 
-            // STOP WEBCAM
             stopBtn.addEventListener("click", function () {
                 isScanningActive = false;
                 isProcessingFrame = false;
@@ -475,13 +463,11 @@
                 stopBtn.classList.add("d-none");
                 startBtn.classList.remove("d-none");
 
-                // Turn dropdown blue to match startCamBtn
                 document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#1162a3";
 
                 buildCartAndRender({}, false);
             });
 
-            // 6. DETECTION LOOP
             async function startDetectionLoop() {
                 while (isScanningActive) {
                     if (!isProcessingFrame && video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -493,9 +479,7 @@
                 }
             }
 
-            // DETECTION LOGIC
             async function captureAndDetect() {
-                // Guard block
                 if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
                 captureCanvas.width = video.videoWidth;
@@ -587,25 +571,22 @@
             }
 
             // ==========================================
-            // 🔴 FIX: Intelligent Quantity Sync
+            // 🔴 UPDATED: INVENTORY STOCK GATEKEEPER
             // ==========================================
             window.buildCartAndRender = async function(yoloCounts, hasLowConfidence) {
                 let htmlOutput = "";
                 let currentTotal = 0;
 
-                // 1. Process YOLO Auto Items
                 for (const [itemName, qty] of Object.entries(yoloCounts)) {
-
                     if (!priceCache[itemName]) {
                         try {
                             const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(itemName)}`);
                             if (dbResponse.ok) {
                                 const productData = await dbResponse.json();
-
                                 if (productData.success === false || productData.price === undefined) {
                                     priceCache[itemName] = { name: itemName, notFound: true };
                                 } else {
-                                    priceCache[itemName] = productData;
+                                    priceCache[itemName] = productData; // Now includes productData.stock!
                                 }
                             } else {
                                 priceCache[itemName] = { name: itemName, notFound: true };
@@ -618,32 +599,52 @@
                     const product = priceCache[itemName];
                     if (!product.notFound) {
 
-                        // Calculate how many of this item are already in the "Saved" cart
                         const savedItem = manualItems.find(i => i.name === product.name);
                         const savedQty = savedItem ? savedItem.qty : 0;
-
-                        // Only prompt the Auto row for the NEW items on the tray
-                        const newQtyToLock = qty - savedQty;
+                        const availableStock = (product.stock || 0) - savedQty;
+                        let newQtyToLock = qty - savedQty;
 
                         if (newQtyToLock > 0) {
-                            const subtotal = product.price * newQtyToLock;
-                            currentTotal += subtotal;
+                            // Enforce Stock Limit: Cap the auto-scanner so it can't add more than available
+                            if (newQtyToLock > availableStock) {
+                                newQtyToLock = availableStock;
+                            }
 
-                            const safeName = itemName.replace(/'/g, "\\'");
-                            const safeDbName = product.name.replace(/'/g, "\\'");
+                            if (newQtyToLock > 0) {
+                                const subtotal = product.price * newQtyToLock;
+                                currentTotal += subtotal;
 
-                            htmlOutput += `
-                                <tr>
-                                    <td class="fw-medium text-truncate" style="max-width: 140px;">${product.name} <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span></td>
-                                    <td class="text-center fw-bold">${newQtyToLock}</td>
-                                    <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
-                                    <td class="text-end text-dark fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock})" title="Lock Item in Cart">
-                                            <i class="fa-solid fa-check" style="font-size: 14px;"></i>
-                                        </button>
-                                    </td>
-                                </tr>`;
+                                const safeName = itemName.replace(/'/g, "\\'");
+                                const safeDbName = product.name.replace(/'/g, "\\'");
+
+                                let stockBadge = "";
+                                if (product.stock <= 5 && product.stock > 0) {
+                                    stockBadge = `<br><span class="text-warning" style="font-size: 10px;"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock: ${product.stock} total</span>`;
+                                }
+
+                                htmlOutput += `
+                                    <tr>
+                                        <td class="fw-medium text-truncate" style="max-width: 140px;">${product.name} <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span>${stockBadge}</td>
+                                        <td class="text-center fw-bold">${newQtyToLock}</td>
+                                        <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
+                                        <td class="text-end text-dark fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock}, ${product.stock})" title="Lock Item in Cart">
+                                                <i class="fa-solid fa-check" style="font-size: 14px;"></i>
+                                            </button>
+                                        </td>
+                                    </tr>`;
+                            } else {
+                                // Scanned more items, but stock is completely maxed out!
+                                htmlOutput += `
+                                    <tr class="table-danger border-danger">
+                                        <td class="fw-medium text-truncate text-danger" style="max-width: 140px;">${product.name} <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">Limit Reached</span></td>
+                                        <td class="text-center fw-bold text-danger">Max</td>
+                                        <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
+                                        <td class="text-end text-danger fw-bold small fw-medium">Stock: ${product.stock}</td>
+                                        <td class="text-center"></td>
+                                    </tr>`;
+                            }
                         }
                     } else {
                         htmlOutput += `
@@ -657,7 +658,7 @@
                     }
                 }
 
-                // Process Manual/Saved Items
+                // Process Saved Items
                 manualItems.forEach((item, index) => {
                     const subtotal = item.price * item.qty;
                     currentTotal += subtotal;
@@ -695,19 +696,14 @@
                 list.innerHTML = htmlOutput;
                 totalDueDisplay.innerText = `₱ ${currentTotal.toFixed(2)}`;
 
-                // BROADCAST: to Customer Display (Only SAVED/CART ITEMS)
+                // Broadcast Customer Display
                 const broadcastItems = [];
                 let customerTotal = 0;
-
                 manualItems.forEach(item => {
                     broadcastItems.push({ name: item.name, qty: item.qty, price: item.price });
                     customerTotal += (item.price * item.qty);
                 });
-
-                localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({
-                    items: broadcastItems,
-                    total: customerTotal
-                }));
+                localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({ items: broadcastItems, total: customerTotal }));
             }
 
             // MANUAL ADD BUTTON LOGIC
@@ -727,18 +723,31 @@
                             return;
                         }
 
+                        // Prevent adding if literally out of stock
+                        if (product.stock <= 0) {
+                            alert(`Out of Stock! There are no ${product.name} left in inventory.`);
+                            return;
+                        }
+
                         saveRecentSearch(product.name);
 
                         const existing = manualItems.find(i => i.name === product.name);
+                        const currentQty = existing ? existing.qty : 0;
 
-                        if (existing) {
-                            existing.qty++;
+                        // Prevent adding beyond available stock limit
+                        if (currentQty + 1 > product.stock) {
+                            alert(`Inventory Limit: Cannot add more ${product.name}. The store only has ${product.stock} left.`);
                         } else {
-                            manualItems.push({
-                                name: product.name,
-                                price: product.price,
-                                qty: 1
-                            });
+                            if (existing) {
+                                existing.qty++;
+                            } else {
+                                manualItems.push({
+                                    name: product.name,
+                                    price: product.price,
+                                    qty: 1,
+                                    stock: product.stock // Track max stock inside cart
+                                });
+                            }
                         }
 
                         input.value = "";
@@ -752,7 +761,6 @@
                 }
             });
 
-            // VOID CART BUTTON
             document.getElementById("btnVoidCart").addEventListener("click", () => {
                 if (confirm("Are you sure you want to void all saved items?")) {
                     manualItems = [];
@@ -760,9 +768,6 @@
                 }
             });
 
-            // --- GLOBAL FUNCTIONS ---
-
-            // Displays Old Transactions Modal
             window.openOldTransactions = async function() {
                 const modal = new bootstrap.Modal(document.getElementById('oldTransactionsModal'));
                 modal.show();
@@ -795,12 +800,23 @@
             };
 
             // Locks a scanned Auto item into the permanent Saved cart
-            window.lockYoloItem = function (formattedName, displayName, price, qty) {
+            window.lockYoloItem = function (formattedName, displayName, price, qty, maxStock) {
                 const existing = manualItems.find(i => i.name === displayName);
-                if (existing) {
-                    existing.qty += qty;
+                const currentQty = existing ? existing.qty : 0;
+
+                if (currentQty + qty > maxStock) {
+                    alert(`Inventory Limit: The store only has ${maxStock} ${displayName} left.`);
+                    const allowedQty = maxStock - currentQty;
+                    if (allowedQty > 0) {
+                        if (existing) existing.qty += allowedQty;
+                        else manualItems.push({ name: displayName, price: price, qty: allowedQty, stock: maxStock });
+                    }
                 } else {
-                    manualItems.push({ name: displayName, price: price, qty: qty });
+                    if (existing) {
+                        existing.qty += qty;
+                    } else {
+                        manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock });
+                    }
                 }
                 if (!isScanningActive) buildCartAndRender({}, false);
             };
@@ -825,9 +841,16 @@
                 const index = document.getElementById("editItemIndex").value;
                 const qtyInput = document.getElementById("editProductQuantity");
                 const newQty = parseInt(qtyInput.value);
+                const maxStock = manualItems[index].stock || 999;
 
                 if (isNaN(newQty) || newQty <= 0) {
                     qtyInput.classList.add("is-invalid");
+                    return;
+                }
+
+                if (newQty > maxStock) {
+                    alert(`Stock Limit Reached: You cannot enter a quantity higher than the available stock (${maxStock}).`);
+                    qtyInput.value = maxStock;
                     return;
                 }
 
@@ -841,13 +864,11 @@
                 if (!isScanningActive) buildCartAndRender({}, false);
             });
 
-            // Removes a Saved item
             window.removeManualItem = function (index) {
                 manualItems.splice(index, 1);
                 if (!isScanningActive) buildCartAndRender({}, false);
             };
 
-            // PROCEED TO PAYMENT BUTTON
             document.getElementById("btnProceedToPayment").addEventListener("click", () => {
                 if (manualItems.length === 0) {
                     alert("The cart is empty! Please add or lock items before proceeding.");

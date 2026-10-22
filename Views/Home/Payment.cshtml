@@ -241,9 +241,14 @@
                 <div class="text-start mb-3 p-3 bg-light rounded-3 border">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="text-muted fw-bold small text-uppercase">Available Balance</span>
-                        <span class="badge bg-danger">Max ₱300.00</span>
+                        <span class="badge bg-danger" id="storeCreditBadge">Loading...</span>
                     </div>
-                    <h4 class="mb-0 fw-bold text-dark font-monospace" id="storeBalance">₱109.00</h4>
+                    <h4 class="mb-0 fw-bold text-dark font-monospace" id="storeBalance">₱0.00</h4>
+
+                    <!-- Next Due Date Info -->
+                    <div class="mt-2 pt-2 border-top text-muted small fw-medium">
+                        <i class="fa-regular fa-calendar me-1"></i> Next Due: <span id="storeDueDate" class="fw-bold text-dark">N/A</span>
+                    </div>
                 </div>
 
                 <!-- Total Due -->
@@ -255,6 +260,13 @@
                 <!-- Error Display -->
                 <div id="storeCreditError" class="alert alert-danger py-2 px-3 text-start mb-4 shadow-sm" style="display: none; font-size: 0.85rem; font-weight: bold; border-left: 4px solid #dc3545;">
                     <i class="fa-solid fa-circle-exclamation me-1"></i> <span id="storeCreditErrorText"></span>
+
+                    <!-- Hidden button for limit extension -->
+                    <div class="mt-3 text-end">
+                        <button type="button" id="btnExtendCredit" class="btn btn-sm btn-outline-danger fw-bold rounded-pill" style="display: none;" onclick="extendCustomerCredit()">
+                            <i class="fa-solid fa-plus me-1"></i> Add ₱300 Limit
+                        </button>
+                    </div>
                 </div>
 
                 <button type="button" class="btn w-100 btn-proceed shadow-sm" onclick="proceedStoreCredit()">Apply Credits</button>
@@ -304,34 +316,32 @@
 
 @section Scripts {
     <script>
-            document.addEventListener("DOMContentLoaded", function () {
+        let liveStoreCreditLimit = 0;
+        let liveAvailableBalance = 0;
+        let liveCustomerId = 0;
+
+        document.addEventListener("DOMContentLoaded", function () {
             const ccNumberInput = document.getElementById('ccNumber');
             const ccNameInput = document.getElementById('ccName');
             const ccExpiryInput = document.getElementById('ccExpiry');
             const ccCvvInput = document.getElementById('ccCvv');
 
-            // Card Number: Digits only, max 16 digits formatted into 4-4-4-4 blocks (19 chars total)
             ccNumberInput.addEventListener('input', function (e) {
-                let val = e.target.value.replace(/\D/g, ''); // strip non-numeric
+                let val = e.target.value.replace(/\D/g, '');
                 if (val.length > 16) val = val.substring(0, 16);
-
-                // Group into blocks of 4 digits
                 const parts = val.match(/.{1,4}/g);
                 e.target.value = parts ? parts.join(' ') : '';
             });
 
-            // Cardholder Name: Letters, spaces, periods, and hyphens only
             ccNameInput.addEventListener('input', function (e) {
                 e.target.value = e.target.value.replace(/[^a-zA-Z\s\.\-]/g, '').toUpperCase();
             });
 
-            // Expiry Date: Digits only, auto-formats to MM/YY with valid month bounds (01-12)
             ccExpiryInput.addEventListener('input', function (e) {
                 let val = e.target.value.replace(/\D/g, '');
                 if (val.length > 4) val = val.substring(0, 4);
 
                 if (val.length >= 1) {
-                    // First digit can only be 0 or 1
                     if (val[0] > '1') val = '0' + val;
                 }
                 if (val.length >= 2) {
@@ -347,14 +357,12 @@
                 }
             });
 
-            // Prevent deletion glitch when backspacing past the slash '/'
             ccExpiryInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Backspace' && this.value.length === 3) {
                     this.value = this.value.substring(0, 2);
                 }
             });
 
-            // CVV / CVC: Exactly digits only, max 4
             ccCvvInput.addEventListener('input', function (e) {
                 let val = e.target.value.replace(/\D/g, '');
                 if (val.length > 4) val = val.substring(0, 4);
@@ -362,8 +370,6 @@
             });
         });
 
-        // ================= CART GUARD =================
-        // Instantly check if the cart has items. If empty, kick them back to Checkout.
         (function checkCartStatus() {
             const savedCart = sessionStorage.getItem("smartScanCart");
             let isEmpty = true;
@@ -383,12 +389,10 @@
             }
         })();
 
-        // ================= PAYMENT LOGIC =================
         let cart = [];
         let total = 0;
         let cashModalInstance, creditModalInstance, storeCreditModalInstance, ewalletModalInstance, gcashQRModalInstance;
 
-        // Parse search params to catch Customer ID from Verification Page
         const urlParams = new URLSearchParams(window.location.search);
         const verifiedCustomerName = urlParams.get('search');
 
@@ -432,13 +436,34 @@
                 const formattedTotal = `₱${total.toFixed(2)}`;
                 document.getElementById("grandTotalDisplay").textContent = formattedTotal;
 
-                // Pre-fill fields
                 document.getElementById("cashTotalDue").value = formattedTotal;
                 document.getElementById("storeTotalDue").value = formattedTotal;
                 document.getElementById("gcashTotalAmount").textContent = formattedTotal;
 
             } catch (error) {
                 console.error("Cart error", error);
+            }
+
+            // --- FETCH LIVE CREDIT DATA WHEN PAGE LOADS ---
+            if (verifiedCustomerName) {
+                fetch(`/Home/GetCustomerCredit?customerName=${encodeURIComponent(verifiedCustomerName)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            liveStoreCreditLimit = data.creditLimit;
+                            liveAvailableBalance = data.availableBalance;
+                            liveCustomerId = data.customerId;
+
+                            document.getElementById("storeCreditBadge").innerText = `Max ₱${liveStoreCreditLimit.toFixed(2)}`;
+                            document.getElementById("storeBalance").innerText = `₱${liveAvailableBalance.toFixed(2)}`;
+                            document.getElementById("storeDueDate").innerText = data.nextDueDate; // Ensure Due Date is updated
+                        } else {
+                            document.getElementById("storeCreditBadge").innerText = "Unregistered";
+                            document.getElementById("storeBalance").innerText = "₱0.00";
+                            document.getElementById("storeDueDate").innerText = "N/A";
+                        }
+                    })
+                    .catch(err => console.error("Could not load credit balance."));
             }
         });
 
@@ -491,19 +516,70 @@
             finalizeTransaction("Credit Card", total, 0);
         }
 
+        // --- UPDATED LIVE BALANCE GATEKEEPER ---
         function proceedStoreCredit() {
-            const storeCreditLimit = 300.00;
             const errorBox = document.getElementById("storeCreditError");
             const errorText = document.getElementById("storeCreditErrorText");
+            const extendBtn = document.getElementById("btnExtendCredit");
 
-            if (total > storeCreditLimit) {
-                errorText.textContent = `Total Due (₱${total.toFixed(2)}) exceeds the ₱${storeCreditLimit.toFixed(2)} limit.`;
+            if (liveCustomerId === 0) {
+                errorText.textContent = "Error: Customer profile not found. Please register customer.";
                 errorBox.style.display = "block";
+                extendBtn.style.display = "none";
+                return;
+            }
+
+            if (total > liveAvailableBalance) {
+                errorText.textContent = `Insufficient balance. Total Due (₱${total.toFixed(2)}) exceeds your available credit of ₱${liveAvailableBalance.toFixed(2)}.`;
+                errorBox.style.display = "block";
+                extendBtn.style.display = "inline-block"; // SHOW the override button
                 return;
             }
 
             errorBox.style.display = "none";
+            extendBtn.style.display = "none";
             finalizeTransaction("Store Credits", total, 0);
+        }
+
+        // --- NEW LIMIT INCREASE API CALL ---
+        async function extendCustomerCredit() {
+            if (!confirm("Are you sure you want to increase this customer's credit limit by ₱300.00 and extend their due date by 3 days?")) return;
+
+            const btn = document.getElementById("btnExtendCredit");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/Home/IncreaseCreditLimit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ CustomerId: liveCustomerId })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    liveStoreCreditLimit += 300;
+                    liveAvailableBalance += 300;
+
+                    document.getElementById("storeCreditBadge").innerText = `Max ₱${liveStoreCreditLimit.toFixed(2)}`;
+                    document.getElementById("storeBalance").innerText = `₱${liveAvailableBalance.toFixed(2)}`;
+
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    // Re-run checkout to see if the new balance covers the cart
+                    proceedStoreCredit();
+                } else {
+                    alert("Failed to increase limit: " + result.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert("Network error while trying to increase limit.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         function openGCashQR() {
@@ -518,7 +594,6 @@
 
         async function finalizeTransaction(method, amountPaid, changeAmount) {
 
-            // Create payload, attaching customer name if verified
             const payload = {
                 items: cart.map(i => ({
                     name: i.name,
@@ -527,10 +602,10 @@
                 })),
                 total: parseFloat(total),
                 paymentMethod: method,
-                customerName: verifiedCustomerName || "Guest" // Forward name to backend if needed
+                customerName: verifiedCustomerName || "Guest",
+                customerId: liveCustomerId > 0 ? liveCustomerId : 2
             };
 
-            // Basic button loading state
             const activeModal = document.querySelector('.modal.show');
             const btn = activeModal ? activeModal.querySelector('.btn-proceed') : null;
             if(btn) {
@@ -558,7 +633,6 @@
                     sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
                     sessionStorage.removeItem("smartScanCart");
 
-                    // Clear Customer Display Monitor
                     localStorage.removeItem("smartScanCustomerDisplay");
 
                     window.location.href = "/Home/GenerateReceipt";
