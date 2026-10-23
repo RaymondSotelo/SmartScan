@@ -686,5 +686,33 @@
         }
 
         window.addEventListener('beforeunload', stopBiometricCamera);
+
+        // Auto clear input
+        document.addEventListener("DOMContentLoaded", function () {
+            function setupAutoClearField(elementId) {
+                const input = document.getElementById(elementId);
+                if (!input) return;
+
+                let previousValue = "";
+
+                input.addEventListener("focus", function () {
+                    previousValue = this.value;
+                    this.value = "";
+                });
+
+                input.addEventListener("blur", function () {
+                    // Restore previous value only if left empty or only whitespace
+                    if (this.value.trim() === "") {
+                        this.value = previousValue;
+                    }
+                });
+            }
+
+            // Attach to both fields
+            setupAutoClearField("FullName");
+            setupAutoClearField("ContactNumber");
+            setupAutoClearField("digitalIdInput");
+            setupAutoClearField("manualDobInput");
+        });
     </script>
 }

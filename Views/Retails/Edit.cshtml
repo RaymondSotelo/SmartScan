@@ -8,7 +8,7 @@
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 pb-3"
      style="height: calc(100dvh - 130px); min-height: 520px;">
 
-    <!-- Top Card Header (Fixed) -->
+    <!-- Top Card Header -->
     <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
         <h5 class="mb-0"><i class="fa-solid fa-shop me-2"></i>Update Retail Information</h5>
     </div>
@@ -238,5 +238,32 @@
                 window.location.href = fallbackUrl;
             }
         }
+
+        // Auto clear input
+        document.addEventListener("DOMContentLoaded", function () {
+            function setupAutoClearField(elementId) {
+                const input = document.getElementById(elementId);
+                if (!input) return;
+
+                let previousValue = "";
+
+                input.addEventListener("focus", function () {
+                    previousValue = this.value;
+                    this.value = "";
+                });
+
+                input.addEventListener("blur", function () {
+                    // Restore previous value only if left empty or only whitespace
+                    if (this.value.trim() === "") {
+                        this.value = previousValue;
+                    }
+                });
+            }
+
+                // Attach to both fields
+                setupAutoClearField("RetailName");
+                setupAutoClearField("Description");
+                setupAutoClearField("Address");
+        });
     </script>
 }

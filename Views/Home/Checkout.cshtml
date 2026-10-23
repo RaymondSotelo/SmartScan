@@ -181,16 +181,20 @@
 
                                 <!-- Stacked Secondary Buttons -->
                                 <div class="d-flex flex-column gap-2 justify-content-center">
+
+                                    <!-- Receipt History Button -->
                                     <button class="btn btn-warning border-secondary border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm"
                                             style="font-size: 0.85rem; height: 38px;"
                                             onclick="openOldTransactions()">
-                                        <i class="fa-solid fa-clock-rotate-left me-2"></i>History
+                                        <i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Transaction
                                     </button>
 
-                                    <button class="btn btn-danger border-danger border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm"
+                                    <!-- Void Cart Button -->
+                                    <button class="btn btn-danger border-danger border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm position-relative"
                                             id="btnVoidCart"
                                             style="font-size: 0.85rem; height: 38px;">
-                                        <i class="fa-solid fa-trash-can me-2"></i>Void Cart
+                                        <i class="fa-solid fa-trash-can"></i>
+                                        <span class="flex-grow-1 text-center">Void Cart</span>
                                     </button>
                                 </div>
 
@@ -212,22 +216,22 @@
 
 <!-- Modal: Recent Transactions -->
 <div class="modal fade" id="oldTransactionsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
         <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
 
             <!-- Top Header -->
-            <div class="modal-header text-white p-3" style="background-color: #1162a3;">
-                <h6 class="modal-title fw-bold mb-0">
+            <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
+                <h6 class="modal-title fw-bold mb-0 fs-5">
                     <i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Transactions
                 </h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <!-- Table -->
             <div class="modal-body p-2">
-                <div class="table-responsive" style="max-height: 380px;">
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
                     <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                        <thead class="table-light text-muted">
+                        <thead class="table-light text-muted sticky-top">
                             <tr>
                                 <th class="ps-3 py-2">Receipt #</th>
                                 <th class="py-2">Date</th>
@@ -246,32 +250,51 @@
 
 <!-- Modal: Adjust Product Quantity -->
 <div class="modal fade" id="adjustQuantityModal" tabindex="-1" aria-labelledby="adjustQuantityModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
-            <div class="modal-header text-white p-3" style="background-color: #1162a3;">
-                <h6 class="modal-title fw-bold mb-0" id="adjustQuantityModalLabel">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
+
+            <!-- Top Header -->
+            <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
+                <h6 class="modal-title fw-bold mb-0 fs-5" id="adjustQuantityModalLabel">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Adjust Quantity
                 </h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="modal-body p-3 p-lg-4">
+
+            <div class="modal-body p-4">
                 <input type="hidden" id="editItemIndex" />
 
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small text-muted mb-1">Product</label>
-                    <input type="text" class="form-control form-control-sm bg-light fw-medium border-0" id="editProductName" readonly />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small text-muted mb-1">Unit Price</label>
-                    <input type="text" class="form-control form-control-sm bg-light fw-medium border-0" id="editProductPrice" readonly />
-                </div>
-                <div class="mb-4">
-                    <label class="form-label fw-semibold small text-muted mb-1">Quantity</label>
-                    <input type="number" class="form-control shadow-sm" id="editProductQuantity" min="1" inputmode="numeric" />
-                    <div class="invalid-feedback">Enter a valid quantity (1 or more).</div>
+                <!-- Readonly Product Name -->
+                <div class="text-start mb-3">
+                    <label class="custom-input-label text-secondary">Product</label>
+                    <input type="text" class="form-control custom-input fw-bold text-primary" id="editProductName" readonly />
                 </div>
 
-                <button type="button" class="btn w-100 fw-bold text-white shadow-sm rounded-3 py-2" id="btnConfirmAdjust" style="background-color: #1162a3;">
+                <!-- Readonly Unit Price -->
+                <div class="text-start mb-3">
+                    <label class="custom-input-label text-secondary">Unit Price</label>
+                    <input type="text" class="form-control custom-input fw-bold text-primary font-monospace" id="editProductPrice" readonly />
+                </div>
+
+                <!-- Editable Quantity with Glow Focus -->
+                <div class="text-start mb-4">
+                    <label class="custom-input-label">Quantity</label>
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white cash-focus-group">
+                        <span class="input-group-text bg-white border-0 fw-bold text-secondary ps-3 py-2">
+                            <i class="fa-solid fa-box"></i>
+                        </span>
+                        <input id="editProductQuantity"
+                               class="form-control border-0 bg-white shadow-none fs-5 font-monospace px-3 fw-semibold py-2 text-center"
+                               type="number"
+                               min="1"
+                               inputmode="numeric"
+                               onwheel="this.blur()">
+                    </div>
+                    <div class="invalid-feedback fw-bold mt-2">Enter a valid quantity (1 or more).</div>
+                </div>
+
+                <!-- Proceed Button -->
+                <button type="button" class="btn w-100 btn-proceed shadow-sm" id="btnConfirmAdjust">
                     Update Quantity
                 </button>
             </div>

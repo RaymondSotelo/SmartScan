@@ -132,7 +132,14 @@
                                     style="font-size: 22px; font-family: Tahoma;">
                                 SmartScan <span class="fw-normal">|</span> @(ViewData["HeaderTitle"] ?? ViewData["Title"] ?? "Cashier")
                             </span>
+                        } else if (User.IsInRole("Admin"))
+                        {
+                            <span class="navbar-brand fw-semibold project-name text-truncate text-white mb-0" 
+                                  style="font-size: 22px; font-family: Tahoma;">
+                                @(ViewData["HeaderTitle"] ?? ViewData["Title"] ?? "Admin Portal")
+                            </span>
                         }
+
                         <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                                 aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>

@@ -174,6 +174,7 @@
                 <div class="modal-body p-4">
                     <input type="hidden" name="CategoryId" id="editCategoryId" />
 
+                    <!-- Category Name -->
                     <div class="form-group mb-0">
                         <label for="editCategoryName" class="control-label fw-medium mb-1" style="color: #1162a3;">Category Name</label>
                         <input type="text"
@@ -227,6 +228,30 @@
                     });
                     </text>
             }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            function setupAutoClearField(elementId) {
+                const input = document.getElementById(elementId);
+                if (!input) return;
+
+                let previousValue = "";
+
+                input.addEventListener("focus", function () {
+                    previousValue = this.value;
+                    this.value = "";
+                });
+
+                input.addEventListener("blur", function () {
+                    // Restore previous value only if left empty or only whitespace
+                    if (this.value.trim() === "") {
+                        this.value = previousValue;
+                    }
+                });
+            }
+
+            // Attach to both fields
+            setupAutoClearField("editCategoryName");
         });
     </script>
 }
