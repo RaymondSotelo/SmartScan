@@ -54,15 +54,26 @@
     </div>
 
     <!-- Overhead TempData Alert -->
-    @if (TempData["UserMessage"] != null)
+    @if (TempData["ProductMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
+        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
             <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
             <div>
-                @TempData["UserMessage"]
+                @TempData["ProductMessage"]
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+
+        <script>
+            setTimeout(function () {
+                var alertNode = document.getElementById('autoCloseAlert');
+                if (alertNode) {
+                    // Use Bootstrap's native Alert API to close it smoothly
+                    var bsAlert = new bootstrap.Alert(alertNode);
+                    bsAlert.close();
+                }
+            }, 2000); // 2000 milliseconds = 2 seconds
+        </script>
     }
 
     <!-- Dynamic Body / Table Area (Flex-Grow to fill the screen) -->

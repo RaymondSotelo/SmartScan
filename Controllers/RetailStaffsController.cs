@@ -86,7 +86,7 @@ public class RetailStaffsController : Controller
 
         // Fetch all User IDs already assigned to ANY retail branch
         var assignedStaffIds = await _context.RetailStaffs
-            .Where(rs => rs.StaffId != null)
+            .Where(rs => rs.StaffId != null && rs.StatusId == 1)
             .Select(rs => rs.StaffId)
             .ToHashSetAsync();
 
@@ -139,7 +139,7 @@ public class RetailStaffsController : Controller
                 _context.Update(existingStaff);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"{username} was previously inactive and has been successfully reactivated.";
+                TempData["RetailStaffMessage"] = $"{username} was previously inactive and has been successfully reactivated.";
                 return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
             }
 
@@ -154,7 +154,7 @@ public class RetailStaffsController : Controller
             _context.Add(retailstaff);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"{username} has been assigned successfully.";
+            TempData["RetailStaffMessage"] = $"{username} has been assigned successfully.";
             return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
         }
     }
@@ -205,7 +205,7 @@ public class RetailStaffsController : Controller
             _context.RetailStaffs.Remove(retailstaff);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"{username} has been removed successfully.";
+            TempData["RetailStaffMessage"] = $"{username} has been removed successfully.";
         }
         catch(DbUpdateException)
         {
@@ -218,7 +218,7 @@ public class RetailStaffsController : Controller
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"{username} has existing transactions and has been deactivated instead.";
+            TempData["RetailStaffMessage"] = $"{username} has existing transactions and has been deactivated instead.";
         }
 
         return RedirectToAction(nameof(Index), new { retailId = retailId });

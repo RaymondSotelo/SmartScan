@@ -29,12 +29,24 @@ namespace SmartScan.Controllers
                 CurrentFilter = search
             };
 
-            // Fetch Retails & Profile Map
-            var retailQuery = _context.Retails
+            // 1. Get the current logged-in user's ID
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // 2. Base Query: Only stores owned by or assigned to the current user
+            var userStoresQuery = _context.Retails.Where(r =>
+                r.AdminOwner == currentUserId ||
+                _context.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId)
+            );
+
+            // 3. Calculate KPIs for Store Outlets (unaffected by search)
+            vm.TotalRetailCount = await userStoresQuery.CountAsync();
+            vm.ActiveRetailCount = await userStoresQuery.CountAsync(r => r.StatusId == 1);
+
+            // 4. Build the Retail Overview list from the base user query
+            var retailQuery = userStoresQuery
                 .Include(r => r.Status)
                 .Include(r => r.AdminOwnerNavigation)
-                .AsNoTracking()
-                .AsQueryable();
+                .AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -46,6 +58,7 @@ namespace SmartScan.Controllers
 
             vm.Retails = await retailQuery.ToListAsync();
 
+            // 5. Fetch Profile Map for the displayed retails
             var ownerIds = vm.Retails
                 .Select(r => r.AdminOwner)
                 .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -57,10 +70,8 @@ namespace SmartScan.Controllers
                 .GroupBy(up => up.UserId)
                 .ToDictionaryAsync(g => g.Key, g => g.First().ProfilePicture, StringComparer.OrdinalIgnoreCase);
 
-            // Calculate Section 1 KPIs
-            vm.TotalRetailCount = await _context.Retails.CountAsync();
-            vm.ActiveRetailCount = await _context.Retails.CountAsync(r => r.StatusId == 1);
 
+            // --- Remaining KPIs (Customers, Sales, Overdue) ---
             vm.TotalCustomers = await _context.Customers.CountAsync();
             vm.VerifiedCustomersCount = await _context.Customers.CountAsync(c => c.IsIdVerified);
             vm.UnderageCustomersCount = await _context.Customers.CountAsync(c => c.StatusId == 3);
@@ -76,7 +87,6 @@ namespace SmartScan.Controllers
                 .SumAsync(t => (decimal?)t.TotalAmount) ?? 0.00m;
 
             // Section 2 Critical Attention: Overdue Debts
-            // Query distinct customers with an active balance and at least one overdue purchase
             vm.OverdueAccounts = await _context.Customers
                 .AsNoTracking()
                 .Where(c => c.CurrentDebt > 0 &&
@@ -87,7 +97,6 @@ namespace SmartScan.Controllers
                     FullName = c.FullName,
                     ContactNumber = c.ContactNumber,
                     AmountDue = c.CurrentDebt,
-                    // Grab their earliest overdue due date for sorting
                     DueDate = c.Transactions
                         .Where(t => t.DueDate.HasValue && t.DueDate.Value < todayDateOnly)
                         .Min(t => t.DueDate)!.Value
@@ -96,7 +105,6 @@ namespace SmartScan.Controllers
                 .Take(4)
                 .ToListAsync();
 
-            // Overdue Total KPI: Calculate across the entire database, not just the top 4
             vm.OverdueDebtAmount = await _context.Customers
                 .Where(c => c.CurrentDebt > 0 &&
                             c.Transactions.Any(t => t.DueDate.HasValue && t.DueDate.Value < todayDateOnly))

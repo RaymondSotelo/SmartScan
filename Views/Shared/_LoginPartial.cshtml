@@ -7,88 +7,96 @@
 @inject UserManager<IdentityUser> UserManager
 @inject ApplicationDbContext DbContext
 
-<ul class="navbar-nav align-items-center">
-    @if (SignInManager.IsSignedIn(User))
-    {
-        var currentUser = await UserManager.GetUserAsync(User);
+@{
+    // Check if the current route is the Customer Display page
+    bool isCustomerDisplay = Context.Request.Path.StartsWithSegments("/Home/CustomerDisplay", StringComparison.OrdinalIgnoreCase);
+}
 
-        // 1. Standardized default path matching your wwwroot/images/ file
-        const string fallbackAvatar = "/images/default-pfp.jpg";
-        string profilePfpPath = fallbackAvatar;
-
-        if (currentUser != null)
+@if (!isCustomerDisplay)
+{
+    <ul class="navbar-nav align-items-center">
+        @if (SignInManager.IsSignedIn(User))
         {
-            var userProfile = await DbContext.UserProfiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(up => up.UserId == currentUser.Id);
+            var currentUser = await UserManager.GetUserAsync(User);
 
-            if (!string.IsNullOrWhiteSpace(userProfile?.ProfilePicture))
+            // 1. Standardized default path matching your wwwroot/images/ file
+            const string fallbackAvatar = "/images/default-pfp.jpg";
+            string profilePfpPath = fallbackAvatar;
+
+            if (currentUser != null)
             {
-                // 2. Ensure path begins with '/' to prevent relative URL breaks
-                var pic = userProfile.ProfilePicture.Trim();
-                profilePfpPath = pic.StartsWith("~") ? pic.Substring(1) : (pic.StartsWith("/") ? pic : "/" + pic);
+                var userProfile = await DbContext.UserProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(up => up.UserId == currentUser.Id);
+
+                if (!string.IsNullOrWhiteSpace(userProfile?.ProfilePicture))
+                {
+                    // 2. Ensure path begins with '/' to prevent relative URL breaks
+                    var pic = userProfile.ProfilePicture.Trim();
+                    profilePfpPath = pic.StartsWith("~") ? pic.Substring(1) : (pic.StartsWith("/") ? pic : "/" + pic);
+                }
             }
+
+            <!-- User Profile Dropdown -->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none"
+                   href="#"
+                   id="userProfileDropdown"
+                   role="button"
+                   data-bs-toggle="dropdown"
+                   aria-expanded="false"
+                   style="padding-top: 24px; padding-bottom: 10px;">
+
+                    <!-- Display Name -->
+                    <span class="me-2" style="padding-right: 8px; font-size: 18px;">@User.Identity?.Name</span>
+
+                    <!-- Profile Picture with onerror fallback & cache buster -->
+                    <img src="@profilePfpPath"
+                         onerror="this.onerror=null; this.src='@fallbackAvatar';"
+                         asp-append-version="true"
+                         alt="Profile Picture"
+                         class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white"
+                         style="width: 42px; height: 42px;" />
+                </a>
+
+                <!-- Dropdown Menu -->
+                <ul class="dropdown-menu dropdown-menu-end shadow border-1 mt-1 p-0 overflow-hidden" aria-labelledby="userProfileDropdown">
+                    <!-- Option 1 | Account Settings -->
+                    <li>
+                        <a class="dropdown-item py-2 fw-medium d-flex align-items-center text-primary"
+                           asp-area="Identity"
+                           asp-page="/Account/Manage/Index">
+                            <i class="fa-solid fa-gear me-2 text-primary" style="width: 20px;"></i>
+                            Account Settings
+                        </a>
+                    </li>
+
+                    <!-- Option 2 | Log out -->
+                    <li>
+                        <form class="d-block w-100 m-0"
+                              asp-area="Identity"
+                              asp-page="/Account/Logout"
+                              asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })"
+                              method="post">
+                            <button type="submit" class="dropdown-item py-2 fw-medium text-danger d-flex align-items-center w-100">
+                                <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger" style="width: 20px;"></i>
+                                Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </li>
         }
-
-        <!-- User Profile Dropdown -->
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none"
-               href="#"
-               id="userProfileDropdown"
-               role="button"
-               data-bs-toggle="dropdown"
-               aria-expanded="false"
-               style="padding-top: 24px; padding-bottom: 10px;">
-
-                <!-- Display Name -->
-                <span class="me-2" style="padding-right: 8px; font-size: 18px;">@User.Identity?.Name</span>
-
-                <!-- Profile Picture with onerror fallback & cache buster -->
-                <img src="@profilePfpPath"
-                     onerror="this.onerror=null; this.src='@fallbackAvatar';"
-                     asp-append-version="true"
-                     alt="Profile Picture"
-                     class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white"
-                     style="width: 42px; height: 42px;" />
-            </a>
-
-            <!-- Dropdown Menu -->
-            <ul class="dropdown-menu dropdown-menu-end shadow border-1 mt-1 p-0 overflow-hidden" aria-labelledby="userProfileDropdown">
-                <!-- Option 1 | Account Settings -->
-                <li>
-                    <a class="dropdown-item py-2 fw-medium d-flex align-items-center text-primary"
-                       asp-area="Identity"
-                       asp-page="/Account/Manage/Index">
-                        <i class="fa-solid fa-gear me-2 text-primary" style="width: 20px;"></i>
-                        Account Settings
-                    </a>
-                </li>
-
-                <!-- Option 2 | Log out -->
-                <li>
-                    <form class="d-block w-100 m-0"
-                          asp-area="Identity"
-                          asp-page="/Account/Logout"
-                          asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })"
-                          method="post">
-                        <button type="submit" class="dropdown-item py-2 fw-medium text-danger d-flex align-items-center w-100">
-                            <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger" style="width: 20px;"></i>
-                            Logout
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </li>
-    }
-    else
-    {
-        <li class="nav-item d-flex align-items-center pt-4 pe-2">
-            <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
-            <span class="mx-2 fw-medium user-select-none" style="color: #387bd6;">|</span>
-            <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Register">Sign Up</a>
-        </li>
-    }
-</ul>
+        else
+        {
+            <li class="nav-item d-flex align-items-center pt-4 pe-2">
+                <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
+                <span class="mx-2 fw-medium user-select-none" style="color: #387bd6;">|</span>
+                <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Register">Sign Up</a>
+            </li>
+        }
+    </ul>
+}
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {

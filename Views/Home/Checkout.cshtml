@@ -372,13 +372,69 @@
                 if (productSearchInput.value.trim() === "") showRecentSearches();
             });
 
+            let searchTimeout = null;
+
+            // UPDATED: Input listener with live search
             productSearchInput.addEventListener("input", () => {
-                if (productSearchInput.value.trim() !== "") {
-                    productSearchResults.style.display = "none";
+                const query = productSearchInput.value.trim();
+
+                if (query !== "") {
+                    // Clear the previous timeout to avoid spamming the server while typing
+                    clearTimeout(searchTimeout);
+
+                    // Wait 300ms after the user stops typing before fetching
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            const response = await fetch(`/Home/SearchProducts?term=${encodeURIComponent(query)}`);
+                            if (response.ok) {
+                                const results = await response.json();
+                                renderSearchResults(results);
+                            }
+                        } catch (error) {
+                            console.error("Autocomplete search failed:", error);
+                        }
+                    }, 300);
                 } else {
                     showRecentSearches();
                 }
             });
+
+            // Function to render the live search matches
+            function renderSearchResults(results) {
+                productSearchResults.innerHTML = "";
+
+                if (!results || results.length === 0) {
+                    productSearchResults.innerHTML = "<div class='px-3 py-2 small text-muted'>No matches found...</div>";
+                    productSearchResults.style.display = "block";
+                    return;
+                }
+
+                productSearchResults.innerHTML = "<div class='px-3 py-1 fw-bold text-muted small border-bottom'>Matching Products</div>";
+
+                results.forEach(productName => {
+                    const item = document.createElement("div");
+                    // Using the same classes as your Recent Searches for visual consistency
+                    item.className = "px-3 py-2 small rounded hover-bg cursor-pointer d-flex align-items-center text-dark";
+                    item.style.cursor = "pointer";
+                    item.innerHTML = `<i class="fa-solid fa-box me-2 text-muted"></i>${productName}`;
+
+                    // Add mouseover effect for better UX
+                    item.addEventListener("mouseenter", () => item.classList.add("bg-light"));
+                    item.addEventListener("mouseleave", () => item.classList.remove("bg-light"));
+
+                    // Auto-fill the input when clicked
+                    item.addEventListener("click", () => {
+                        productSearchInput.value = productName;
+                        productSearchResults.style.display = "none";
+                        // Optional: Automatically trigger the 'Add' button after clicking
+                        // document.getElementById("btnAddProduct").click();
+                    });
+
+                    productSearchResults.appendChild(item);
+                });
+
+                productSearchResults.style.display = "block";
+            }
 
             document.addEventListener("click", event => {
                 if (!productSearchInput.contains(event.target) && !productSearchResults.contains(event.target)) {
@@ -907,16 +963,20 @@
 
         // BACKGROUND PRE-FETCHER: Download AI models into browser cache while scanning items
         window.addEventListener('load', () => {
-            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
+            // Wait 3 seconds after the page loads before tying up the CPU with WebGL compilation
+            setTimeout(() => {
+                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
 
-            console.log("Pre-fetching Biometric Models in background...");
-            Promise.all([
-                faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-            ]).then(() => {
-                console.log("Biometric Models cached! Verification page will now load instantly.");
-            }).catch(err => console.warn("Background model fetch delayed.", err));
+                console.log("Pre-fetching Biometric Models in background...");
+                Promise.all([
+                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                ]).then(() => {
+                    console.log("Biometric Models cached! Verification page will now load instantly.");
+                }).catch(err => console.warn("Background model fetch delayed.", err));
+
+            }, 3000); // 3000ms delay
         });
     </script>
 }

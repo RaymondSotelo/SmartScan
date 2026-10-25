@@ -373,7 +373,7 @@ public class InventoriesController : Controller
         {
             _context.Barcodes.RemoveRange(barcodes);
             await _context.SaveChangesAsync();
-            TempData["UserMessage"] = "All barcodes for this product item have been removed.";
+            TempData["InventoryMessage"] = "All barcodes for this product item have been removed.";
         }
 
         return RedirectToAction(nameof(Edit), new { inventoryId, retailId });

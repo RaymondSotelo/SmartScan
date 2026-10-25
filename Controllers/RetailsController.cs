@@ -182,7 +182,7 @@ namespace SmartScan.Controllers
             {
                 _context.Add(retail);
                 await _context.SaveChangesAsync();
-                TempData["UserMessage"] = $"'{retail.RetailName}' was added successfully.";
+                TempData["RetailMessage"] = $"'{retail.RetailName}' was added successfully.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -323,7 +323,7 @@ namespace SmartScan.Controllers
                 try
                 {
                     await _context.SaveChangesAsync();
-                    TempData["UserMessage"] = $"'{retail.RetailName}' was updated successfully.";
+                    TempData["RetailMessage"] = $"'{retail.RetailName}' was updated successfully.";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
@@ -402,7 +402,7 @@ namespace SmartScan.Controllers
                     }
                 }
 
-                TempData["UserMessage"] = $"'{retail.RetailName}' was permanently deleted.";
+                TempData["RetailMessage"] = $"'{retail.RetailName}' was permanently deleted.";
             }
             catch (DbUpdateException)
             {

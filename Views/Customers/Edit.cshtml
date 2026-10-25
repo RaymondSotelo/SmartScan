@@ -41,7 +41,18 @@
                         <!-- Full Name -->
                         <div class="form-group mb-3">
                             <label asp-for="FullName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Full Name</label>
-                            <input asp-for="FullName" id="FullName" class="form-control rounded-3" placeholder="e.g., Juan Dela Cruz" required />
+                            <div class="position-relative">
+								<input asp-for="FullName" id="FullName" class="form-control rounded-3 pe-5" placeholder="e.g., Juan Dela Cruz" required />
+
+                                <!-- Inner Clear Button -->
+                                <button type="button"
+                                        class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none"
+                                        onclick="document.getElementById('FullName').value = ''; document.getElementById('FullName').focus();"
+                                        title="Clear field"
+                                        tabindex="-1">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
                             <span asp-validation-for="FullName" class="text-danger small mt-1 d-block"></span>
                         </div>
 
@@ -51,14 +62,24 @@
                                 <label asp-for="ContactNumber" class="control-label fw-semibold mb-1" style="color: #1162a3;">Mobile Contact Number</label>
                                 <span class="text-muted" style="font-size: 11px;">Optional</span>
                             </div>
-                            <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                            <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white position-relative">
                                 <input asp-for="ContactNumber"
+                                       id="ContactNumber"
                                        type="tel"
-                                       class="form-control rounded-3 border-0 shadow-none ps-3 fw-semibold"
+                                       class="form-control rounded-3 border-0 shadow-none ps-3 fw-semibold pe-5"
                                        maxlength="11"
                                        inputmode="numeric"
                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
                                        placeholder="e.g., 09123456789" />
+
+                                <!-- Inner Clear Button -->
+                                <button type="button"
+                                        class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
+                                        onclick="document.getElementById('ContactNumber').value = ''; document.getElementById('ContactNumber').focus();"
+                                        title="Clear field"
+                                        tabindex="-1">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
                             </div>
                             <span asp-validation-for="ContactNumber" class="text-danger small mt-1 d-block"></span>
                             <div class="form-text small" style="font-size: 11px;">11-digit Philippine mobile phone number.</div>
@@ -686,33 +707,5 @@
         }
 
         window.addEventListener('beforeunload', stopBiometricCamera);
-
-        // Auto clear input
-        document.addEventListener("DOMContentLoaded", function () {
-            function setupAutoClearField(elementId) {
-                const input = document.getElementById(elementId);
-                if (!input) return;
-
-                let previousValue = "";
-
-                input.addEventListener("focus", function () {
-                    previousValue = this.value;
-                    this.value = "";
-                });
-
-                input.addEventListener("blur", function () {
-                    // Restore previous value only if left empty or only whitespace
-                    if (this.value.trim() === "") {
-                        this.value = previousValue;
-                    }
-                });
-            }
-
-            // Attach to both fields
-            setupAutoClearField("FullName");
-            setupAutoClearField("ContactNumber");
-            setupAutoClearField("digitalIdInput");
-            setupAutoClearField("manualDobInput");
-        });
     </script>
 }

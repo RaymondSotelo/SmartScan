@@ -104,7 +104,7 @@ namespace SmartScan.Controllers
                 _context.Add(customer);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = customer.StatusId == 3
+                TempData["CustomerMessage"] = customer.StatusId == 3
                     ? $"Customer '{customer.FullName}' registered with Underage status (Age: {customer.Age})."
                     : $"Customer '{customer.FullName}' registered and verified successfully.";
 
@@ -166,7 +166,7 @@ namespace SmartScan.Controllers
                     }
 
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = $"Profile for '{existingCustomer.FullName}' updated.";
+                    TempData["CustomerMessage"] = $"Profile for '{existingCustomer.FullName}' updated.";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
@@ -212,7 +212,7 @@ namespace SmartScan.Controllers
                 {
                     _context.Customers.Remove(customer);
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = $"Customer '{customer.FullName}' deleted.";
+                    TempData["CustomerMessage"] = $"Customer '{customer.FullName}' deleted.";
                 }
                 catch (DbUpdateException)
                 {

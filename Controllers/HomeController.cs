@@ -27,7 +27,10 @@ namespace SmartScan.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
-            if (!User.Identity.IsAuthenticated) return View();
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
+            {
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
+            }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -156,6 +159,27 @@ namespace SmartScan.Controllers
             }
 
             return Json(new { name = product.ProductName, price = localizedPrice, stock = currentStock });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SearchProducts(string term)
+        {
+            if (string.IsNullOrWhiteSpace(term)) return Json(new List<string>());
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+
+            if (retailStaff == null) return Json(new List<string>());
+
+            // Fetch up to 8 products matching the term in this specific store's inventory
+            var matchedProducts = await _context.Inventories
+                .Include(i => i.Product)
+                .Where(i => i.RetailId == retailStaff.RetailId && i.Product.ProductName.Contains(term))
+                .Select(i => i.Product.ProductName)
+                .Take(8)
+                .ToListAsync();
+
+            return Json(matchedProducts);
         }
 
         [AllowAnonymous]

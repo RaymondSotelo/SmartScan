@@ -121,12 +121,12 @@
 
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
 <!-- ================= MODALS ================= -->
+
 <!-- Cash In Hand Modal -->
 <div class="modal fade" id="cashModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
@@ -139,21 +139,35 @@
                 <!-- Total Due (Disabled) -->
                 <div class="text-start mb-3">
                     <label class="custom-input-label text-secondary">Total Due</label>
-                    <input type="text" class="form-control custom-input fs-5 text-primary text-end font-monospace" id="cashTotalDue" readonly>
+                    <input type="text" class="form-control custom-input fs-5 text-primary fw-bold text-end font-monospace" id="cashTotalDue" readonly>
                 </div>
 
-                <!-- Amount Received -->
-                <div class="text-start mb-4">
-                    <label class="custom-input-label">Amount Received</label>
-                    <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white cash-focus-group">
-                        <span class="input-group-text bg-white border-0 fw-bold text-secondary ps-3 py-2 fs-5">₱</span>
-                        <input id="cashAmountReceived"
-                               class="form-control border-0 bg-white shadow-none fs-5 text-end font-monospace pe-3 ps-0 fw-semibold py-2"
-                               type="number"
-                               step="0.01"
-                               min="0.01"
-                               onwheel="this.blur()"
-                               placeholder="0.00">
+                <!-- 2-Column Row for Amount Received & Exact Change -->
+                <div class="row g-2 mb-4">
+                    <!-- Amount Received -->
+                    <div class="col-6 text-start">
+                        <label class="custom-input-label">Amount Received</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white cash-focus-group">
+                            <span class="input-group-text bg-white border-0 fw-bold text-secondary ps-3 py-2 fs-6">₱</span>
+                            <input id="cashAmountReceived"
+                                   class="form-control border-0 bg-white shadow-none fs-5 text-end font-monospace pe-3 ps-0 fw-semibold py-2"
+                                   type="number"
+                                   step="0.01"
+                                   min="0.01"
+                                   onwheel="this.blur()"
+                                   placeholder="0.00"
+                                   oninput="calculateChange()">
+                        </div>
+                    </div>
+
+                    <!-- Exact Change (Disabled) -->
+                    <div class="col-6 text-start">
+                        <label class="custom-input-label text-secondary">Exact Change</label>
+                        <input type="text"
+                               class="form-control custom-input fs-5 text-success fw-bold text-end font-monospace py-2"
+                               id="cashChange"
+                               placeholder="₱ 0.00"
+                               readonly>
                     </div>
                 </div>
 
@@ -648,6 +662,20 @@
 
         function cancelAndReturn() {
             window.location.href = "/Home/Checkout";
+        }
+
+        // Automatically calculates change as the cashier types
+        function calculateChange() {
+            // Strip out '₱' or commas from the Total Due text to get a clean number
+            const rawDue = document.getElementById('cashTotalDue').value.replace(/[^0-9.-]+/g, "");
+            const totalDue = parseFloat(rawDue) || 0;
+
+            const amountReceived = parseFloat(document.getElementById('cashAmountReceived').value) || 0;
+            const change = amountReceived - totalDue;
+
+            // Prevent showing negative change if the amount received is less than total due
+            const displayChange = change > 0 ? change : 0;
+            document.getElementById('cashChange').value = "₱ " + displayChange.toFixed(2);
         }
     </script>
 }

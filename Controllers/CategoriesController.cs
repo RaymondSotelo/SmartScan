@@ -56,7 +56,7 @@ public class CategoriesController : Controller
 
             if (exists)
             {
-                TempData["ErrorMessage"] = $"The category \"{category.CategoryName}\" already exists.";
+                TempData["CategoryMessage"] = $"The category \"{category.CategoryName}\" already exists.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -66,7 +66,7 @@ public class CategoriesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        TempData["ErrorMessage"] = "Failed to create category. Please provide a valid name.";
+        TempData["CategoryMessage"] = "Failed to create category. Please provide a valid name.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -98,7 +98,7 @@ public class CategoriesController : Controller
 
             if (exists)
             {
-                TempData["ErrorMessage"] = $"Another category named {category.CategoryName} already exists.";
+                TempData["CategoryMessage"] = $"Another category named {category.CategoryName} already exists.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -119,7 +119,7 @@ public class CategoriesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        TempData["ErrorMessage"] = "Failed to update category. Please check your input.";
+        TempData["CategoryMessage"] = "Failed to update category. Please check your input.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -141,7 +141,7 @@ public class CategoriesController : Controller
         }
         catch (DbUpdateException)
         {
-            TempData["ErrorMessage"] = $"Cannot delete '{category.CategoryName}' because products are assigned to it.";
+            TempData["CategoryMessage"] = $"Cannot delete '{category.CategoryName}' because products are assigned to it.";
         }
 
         return RedirectToAction(nameof(Index));

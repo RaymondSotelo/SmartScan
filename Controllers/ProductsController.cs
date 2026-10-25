@@ -99,7 +99,7 @@ public class ProductsController : Controller
 
             _context.Add(product);
             await _context.SaveChangesAsync();
-            TempData["UserMessage"] = $"{product.ProductName} was successfully added.";
+            TempData["ProductMessage"] = $"{product.ProductName} was successfully added.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -193,7 +193,7 @@ public class ProductsController : Controller
             try
             {
                 await _context.SaveChangesAsync();
-                TempData["UserMessage"] = $"{existProduct.ProductName} was updated successfully.";
+                TempData["ProductMessage"] = $"{existProduct.ProductName} was updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
