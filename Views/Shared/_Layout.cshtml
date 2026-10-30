@@ -11,8 +11,7 @@
     <link rel="stylesheet" href="~/SmartScan.styles.css" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/images/SmartScanLogo.png" asp-append-version="true" />
     <link rel="shortcut icon" type="image/png" href="~/images/SmartScanLogo.png" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" /></head>
 <body>
     <div class="d-flex" id="wrapper">
     @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
@@ -95,7 +94,12 @@
                                 <span class="menu-text ms-3">Customer</span>
                             </a>
                         </li>
-
+                        <li class="mb-2"> <!-- [SECURITY LOGS Button] -->
+                            <a asp-area="" asp-controller="SecurityAlerts" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                                <i class="fa-solid fa-clipboard-check sidebar-icon fs-5 text-center"></i>
+                                <span class="menu-text ms-3">Security Logs</span>
+                            </a>
+                        </li>
                     }          
                 </ul>
             </nav>

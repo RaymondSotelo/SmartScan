@@ -27,7 +27,7 @@
                     <!-- Product Name -->
                     <div class="form-group mb-3">
                         <label asp-for="ProductName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Product Name</label>
-                        <input asp-for="ProductName" class="form-control rounded-3" placeholder="e.g. Organic Rolled Oats" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+                        <input asp-for="ProductName" class="form-control rounded-3" placeholder="e.g. Nescafe Stick" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
                         <span asp-validation-for="ProductName" class="text-danger small mt-1 d-block"></span>
                     </div>
 
@@ -69,6 +69,25 @@
                             <input asp-for="Price" class="form-control border-0 shadow-none fw-semibold" type="number" step="0.01" min="0.01" onwheel="this.blur()" placeholder="0.00" />
                         </div>
                         <span asp-validation-for="Price" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <!-- Initial AI Scanning Status Notice -->
+                    <div class="form-group mb-3">
+                        <label class="control-label fw-semibold mb-2 d-block" style="color: #1162a3;">AI Detection Status</label>
+
+                        <!-- Hidden input reinforcing default false state -->
+                        <input type="hidden" asp-for="CanScan" value="false" />
+
+                        <div class="d-flex align-items-center p-3 bg-light rounded-3 border shadow-sm">
+                            <div>
+                                <span class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm bg-warning text-dark border border-warning-subtle">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Not Scannable by Default
+                                </span>
+                                <small class="text-muted d-block mt-2">
+                                    New products require dataset labeling and AI detector model training before automated scanning can be enabled.
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

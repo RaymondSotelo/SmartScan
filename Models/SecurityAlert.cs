@@ -10,20 +10,20 @@ public partial class SecurityAlert
     [Key]
     public int AlertId { get; set; }
 
-    public int TransactionId { get; set; }
-
     public int AlertTypeId { get; set; }
 
     public string Description { get; set; } = null!;
 
-    public int RetailStaffId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    public DateOnly CreatedAt { get; set; }
+    public int? RetailId { get; set; }
+
+    public string? ActionUrl { get; set; }
+
     [ValidateNever]
     public virtual AlertType AlertType { get; set; } = null!;
     
     [ValidateNever]
-    public virtual RetailStaff RetailStaff { get; set; } = null!;
-   [ValidateNever]
-    public virtual Transaction Transaction { get; set; } = null!;
+    public virtual Retail? Retail { get; set; }
+
 }

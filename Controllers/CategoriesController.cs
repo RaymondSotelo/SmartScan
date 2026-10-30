@@ -33,36 +33,44 @@ public class CategoriesController : Controller
         return View(await category.ToListAsync());
     }
 
-    // POST: CATEGORYS/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    // POST: CATEGORIES/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("CategoryName")] Category category)
     {
         ModelState.Remove("Products");
 
-        // Sanitize & clean trailing/leading whitespace
-        if (!string.IsNullOrWhiteSpace(category.CategoryName))
+        if (string.IsNullOrWhiteSpace(category.CategoryName))
         {
-            category.CategoryName = category.CategoryName.Trim();
+            TempData["CategoryMessage"] = "Category name cannot be empty.";
+            return RedirectToAction(nameof(Index));
         }
+
+        category.CategoryName = category.CategoryName.Trim();
+        string exactName = category.CategoryName.ToLower();
+
+        string variation1 = exactName.EndsWith("s") ? exactName.Substring(0, exactName.Length - 1) : exactName + "s";
+        string variation2 = exactName.EndsWith("es") ? exactName.Substring(0, exactName.Length - 2) : exactName + "es";
 
         if (ModelState.IsValid)
         {
-            // Check for duplicate name (case-insensitive)
+            // Aggressive duplicate check
             bool exists = await _context.Categories
-                .AnyAsync(c => c.CategoryName.ToLower() == category.CategoryName.ToLower());
+                .AnyAsync(c =>
+                    c.CategoryName.Trim().ToLower() == exactName ||
+                    c.CategoryName.Trim().ToLower() == variation1 ||
+                    c.CategoryName.Trim().ToLower() == variation2);
 
             if (exists)
             {
-                TempData["CategoryMessage"] = $"The category \"{category.CategoryName}\" already exists.";
+                TempData["CategoryMessage"] = $"A category similar to \"{category.CategoryName}\" already exists.";
                 return RedirectToAction(nameof(Index));
             }
 
             // Persist new category
             _context.Add(category);
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 

@@ -33,14 +33,16 @@ public partial class Transaction
 
     [ValidateNever]
     public virtual Customer Customer { get; set; } = null!;
+
     [ValidateNever]
     public virtual PaymentMethod? PaymentMethod { get; set; }
+
     [ValidateNever]
     public virtual Retail? Retail { get; set; }
+
     [ValidateNever]
     public virtual RetailStaff? RetailStaff { get; set; }
 
-    public virtual ICollection<SecurityAlert> SecurityAlerts { get; set; } = new List<SecurityAlert>();
     [ValidateNever]
     public virtual Status? Status { get; set; }
 

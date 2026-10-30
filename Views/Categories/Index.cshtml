@@ -5,7 +5,7 @@
     ViewData["HeaderTitle"] = "Retail Management";
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
      style="height: calc(100dvh - 130px); min-height: 500px;">
 
     <!-- Top Card Header -->
@@ -13,86 +13,101 @@
         <h5 class="mb-0"><i class="fa-solid fa-tag me-2"></i>Categories</h5>
     </div>
 
-    <!-- Header Info -->
-    <div class="px-4 pt-4 pb-3">
-        <h4 class="mb-0 fw-bold" style="color: #1162a3;">Category Directory</h4>
-        <p class="fw-medium pt-1 text-secondary mb-0">Organize and manage catalog categories across your retail items.</p>
-    </div>
+    <!-- Single Scrollable Workspace -->
+    <div class="flex-grow-1 overflow-auto position-relative d-flex flex-column rounded-bottom-4">
 
-    <!-- Action Bar & Search -->
-    <div class="px-4 pb-3 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0">
-       
-        <!-- Add Button -->
-        <button type="button" class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
-                style="background-color: #1162a3; border-color: #1162a3;"
-                data-bs-toggle="modal" data-bs-target="#createCategoryModal">
-            <i class="fa-solid fa-plus"></i>
-            <span>Add New Category</span>
-        </button>
+        <!-- Header Info (Scrolls away as user scrolls down) -->
+        <div class="px-4 pt-4 pb-2 flex-shrink-0">
+            <h4 class="mb-0 fw-bold" style="color: #1162a3;">Category Directory</h4>
+            <p class="fw-medium pt-1 text-secondary mb-0">Organize and manage catalog categories across your retail items.</p>
+        </div>
 
-        <!-- Search Bar -->
-        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
-            <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-                <span class="input-group-text bg-white border-0">
-                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                </span>
-                <input type="text"
-                       name="search"
-                       value="@ViewData["CurrentFilter"]"
-                       class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-                       placeholder="Search category..."
-                       aria-label="Search category" />
-            </div>
+        <!-- Unified Table with Sticky Action Bar AND Headers -->
+        <div class="flex-grow-1 pb-3">
 
-            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
-                    <i class="fa-solid fa-xmark"></i>
-                </a>
-            }
-        </form>
-    </div>
+            <table class="table table-hover align-middle mb-0 w-100"
+                   style="min-width: 500px; border-collapse: separate; border-spacing: 0;">
 
-    <!-- Dynamic Body / Table Area -->
-    <div class="card-body p-4 pt-0 d-flex flex-column flex-grow-1 overflow-hidden">
-        @if (Model == null || !Model.Any())
-        {
-            @if (!string.IsNullOrWhiteSpace(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <div class="alert alert-warning text-center my-3 fw-semibold shadow-sm" role="alert">
-                    <i class="fa-solid fa-circle-exclamation me-2"></i>No categories found matching "<strong>@ViewData["CurrentFilter"]</strong>".
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-5 my-auto">
-                    <div class="text-muted mb-3">
-                        <i class="fa-solid fa-tags fa-3x text-secondary opacity-50"></i>
-                    </div>
-                    <h4 class="fw-semibold text-secondary">No Categories Yet</h4>
-                    <p class="text-muted small">Click "Add new Category" above to register your first catalog category.</p>
-                </div>
-            }
-        }
-        else
-        {
-            <!-- Scrollable Table Container -->
-            <div class="table-responsive flex-grow-1 overflow-y-auto pe-1">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light sticky-top">
+                <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+
+                    <!-- Sticky Action Bar Row (Inside the table header) -->
+                    <tr class="bg-white">
+                        <th colspan="2" class="p-0 border-0 border-bottom">
+                            <div class="px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                                <!-- Add Button -->
+                                <button type="button" class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                                        style="background-color: #1162a3; border-color: #1162a3;"
+                                        data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Add New Category</span>
+                                </button>
+
+                                <!-- Search Bar -->
+                                <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+                                    <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                                        <span class="input-group-text bg-white border-0">
+                                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                        </span>
+                                        <input type="text"
+                                               name="search"
+                                               value="@ViewData["CurrentFilter"]"
+                                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                               placeholder="Search category..."
+                                               aria-label="Search category" />
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                                    {
+                                        <a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </a>
+                                    }
+                                </form>
+                            </div>
+                        </th>
+                    </tr>
+
+                    <!-- 2. Sticky Column Headers Row -->
+                    <tr class="table-light">
+                        <th class="ps-4 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Category Name</th>
+                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-semibold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model == null || !Model.Any())
+                    {
                         <tr>
-                            <th class="ps-3 py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Category Name</th>
-                            <th class="pe-3 py-3 text-end text-secondary text-uppercase fw-semibold" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                            <td colspan="2" class="p-0 border-0 bg-white">
+                                @if (!string.IsNullOrWhiteSpace(ViewData["CurrentFilter"]?.ToString()))
+                                {
+                                    <div class="alert alert-warning text-center mx-4 my-4 fw-semibold shadow-sm" role="alert">
+                                        <i class="fa-solid fa-circle-exclamation me-2"></i>No categories found matching "<strong>@ViewData["CurrentFilter"]</strong>".
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-5 my-4">
+                                        <div class="text-muted mb-3">
+                                            <i class="fa-solid fa-tags fa-3x text-secondary opacity-50"></i>
+                                        </div>
+                                        <h4 class="fw-semibold text-secondary">No Categories Yet</h4>
+                                        <p class="text-muted small">Click "Add new Category" above to register your first catalog category.</p>
+                                    </div>
+                                }
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
+                    }
+                    else
+                    {
                         @foreach (var item in Model)
                         {
                             <tr>
-                                <td class="ps-3 text-truncate fw-semibold" style="max-width: 280px; color: #1162a3;" title="@item.CategoryName">
+                                <td class="ps-4 text-truncate fw-semibold" style="max-width: 280px; color: #1162a3;" title="@item.CategoryName">
                                     <i class="fa-solid fa-tag text-secondary me-2 opacity-75"></i>@item.CategoryName
                                 </td>
-                                <td class="pe-3 text-end">
+                                <td class="pe-4 text-end">
                                     <button type="button"
                                             class="btn btn-sm btn-outline-primary fw-medium rounded-pill px-3 me-1 shadow-sm edit-category-btn"
                                             data-bs-toggle="modal"
@@ -115,10 +130,10 @@
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
-        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -228,15 +243,36 @@
 
             @if (TempData["CategoryMessage"] != null)
             {
-                    <text>
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Action Blocked',
-                        text: @Html.Raw(Json.Serialize(TempData["CategoryMessage"])),
-                        confirmButtonColor: '#1162a3'
-                    });
-                    </text>
+                <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Action Blocked',
+                    text: @Html.Raw(Json.Serialize(TempData["CategoryMessage"])),
+                    confirmButtonColor: '#1162a3'
+                });
+                </text>
             }
+        });
+
+        // Prevent double-clicking on all forms
+        document.querySelectorAll("form").forEach(form => {
+            form.addEventListener("submit", function () {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    // Disable the button to prevent multiple clicks
+                    submitBtn.disabled = true;
+
+                    // Change button text to show it's working
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Saving...';
+
+                    // Re-enable after 3 seconds just in case the page doesn't reload
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }, 3000);
+                }
+            });
         });
     </script>
 }

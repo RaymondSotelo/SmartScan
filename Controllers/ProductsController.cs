@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -53,8 +53,6 @@ public class ProductsController : Controller
     }
 
     // POST: PRODUCTS/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("ProductName,CategoryId,Price,ProductImage,ImageUpload")] Product product)
@@ -63,43 +61,63 @@ public class ProductsController : Controller
         ModelState.Remove("Category");
         ModelState.Remove("Status");
 
-        // Checks if an image was uploaded via file tab
-        if (product.ImageUpload != null && product.ImageUpload.Length > 0)
+        // Checks in the database for similar prodduct name before adding
+        if (!string.IsNullOrWhiteSpace(product.ProductName))
         {
-            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
-            Directory.CreateDirectory(uploadsFolder);
+            string exactName = product.ProductName.Trim().ToLower();
 
-            // Sanitize file name
-            string cleanFileName = Path.GetFileName(product.ImageUpload.FileName);
-            string uniqueFileName = Guid.NewGuid().ToString() + "_" + cleanFileName;
-            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            string variation1 = exactName.EndsWith("s") ? exactName.Substring(0, exactName.Length - 1) : exactName + "s";
+            string variation2 = exactName.EndsWith("es") ? exactName.Substring(0, exactName.Length - 2) : exactName + "es";
 
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            bool nameExists = await _context.Products
+                .AnyAsync(p =>
+                    p.ProductName.Trim().ToLower() == exactName ||
+                    p.ProductName.Trim().ToLower() == variation1 ||
+                    p.ProductName.Trim().ToLower() == variation2);
+
+            if (nameExists)
             {
-                await product.ImageUpload.CopyToAsync(fileStream);
+                ModelState.AddModelError("ProductName", $"A product similar to '{product.ProductName.Trim()}' already exists.");
             }
-
-            // Assign the saved file path to the non-nullable string
-            product.ProductImage = "/uploads/products/" + uniqueFileName;
-
-            // Strip the model validation error that was generated on initial binding
-            ModelState.Remove("ProductImage");
         }
 
-        // Fallback check: ensure either a URL was provided or a file was saved
-        if (string.IsNullOrWhiteSpace(product.ProductImage))
-        {
-            ModelState.AddModelError("ProductImage", "Please provide a valid image URL or upload an image file.");
-        }
-
-        // Save to database
         if (ModelState.IsValid)
         {
+            // Checks if an image was uploaded via file tab
+            if (product.ImageUpload != null && product.ImageUpload.Length > 0)
+            {
+                // Note: Updated to match your physical folder path "images/products"
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+                Directory.CreateDirectory(uploadsFolder);
+
+                // Sanitize file name
+                string cleanFileName = Path.GetFileName(product.ImageUpload.FileName);
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + cleanFileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await product.ImageUpload.CopyToAsync(fileStream);
+                }
+
+                // Assign the saved file path to the non-nullable string
+                product.ProductImage = "/images/products/" + uniqueFileName;
+            }
+
+            // Strip the model validation error that was generated on initial binding if a file was uploaded
+            if (product.ImageUpload != null)
+            {
+                ModelState.Remove("ProductImage");
+            }
+
+            // Set default status to Active (Assuming StatusId 1 is Active)
             product.StatusId = 1;
+            product.CanScan = false;
 
             _context.Add(product);
             await _context.SaveChangesAsync();
-            TempData["ProductMessage"] = $"{product.ProductName} was successfully added.";
+
+            TempData["ProductMessage"] = $"{product.ProductName} has been created successfully.";
             return RedirectToAction(nameof(Index));
         }
 

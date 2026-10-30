@@ -5,7 +5,7 @@
     ViewData["HeaderTitle"] = "Retail Management";
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
      style="height: calc(100dvh - 130px); min-height: 500px;">
 
     <!-- Top Card Header -->
@@ -13,112 +13,126 @@
         <h5 class="mb-0"><i class="fa-solid fa-cart-flatbed me-2"></i>Products</h5>
     </div>
 
-	<!-- Header Info -->
-    <div class="px-4 pt-4 pb-3">
-        <h4 class="mb-0 fw-bold" style="color: #1162a3;">Product Catalog</h4>
-		<p class="fw-medium pt-1 text-secondary mb-0">Manage retail items, pricing, categories, and inventory status.</p>
-	</div>
+    <!-- Single Scrollable Workspace -->
+    <div class="flex-grow-1 overflow-auto position-relative d-flex flex-column rounded-bottom-4">
 
-    <!-- Action Bar & Search -->
-    <div class="px-4 pb-3 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0">
-       
-        <!-- Add Button -->
-		<a asp-action="Create" 
-           class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
-		   style="background-color: #1162a3; border-color: #1162a3;">
-			<i class="fa-solid fa-plus"></i>
-			<span>Add New Product</span>
-		</a>
-
-        <!-- Search Bar -->
-        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
-            <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-                <span class="input-group-text bg-white border-0">
-                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                </span>
-                <input type="text"
-                       name="search"
-                       value="@ViewData["CurrentFilter"]"
-                       class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-                       placeholder="Search product..."
-                       aria-label="Search products" />
-            </div>
-
-            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
-                    <i class="fa-solid fa-xmark"></i>
-                </a>
-            }
-        </form>
-    </div>
-
-    <!-- Overhead TempData Alert -->
-    @if (TempData["ProductMessage"] != null)
-    {
-        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
-            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
-            <div>
-                @TempData["ProductMessage"]
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <!-- Header Info -->
+        <div class="px-4 pt-4 pb-2 flex-shrink-0">
+            <h4 class="mb-0 fw-bold" style="color: #1162a3;">Product Catalog</h4>
+            <p class="fw-medium pt-1 text-secondary mb-0">Manage retail items, pricing, categories, and inventory status.</p>
         </div>
 
-        <script>
-            setTimeout(function () {
-                var alertNode = document.getElementById('autoCloseAlert');
-                if (alertNode) {
-                    // Use Bootstrap's native Alert API to close it smoothly
-                    var bsAlert = new bootstrap.Alert(alertNode);
-                    bsAlert.close();
-                }
-            }, 2000); // 2000 milliseconds = 2 seconds
-        </script>
-    }
+        <!-- Overhead TempData Alert -->
+        @if (TempData["ProductMessage"] != null)
+        {
+            <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 my-2 flex-shrink-0" role="alert">
+                <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+                <div>
+                    @TempData["ProductMessage"]
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
 
-    <!-- Dynamic Body / Table Area (Flex-Grow to fill the screen) -->
-    <div class="card-body p-4 pt-0 d-flex flex-column flex-grow-1 overflow-hidden">
-        @if (Model == null || !Model.Any())
-        {
-            @if (!string.IsNullOrWhiteSpace(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <div class="alert alert-warning text-center my-3 fw-semibold shadow-sm" role="alert">
-                    <i class="fa-solid fa-circle-exclamation me-2"></i>No products found matching "<strong>@ViewData["CurrentFilter"]</strong>".
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-5 my-auto">
-                    <div class="text-muted mb-3">
-                        <i class="fa-solid fa-boxes-stacked fa-3x text-secondary opacity-50"></i>
-                    </div>
-                    <h4 class="fw-semibold text-secondary">No Products Yet</h4>
-                    <p class="text-muted small">Click "Add New Product" above to add your first inventory item.</p>
-                </div>
-            }
+            <script>
+                setTimeout(function () {
+                    var alertNode = document.getElementById('autoCloseAlert');
+                    if (alertNode) {
+                        var bsAlert = new bootstrap.Alert(alertNode);
+                        bsAlert.close();
+                    }
+                }, 2000);
+            </script>
         }
-        else
-        {
-            <!-- Scrollable Table Container -->
-            <div class="table-responsive flex-grow-1 overflow-y-auto pe-1">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light sticky-top">
+
+        <!-- Unified Table with Sticky Action Bar AND Headers -->
+        <div class="flex-grow-1 pb-3">
+            <table class="table table-hover align-middle mb-0 w-100"
+                   style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
+
+                <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+
+                    <!-- Sticky Action Bar Row -->
+                    <tr class="bg-white">
+                        <th colspan="6" class="p-0 border-0 border-bottom">
+                            <div class="px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                                <!-- Add Button -->
+                                <a asp-action="Create"
+                                   class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                                   style="background-color: #1162a3; border-color: #1162a3;">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Add New Product</span>
+                                </a>
+
+                                <!-- Search Bar -->
+                                <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+                                    <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                                        <span class="input-group-text bg-white border-0">
+                                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                        </span>
+                                        <input type="text"
+                                               name="search"
+                                               value="@ViewData["CurrentFilter"]"
+                                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                               placeholder="Search product..."
+                                               aria-label="Search products" />
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                                    {
+                                        <a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </a>
+                                    }
+                                </form>
+                            </div>
+                        </th>
+                    </tr>
+
+                    <!-- Sticky Column Headers Row -->
+                    <tr class="table-light">
+                        <th class="ps-4 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Product</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Category</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Market Price</th>
+                        <th class="py-3 text-center text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Status</th>
+                        <th class="py-3 text-center text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">AI Ready</th>
+                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model == null || !Model.Any())
+                    {
                         <tr>
-                            <th class="ps-3 py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Product</th>
-                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Category</th>
-                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Market Price</th>
-                            <th class="py-3 text-center text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Status</th>
-                            <th class="pe-3 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                            <td colspan="6" class="p-0 border-0 bg-white">
+                                @if (!string.IsNullOrWhiteSpace(ViewData["CurrentFilter"]?.ToString()))
+                                {
+                                    <div class="alert alert-warning text-center mx-4 my-4 fw-semibold shadow-sm" role="alert">
+                                        <i class="fa-solid fa-circle-exclamation me-2"></i>No products found matching "<strong>@ViewData["CurrentFilter"]</strong>".
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-5 my-4">
+                                        <div class="text-muted mb-3">
+                                            <i class="fa-solid fa-boxes-stacked fa-3x text-secondary opacity-50"></i>
+                                        </div>
+                                        <h4 class="fw-semibold text-secondary">No Products Yet</h4>
+                                        <p class="text-muted small">Click "Add New Product" above to add your first inventory item.</p>
+                                    </div>
+                                }
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
                         {
                             var imgUrl = string.IsNullOrWhiteSpace(item.ProductImage) ? "/images/default-product.png" : item.ProductImage;
 
                             <tr>
-                                <!-- Product Name + Thumbnail -->
-                                <td class="ps-3">
+                                <!-- Product Name -->
+                                <td class="ps-4">
                                     <div class="d-flex align-items-center gap-3">
                                         <img src="@imgUrl"
                                              onerror="this.onerror=null; this.src='/images/default-product.png';"
@@ -159,8 +173,24 @@
                                     }
                                 </td>
 
+                                <!-- AI Scannable Badge -->
+                                <td class="text-center">
+                                    @if (item.CanScan)
+                                    {
+                                        <span class="badge rounded-pill bg-white text-primary border border-primary-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                            <i class="fa-solid fa-robot me-1"></i>Trained
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; font-size: 11px;">
+                                            <i class="fa-solid fa-hourglass-half me-1"></i>Pending
+                                        </span>
+                                    }
+                                </td>
+
                                 <!-- Action Buttons -->
-                                <td class="pe-3 text-end">
+                                <td class="pe-4 text-end">
                                     <a class="btn btn-sm btn-outline-primary fw-medium rounded-pill px-3 me-1 shadow-sm"
                                        asp-action="Edit"
                                        asp-route-productid="@item.ProductId"
@@ -180,10 +210,10 @@
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
-        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -192,14 +222,14 @@
     <script>
         @if (TempData["ErrorMessage"] != null)
         {
-                <text>
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Action Blocked',
-                    text: @Html.Raw(Json.Serialize(TempData["ErrorMessage"])),
-                    confirmButtonColor: '#1162a3'
-                });
-                </text>
+            <text>
+            Swal.fire({
+                icon: 'error',
+                title: 'Action Blocked',
+                text: @Html.Raw(Json.Serialize(TempData["ErrorMessage"])),
+                confirmButtonColor: '#1162a3'
+            });
+            </text>
         }
     </script>
 }

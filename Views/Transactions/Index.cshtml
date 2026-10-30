@@ -9,166 +9,174 @@
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
      style="height: calc(100dvh - 130px); min-height: 500px;">
 
-    <!-- Header -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
-         style="background-color: #1162a3;">
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
         <h5 class="mb-0">
             <i class="fa-solid fa-receipt me-2"></i>Transaction Logs
         </h5>
-        
     </div>
 
-    <!-- Interior Layout Body (Flex Container) -->
-    <div class="card-body p-4 flex-grow-1 overflow-hidden d-flex flex-column">
+    <!-- Single Scrollable Workspace -->
+    <div class="flex-grow-1 overflow-auto position-relative d-flex flex-column rounded-bottom-4">
 
-        <!-- Header Controls & Search Toolbar (Fixed) -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 flex-shrink-0">
-            <div>
-                <h4 class="mb-0 fw-bold" style="color: #1162a3;">
-                    System Transaction Ledger
-                </h4>
-                <p class="fw-medium pt-1 text-secondary mb-0">Audit completed checkouts, sales volumes, and payment distribution across all registered stores.</p>
-            </div>
-
-            <div class="d-flex align-items-center gap-2">
-				<!-- Search Bar -->
-				<form asp-action="Index" method="get" class="d-flex gap-2" style="width: 290px; max-width: 100%;">
-					<div class="input-group shadow-sm rounded-3 overflow-hidden border">
-						<span class="input-group-text bg-white border-0">
-							<i class="fa-solid fa-magnifying-glass text-muted"></i>
-						</span>
-						<input type="text"
-							   name="search"
-							   value="@currentFilter"
-							   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-							   style="font-size: 13px;"
-							   placeholder="Search receipt, retail, staff, amount..."
-							   aria-label="Search transaction" />
-					</div>
-
-					@if (!string.IsNullOrEmpty(currentFilter))
-					{
-						<a asp-action="Index"
-						   class="btn btn-outline-secondary rounded-pill px-3 d-flex align-items-center"
-						   style="height: 38px;"
-						   title="Clear Search">
-							<i class="fa-solid fa-xmark"></i>
-						</a>
-					}
-				</form>
-
-                <!-- Counter Badge -->
-                <span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
-                      style="background-color: #1162a3; height: 38px; font-size: 13px;">
-                    <i class="fa-solid fa-receipt me-1"></i>@Model.Count() Orders
-                </span>
-            </div>          
+        <!-- Header Info (Scrolls away as user scrolls down) -->
+        <div class="px-4 pt-4 pb-2 flex-shrink-0">
+            <h4 class="mb-0 fw-bold" style="color: #1162a3;">System Transaction Ledger</h4>
+            <p class="fw-medium pt-1 text-secondary mb-0">Audit completed checkouts, sales volumes, and payment distribution across all registered stores.</p>
         </div>
 
-        <!-- Scrollable Table Section -->
-        <div class="flex-grow-1 overflow-y-auto overflow-x-hidden no-scrollbar">
-            @if (!Model.Any())
-            {
-                @if (!string.IsNullOrEmpty(currentFilter))
-                {
-                    <div class="alert alert-warning text-center my-4 fw-semibold shadow-sm border-0 rounded-4" role="alert">
-                        <i class="fa-solid fa-circle-exclamation me-2"></i>No transaction found matching "<strong>@currentFilter</strong>".
-                    </div>
-                }
-                else
-                {
-                    <div class="text-center py-5 my-auto">
-                        <div class="text-muted mb-3">
-                            <i class="fa-solid fa-receipt fa-3x text-secondary opacity-50"></i>
-                        </div>
-                        <h5 class="fw-semibold text-secondary">No Transactions Available</h5>
-                        <p class="text-muted small">Completed checkout transactions recorded by the system will appear here.</p>
-                    </div>
-                }
-            }
-            else
-            {
-				<div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-2">
-					<table class="table table-hover align-middle mb-0">
-						<thead class="table-light sticky-top">
-							<tr>
-								<th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Receipt & Retail Store</th>
-								<th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Timestamp</th>
-								<th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Processed By & Tender</th>
-								<th class="py-3 text-secondary text-uppercase fw-bold text-end" style="font-size: 14px; letter-spacing: 0.5px;">Amount</th>
-								<th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Action</th>
-							</tr>
-						</thead>
-						<tbody>
-							@foreach (var item in Model)
-							{
-								int itemsCount = item.TransactionItems?.Sum(ti => ti.Quantity) ?? 0;
+        <div class="flex-grow-1 pb-3">
+            <table class="table table-hover align-middle mb-0 w-100"
+                   style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
 
-								<tr>
-									<!-- 1. Receipt & Store Name Combined -->
-									<td class="ps-4">
-										<div class="d-flex flex-column">
-											<span class="font-monospace fw-semibold fs-6" style="color: #1162a3;">
-												@item.ReceiptNumber
-											</span>
-											<span class="text-secondary small fw-medium text-truncate" style="max-width: 220px;" title="@item.Retail?.RetailName">
-												<i class="fa-solid fa-shop me-1 text-muted"></i>@(item.Retail?.RetailName ?? "Unknown Store")
-											</span>
-										</div>
-									</td>
+                <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
 
-									<!-- 2. Timestamp -->
-									<td>
-										<span class="fw-semibold text-dark d-block" style="font-size: 13px;">
-											@item.CreatedAt.ToString("MMM dd, yyyy")
-										</span>
-										<small class="text-muted" style="font-size: 11px;">
-											@item.CreatedAt.ToString("hh:mm tt")
-										</small>
-									</td>
+                    <!-- Sticky Action Bar Row -->
+                    <tr class="bg-white">
+                        <th colspan="5" class="p-0 border-0 border-bottom">
+                            <div class="px-4 py-3 d-flex flex-wrap justify-content-end align-items-center gap-3">
 
-									<!-- 3. Cashier & Payment Method -->
-									<td>
-										<div class="d-flex flex-column gap-1">
-											<div class="d-flex align-items-center gap-2">
-												<i class="fa-solid fa-circle-user text-secondary opacity-75"></i>
-												<span class="fw-semibold text-dark text-truncate" style="max-width: 170px; font-size: 13px;">
-													@(item.RetailStaff?.Staff?.UserName ?? "Automated POS")
-												</span>
-											</div>
-											<div>
-												<span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-0" style="font-size: 10px;">
-													<i class="fa-solid fa-wallet me-1"></i>@(item.PaymentMethod?.PaymentMethodName ?? "Cash")
-												</span>
-											</div>
-										</div>
-									</td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <!-- Search Bar -->
+                                    <form asp-action="Index" method="get" class="d-flex gap-2" style="width: 290px; max-width: 100%;">
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                                            <span class="input-group-text bg-white border-0">
+                                                <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                            </span>
+                                            <input type="text"
+                                                   name="search"
+                                                   value="@currentFilter"
+                                                   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                                   style="font-size: 13px;"
+                                                   placeholder="Search receipt, store, amount..."
+                                                   aria-label="Search transaction" />
+                                        </div>
 
-									<!-- 4. Total Amount & Units -->
-									<td class="text-end">
-										<span class="fw-bold text-primary fs-6 d-block">
-											₱@item.TotalAmount.ToString("N2")
-										</span>
-										<small class="text-muted" style="font-size: 11px;">
-											@itemsCount unit@(itemsCount == 1 ? "" : "s")
-										</small>
-									</td>
+                                        @if (!string.IsNullOrEmpty(currentFilter))
+                                        {
+                                            <a asp-action="Index"
+                                               class="btn btn-outline-secondary rounded-3 px-3 d-flex align-items-center"
+                                               title="Clear Search">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </a>
+                                        }
+                                    </form>
 
-									<!-- 5. Action -->
-									<td class="pe-4 text-end">
-										<a class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium shadow-sm"
-										   asp-action="Details"
-										   asp-route-transactionid="@item.TransactionId"
-										   style="font-size: 14px;">
-											<i class="fa-solid fa-eye me-1"></i>View
-										</a>
-									</td>
-								</tr>
-							}
-						</tbody>
-					</table>
-                </div>
-            }
+                                    <!-- Counter Badge -->
+                                    <span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
+                                          style="background-color: #1162a3; height: 38px; font-size: 13px;">
+                                        <i class="fa-solid fa-receipt me-1"></i>@Model.Count() Orders
+                                    </span>
+                                </div>
+
+                            </div>
+                        </th>
+                    </tr>
+
+                    <!-- Sticky Column Headers Row -->
+                    <tr class="table-light">
+                        <th class="ps-4 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px; width: 28%;">Receipt & Retail Store</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px; width: 18%;">Timestamp</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px; width: 22%;">Processed By & Tender</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold text-end border-bottom" style="font-size: 14px; letter-spacing: 0.5px; width: 17%;">Amount</th>
+                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px; width: 15%;">Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="p-0 border-0 bg-white">
+                                @if (!string.IsNullOrEmpty(currentFilter))
+                                {
+                                    <div class="alert alert-warning text-center mx-4 my-4 fw-semibold shadow-sm rounded-4" role="alert">
+                                        <i class="fa-solid fa-circle-exclamation me-2"></i>No transaction found matching "<strong>@currentFilter</strong>".
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-5 my-4">
+                                        <div class="text-muted mb-3">
+                                            <i class="fa-solid fa-receipt fa-3x text-secondary opacity-50"></i>
+                                        </div>
+                                        <h4 class="fw-semibold text-secondary">No Transactions Available</h4>
+                                        <p class="text-muted small">Completed checkout transactions recorded by the system will appear here.</p>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            int itemsCount = item.TransactionItems?.Sum(ti => ti.Quantity) ?? 0;
+
+                            <tr>
+                                <!-- 1. Receipt & Store Name Combined -->
+                                <td class="ps-4">
+                                    <div class="d-flex flex-column">
+                                        <span class="font-monospace fw-semibold fs-6" style="color: #1162a3;">
+                                            @item.ReceiptNumber
+                                        </span>
+                                        <span class="text-secondary small fw-medium text-truncate" style="max-width: 220px;" title="@item.Retail?.RetailName">
+                                            <i class="fa-solid fa-shop me-1 text-muted"></i>@(item.Retail?.RetailName ?? "Unknown Store")
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- 2. Timestamp -->
+                                <td>
+                                    <span class="fw-semibold text-dark d-block" style="font-size: 13px;">
+                                        @item.CreatedAt.ToString("MMM dd, yyyy")
+                                    </span>
+                                    <small class="text-muted" style="font-size: 11px;">
+                                        @item.CreatedAt.ToString("hh:mm tt")
+                                    </small>
+                                </td>
+
+                                <!-- 3. Cashier & Payment Method -->
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-circle-user text-secondary opacity-75"></i>
+                                            <span class="fw-semibold text-dark text-truncate" style="max-width: 170px; font-size: 13px;">
+                                                @(item.RetailStaff?.Staff?.UserName ?? "Automated POS")
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-0" style="font-size: 10px;">
+                                                <i class="fa-solid fa-wallet me-1"></i>@(item.PaymentMethod?.PaymentMethodName ?? "Cash")
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- 4. Total Amount & Units -->
+                                <td class="text-end">
+                                    <span class="fw-bold text-primary fs-6 d-block">
+                                        ₱@item.TotalAmount.ToString("N2")
+                                    </span>
+                                    <small class="text-muted" style="font-size: 11px;">
+                                        @itemsCount unit@(itemsCount == 1 ? "" : "s")
+                                    </small>
+                                </td>
+
+                                <!-- 5. Action -->
+                                <td class="pe-4 text-end">
+                                    <a class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium shadow-sm"
+                                       asp-action="Details"
+                                       asp-route-transactionid="@item.TransactionId"
+                                       style="font-size: 14px;">
+                                        <i class="fa-solid fa-eye me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @using SmartScan.Data
 @using SmartScan.Models
 
@@ -7,8 +8,59 @@
 @inject UserManager<IdentityUser> UserManager
 @inject ApplicationDbContext DbContext
 
+@functions {
+    // Dynamic Time Formatter
+    public string GetRelativeTime(DateTime createdAt)
+    {
+        var span = DateTime.Now - createdAt;
+
+        if (span.TotalMinutes < 1)
+            return $"{(int)span.TotalSeconds} seconds ago";
+        if (span.TotalHours < 1)
+            return $"{(int)span.TotalMinutes} mins ago";
+        if (span.TotalDays < 1)
+            return $"{(int)span.TotalHours} hrs, {span.Minutes} mins ago";
+        if (span.TotalDays < 30)
+            return $"{(int)span.TotalDays} days, {span.Hours} hrs ago";
+        if (span.TotalDays < 365)
+            return $"{(int)(span.TotalDays / 30)} months, {(int)(span.TotalDays % 30)} days ago";
+
+        return createdAt.ToString("MMM dd, yyyy");
+    }
+}
+
 @{
-    // Check if the current route is the Customer Display page
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var isCashier = User.IsInRole("Cashier");
+    var isAdmin = User.IsInRole("Admin");
+
+    // Get user's retail IDs
+    var userRetailIds = DbContext.Retails
+        .Where(r => r.AdminOwner == currentUserId ||
+                    DbContext.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId))
+        .Select(r => r.RetailId)
+        .ToList();
+
+    // Base query for unread alerts (checks the AdminAlertReads table)
+    var alertsQuery = DbContext.SecurityAlerts
+        .Include(a => a.AlertType)
+        .Where(a => a.RetailId.HasValue && userRetailIds.Contains(a.RetailId.Value))
+        .Where(a => !DbContext.AdminAlertReads.Any(read => read.AlertId == a.AlertId && read.AdminId == currentUserId && read.IsRead));
+
+    // Role-Based Filtering
+    if (isCashier && !isAdmin)
+    {
+        // Cashiers only see: 4 (Low Stock), 5 (Depleted), 6 (Anomaly)
+        var allowedTypes = new List<int> { 4, 5, 6 };
+        alertsQuery = alertsQuery.Where(a => allowedTypes.Contains(a.AlertTypeId));
+    }
+
+    // Execute query and sort by newest
+    var topAlerts = alertsQuery
+        .OrderByDescending(a => a.CreatedAt)
+        .ThenByDescending(a => a.AlertId)
+        .ToList();
+
     bool isCustomerDisplay = Context.Request.Path.StartsWithSegments("/Home/CustomerDisplay", StringComparison.OrdinalIgnoreCase);
 }
 
@@ -18,8 +70,6 @@
         @if (SignInManager.IsSignedIn(User))
         {
             var currentUser = await UserManager.GetUserAsync(User);
-
-            // 1. Standardized default path matching your wwwroot/images/ file
             const string fallbackAvatar = "/images/default-pfp.jpg";
             string profilePfpPath = fallbackAvatar;
 
@@ -31,7 +81,6 @@
 
                 if (!string.IsNullOrWhiteSpace(userProfile?.ProfilePicture))
                 {
-                    // 2. Ensure path begins with '/' to prevent relative URL breaks
                     var pic = userProfile.ProfilePicture.Trim();
                     profilePfpPath = pic.StartsWith("~") ? pic.Substring(1) : (pic.StartsWith("/") ? pic : "/" + pic);
                 }
@@ -39,50 +88,100 @@
 
             <!-- User Profile Dropdown -->
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none"
-                   href="#"
-                   id="userProfileDropdown"
-                   role="button"
-                   data-bs-toggle="dropdown"
-                   aria-expanded="false"
-                   style="padding-top: 24px; padding-bottom: 10px;">
-
-                    <!-- Display Name -->
+                <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none" href="#" id="userProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="padding-top: 24px; padding-bottom: 10px;">
                     <span class="me-2" style="padding-right: 8px; font-size: 18px;">@User.Identity?.Name</span>
-
-                    <!-- Profile Picture with onerror fallback & cache buster -->
-                    <img src="@profilePfpPath"
-                         onerror="this.onerror=null; this.src='@fallbackAvatar';"
-                         asp-append-version="true"
-                         alt="Profile Picture"
-                         class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white"
-                         style="width: 42px; height: 42px;" />
+                    <img src="@profilePfpPath" onerror="this.onerror=null; this.src='@fallbackAvatar';" asp-append-version="true" alt="Profile" class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white" style="width: 42px; height: 42px;" />
                 </a>
 
-                <!-- Dropdown Menu -->
-                <ul class="dropdown-menu dropdown-menu-end shadow border-1 mt-1 p-0 overflow-hidden" aria-labelledby="userProfileDropdown">
-                    <!-- Option 1 | Account Settings -->
+                <ul class="dropdown-menu dropdown-menu-end shadow border-1 rounded-3 mt-1 p-0 overflow-hidden" aria-labelledby="userProfileDropdown" style="width: 340px; z-index: 1050;">
                     <li>
-                        <a class="dropdown-item py-2 fw-medium d-flex align-items-center text-primary"
-                           asp-area="Identity"
-                           asp-page="/Account/Manage/Index">
-                            <i class="fa-solid fa-gear me-2 text-primary" style="width: 20px;"></i>
-                            Account Settings
+                        <a class="dropdown-item py-2 fw-medium d-flex align-items-center text-primary" asp-area="Identity" asp-page="/Account/Manage/Index">
+                            <i class="fa-solid fa-gear me-2 text-primary" style="width: 20px;"></i>Account Settings
                         </a>
                     </li>
-
-                    <!-- Option 2 | Log out -->
                     <li>
-                        <form class="d-block w-100 m-0"
-                              asp-area="Identity"
-                              asp-page="/Account/Logout"
-                              asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })"
-                              method="post">
+                        <form class="d-block w-100 m-0" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })" method="post">
                             <button type="submit" class="dropdown-item py-2 fw-medium text-danger d-flex align-items-center w-100">
-                                <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger" style="width: 20px;"></i>
-                                Logout
+                                <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger" style="width: 20px;"></i>Logout
                             </button>
                         </form>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- Notification Bell Dropdown -->
+            <li class="nav-item dropdown me-3" style="padding-top: 14px;">
+                <a class="nav-link dropdown-toggle position-relative text-white" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-bell fs-5"></i>
+                    @if (topAlerts.Any())
+                    {
+                        <span class="position-absolute top-25 start-75 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">New alerts</span>
+                        </span>
+                    }
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end shadow border-1 rounded-3 mt-4 p-0 overflow-hidden" aria-labelledby="alertsDropdown" style="width: 340px; z-index: 1050;">
+                    <li>
+                        <div class="dropdown-header fw-bold text-primary bg-light border-bottom py-2">
+                            Notifications
+                        </div>
+                    </li>
+
+                    <li>
+                        <!-- Scrollable Container for ALL unread alerts -->
+                        <div style="max-height: 380px; overflow-y: auto;">
+                            @if (!topAlerts.Any())
+                            {
+                                <div class="dropdown-item py-4 text-muted text-center">
+                                    <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i><br />
+                                    No unread alerts.
+                                </div>
+                            }
+                            else
+                            {
+                                foreach (var alert in topAlerts)
+                                {
+                                    var alertTypeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
+
+                                    <a class="dropdown-item py-3 border-bottom text-wrap alert-dropdown-item"
+                                       href="@(string.IsNullOrEmpty(alert.ActionUrl) ? "#" : alert.ActionUrl)"
+                                       id="alert-item-@alert.AlertId">
+
+                                        <!-- Title -->
+                                        <div class="fw-bold fs-6 alert-item-title">
+                                            @alertTypeName
+                                        </div>
+
+                                        <!-- Description -->
+                                        <div class="small alert-item-desc mt-1 lh-sm">
+                                            @alert.Description
+                                        </div>
+
+                                        <!-- Footer -->
+                                        <div class="d-flex justify-content-between align-items-end mt-2">
+                                            <div class="alert-item-time" style="font-size: 11px;">
+                                                <i class="fa-regular fa-clock me-1"></i>@GetRelativeTime(alert.CreatedAt)
+                                            </div>
+
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill btn-read shadow-sm"
+                                                    style="font-size: 11px;"
+                                                    title="Mark as Read"
+                                                    onclick="markAlertAsRead(event, @alert.AlertId)">
+                                                <i class="fa-solid fa-check text-success"></i> Read
+                                            </button>
+                                        </div>
+                                    </a>
+                                }
+                            }
+                        </div>
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item text-center fw-semibold py-2 bg-light border-top" asp-controller="SecurityAlerts" asp-action="Index" style="color: #1162a3;">
+                            See all alerts
+                        </a>
                     </li>
                 </ul>
             </li>
@@ -107,7 +206,6 @@
 
             dropdownEl.parentElement.addEventListener('hide.bs.dropdown', function (e) {
                 if (isClosing) return;
-
                 e.preventDefault();
                 isClosing = true;
                 dropdownMenu.classList.add('collapsing-out');
@@ -115,12 +213,34 @@
                 setTimeout(() => {
                     dropdownMenu.classList.remove('collapsing-out');
                     const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
-                    if (bsDropdown) {
-                        bsDropdown.hide();
-                    }
+                    if (bsDropdown) bsDropdown.hide();
                     isClosing = false;
                 }, 170);
             });
         }
     });
+
+    // Handle AJAX Mark As Read
+    function markAlertAsRead(event, alertId) {
+        // Stop the dropdown menu from closing and the link from firing
+        event.preventDefault();
+        event.stopPropagation();
+
+        fetch(`/SecurityAlerts/MarkAsRead?alertId=${alertId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const item = document.getElementById('alert-item-' + alertId);
+                if (item) {
+                    // Smooth fade out before removing from DOM
+                    item.style.opacity = '0';
+                    setTimeout(() => item.remove(), 250);
+                }
+            }
+        })
+        .catch(err => console.error("Error marking alert as read", err));
+    }
 </script>

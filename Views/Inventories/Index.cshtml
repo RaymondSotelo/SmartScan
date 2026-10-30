@@ -6,58 +6,19 @@
     Layout = "_RetailLayout";
 }
 
+<!-- Content fills the parent layout container -->
 <div class="d-flex flex-column h-100">
 
-    <!-- Header & Badge Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
-        <div>
-            <h4 class="fw-bold mb-0" style="color: #1162a3;">Store Inventory</h4>
-            <p class="text-secondary fw-semibold mb-0">Manage stock quantities, localized store pricing, and item availability.</p>
-        </div>
-        <span class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm text-white flex-shrink-0" style="background-color: #1162a3; font-size: 14px;">
-            <i class="fa-solid fa-boxes-stacked me-1"></i>Total Items: @(ViewBag.TotalProducts ?? Model?.Count() ?? 0)
-        </span>
-    </div>
-
-    <!-- Action Bar & Search -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-3 flex-shrink-0">
-        <a class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
-           asp-action="Create"
-           asp-route-retailId="@ViewBag.RetailId"
-           style="background-color: #1162a3; border-color: #1162a3; font-size: 14px;">
-            <i class="fa-solid fa-plus"></i>
-            <span>Add Stock Item</span>
-        </a>
-
-        <!-- Search Feature -->
-        <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
-            <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
-
-            <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-                <span class="input-group-text bg-white border-0">
-                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                </span>
-                <input type="text"
-                       name="search"
-                       value="@ViewData["CurrentFilter"]"
-                       class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-                       placeholder="Search product..."
-                       aria-label="Search" />
-            </div>
-
-            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary rounded-3" title="Clear Search">
-                    <i class="fa-solid fa-xmark"></i>
-                </a>
-            }
-        </form>
+    <!-- Header Info -->
+    <div class="pt-2 pb-2 flex-shrink-0">
+        <h4 class="mb-0 fw-bold" style="color: #1162a3;">Store Inventory</h4>
+        <p class="fw-medium pt-1 text-secondary mb-0">Manage stock quantities, localized store pricing, and item availability.</p>
     </div>
 
     <!-- Overhead TempData Alert -->
     @if (TempData["InventoryMessage"] != null)
     {
-        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mb-3 flex-shrink-0" role="alert">
+        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center my-2 flex-shrink-0 rounded-3" role="alert">
             <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
             <div>@TempData["InventoryMessage"]</div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -67,138 +28,195 @@
             setTimeout(function () {
                 var alertNode = document.getElementById('autoCloseAlert');
                 if (alertNode) {
-                    // Use Bootstrap's native Alert API to close it smoothly
                     var bsAlert = new bootstrap.Alert(alertNode);
                     bsAlert.close();
                 }
-            }, 2000); // 2000 milliseconds = 2 seconds
+            }, 2000);
         </script>
     }
 
-    <!-- Dynamic Table Workspace (Scrolls independently within layout) -->
-    <div class="flex-grow-1 overflow-hidden d-flex flex-column">
-        @if (Model == null || !Model.Any())
-        {
-            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-            {
-                <div class="alert alert-warning text-center my-3 fw-semibold shadow-sm" role="alert">
-                    <i class="fa-solid fa-circle-exclamation me-2"></i>No inventory items matching "<strong>@ViewData["CurrentFilter"]</strong>".
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-5 my-auto">
-                    <div class="text-muted mb-3">
-                        <i class="fa-solid fa-warehouse fa-3x text-secondary opacity-50"></i>
-                    </div>
-                    <h5 class="fw-semibold text-secondary">No Stock Registered</h5>
-                    <p class="text-muted small">Click "Add Stock Item" above to allocate catalog products to this store.</p>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="table-responsive flex-grow-1 overflow-y-auto pe-1">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light sticky-top">
-                        <tr>
-                            <th class="ps-3 py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Product</th>
-                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Category</th>
-                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Local Price</th>
-                            <th class="py-3 text-center text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Stock Level</th>
-                            <th class="pe-3 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            var imgUrl = string.IsNullOrWhiteSpace(item.Product?.ProductImage) ? "/images/default-product.png" : item.Product.ProductImage;
+    <!-- Unified Table with Sticky Action Bar AND Headers -->
+    <div class="flex-grow-1 overflow-auto position-relative mt-2">
 
-                            <tr>
-                                <!-- Product Image + Name -->
-                                <td class="ps-3">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <img src="@imgUrl"
-                                             onerror="this.onerror=null; this.src='/images/default-product.png';"
-                                             alt="@item.Product?.ProductName"
-                                             class="rounded-3 border object-fit-cover shadow-sm bg-white flex-shrink-0"
-                                             style="width: 44px; height: 44px;" />
-                                        <span class="fw-semibold text-truncate" style="max-width: 200px; color: #1162a3;" title="@item.Product?.ProductName">
-                                            @(item.Product?.ProductName ?? "Unknown Product")
+        <table class="table table-hover align-middle mb-0 w-100"
+               style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
+
+            <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+
+                <!-- Sticky Action Bar Row -->
+                <tr class="bg-white">
+                    <th colspan="5" class="p-0 border-0 border-bottom">
+                        <div class="py-3 px-2 d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                            <!-- Add Button -->
+                            <a asp-action="Create"
+                               asp-route-retailId="@ViewBag.RetailId"
+                               class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                               style="background-color: #1162a3; border-color: #1162a3;">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add Stock Item</span>
+                            </a>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <!-- Search Bar -->
+                                <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+                                    <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
+
+                                    <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                                        <span class="input-group-text bg-white border-0">
+                                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
                                         </span>
+                                        <input type="text"
+                                               name="search"
+                                               value="@ViewData["CurrentFilter"]"
+                                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                               placeholder="Search product..."
+                                               aria-label="Search" />
                                     </div>
-                                </td>
 
-                                <!-- Category Badge -->
-                                <td>
-                                    <span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-1">
-                                        <i class="fa-solid fa-tag me-1"></i>@(item.Product?.Category?.CategoryName ?? "Unassigned")
-                                    </span>
-                                </td>
-
-                                <!-- Local Price -->
-                                <td>
-                                    <span class="fw-bold text-dark">₱@item.LocalPrice.ToString("N2")</span>
-                                </td>
-
-                                <!-- Stock Status Pill -->
-                                <td class="text-center">
-                                    @if (item.Stock <= 0)
+                                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
                                     {
-                                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
-                                            <i class="fa-solid fa-triangle-exclamation me-1"></i>Out of Stock (@item.Stock)
-                                        </span>
-                                    }
-                                    else if (item.Stock <= 5)
-                                    {
-                                        <span class="badge rounded-pill bg-warning-subtle text-dark border border-warning-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
-                                            <i class="fa-solid fa-clock me-1"></i>Low (@item.Stock)
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
-                                            <i class="fa-solid fa-check me-1"></i>@item.Stock units
-                                        </span>
-                                    }
-                                </td>
-
-                                <td class="pe-3 text-end" style="white-space: nowrap; width: 1%;">
-                                    <div class="d-inline-flex align-items-center gap-1">
-                                        <!-- Edit Button -->
-                                        <a class="btn btn-sm btn-outline-primary fw-medium rounded-pill px-3 shadow-sm action-btn"
-                                           asp-action="Edit"
-                                           asp-route-inventoryId="@item.InventoryId"
-                                           asp-route-retailId="@item.RetailId"
-                                           style="font-size: 14px;"
-                                           title="Edit Item">
-                                            <i class="fa-solid fa-pen-to-square action-btn-icon me-1"></i><span class="action-btn-text">Edit</span>
+                                        <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                                            <i class="fa-solid fa-xmark"></i>
                                         </a>
+                                    }
+                                </form>
 
-                                        <!-- Remove Form & Button -->
-                                        <form asp-action="Delete"
-                                              asp-route-inventoryId="@item.InventoryId"
-                                              asp-route-retailId="@item.RetailId"
-                                              method="post"
-                                              id="removeInventoryForm-@item.InventoryId"
-                                              class="d-inline m-0 p-0">
-                                            @Html.AntiForgeryToken()
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger fw-medium rounded-pill px-3 shadow-sm action-btn"
-                                                    style="font-size: 14px;"
-                                                    title="Remove Item"
-                                                    onclick="confirmInventoryRemoval('@item.InventoryId', '@Html.Raw(item.Product?.ProductName?.Replace("'", "\\'") ?? "this item")')">
-                                                <i class="fa-solid fa-trash action-btn-icon me-1"></i><span class="action-btn-text">Remove</span>
-                                            </button>
-                                        </form>
+                                <!-- Total Items Badge -->
+                                <span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
+                                      style="background-color: #1162a3; height: 38px; font-size: 13px;">
+                                    <i class="fa-solid fa-boxes-stacked me-1"></i>Total Items: @(ViewBag.TotalProducts ?? Model?.Count() ?? 0)
+                                </span>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+
+                <!-- Sticky Column Headers Row -->
+                <tr class="table-light">
+                    <th class="ps-3 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Product</th>
+                    <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Category</th>
+                    <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Local Price</th>
+                    <th class="py-3 text-center text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Stock Level</th>
+                    <th class="pe-3 py-3 text-end text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (Model == null || !Model.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="p-0 border-0 bg-white">
+                            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                            {
+                                <div class="alert alert-warning text-center mx-2 my-4 fw-semibold shadow-sm rounded-4" role="alert">
+                                    <i class="fa-solid fa-circle-exclamation me-2"></i>No inventory items matching "<strong>@ViewData["CurrentFilter"]</strong>".
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-5 my-4">
+                                    <div class="text-muted mb-3">
+                                        <i class="fa-solid fa-warehouse fa-3x text-secondary opacity-50"></i>
                                     </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+                                    <h5 class="fw-semibold text-secondary">No Stock Registered</h5>
+                                    <p class="text-muted small">Click "Add Stock Item" above to allocate catalog products to this store.</p>
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        var imgUrl = string.IsNullOrWhiteSpace(item.Product?.ProductImage) ? "/images/default-product.png" : item.Product.ProductImage;
+
+                        <tr>
+                            <!-- Product Image + Name -->
+                            <td class="ps-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="@imgUrl"
+                                         onerror="this.onerror=null; this.src='/images/default-product.png';"
+                                         alt="@item.Product?.ProductName"
+                                         class="rounded-3 border object-fit-cover shadow-sm bg-white flex-shrink-0"
+                                         style="width: 48px; height: 48px;" />
+                                    <span class="fw-semibold text-truncate" style="max-width: 200px; color: #1162a3;" title="@item.Product?.ProductName">
+                                        @(item.Product?.ProductName ?? "Unknown Product")
+                                    </span>
+                                </div>
+                            </td>
+
+                            <!-- Category Badge -->
+                            <td>
+                                <span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-1">
+                                    <i class="fa-solid fa-tag me-1"></i>@(item.Product?.Category?.CategoryName ?? "Unassigned")
+                                </span>
+                            </td>
+
+                            <!-- Local Price -->
+                            <td>
+                                <span class="fw-bold text-dark">₱@item.LocalPrice.ToString("N2")</span>
+                            </td>
+
+                            <!-- Stock Status Pill -->
+                            <td class="text-center">
+                                @if (item.Stock <= 0)
+                                {
+                                    <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Out of Stock (@item.Stock)
+                                    </span>
+                                }
+                                else if (item.Stock <= 5)
+                                {
+                                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba; border-color:#856404;">
+                                        <i class="fa-solid fa-clock me-1"></i>Low (@item.Stock)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                        <i class="fa-solid fa-check me-1"></i>@item.Stock units
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="pe-3 text-end" style="white-space: nowrap;">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <!-- Edit Button -->
+                                    <a class="btn btn-sm btn-outline-primary fw-medium rounded-pill px-3 shadow-sm"
+                                       asp-action="Edit"
+                                       asp-route-inventoryId="@item.InventoryId"
+                                       asp-route-retailId="@item.RetailId"
+                                       style="font-size: 14px;"
+                                       title="Edit Item">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                                    </a>
+
+                                    <!-- Remove Form & Button -->
+                                    <form asp-action="Delete"
+                                          asp-route-inventoryId="@item.InventoryId"
+                                          asp-route-retailId="@item.RetailId"
+                                          method="post"
+                                          id="removeInventoryForm-@item.InventoryId"
+                                          class="d-inline m-0 p-0">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger fw-medium rounded-pill px-3 shadow-sm"
+                                                style="font-size: 14px;"
+                                                title="Remove Item"
+                                                onclick="confirmInventoryRemoval('@item.InventoryId', '@Html.Raw(item.Product?.ProductName?.Replace("'", "\\'") ?? "this item")')">
+                                            <i class="fa-solid fa-trash me-1"></i>Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -224,14 +242,14 @@
 
         @if (TempData["NoEntryMessage"] != null)
         {
-                <text>
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Access Denied',
+                    <text>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Access Denied',
                         text: @Html.Raw(Json.Serialize(TempData["NoEntryMessage"])),
-                    confirmButtonColor: '#1162a3'
-                });
-                </text>
+                        confirmButtonColor: '#1162a3'
+                    });
+                    </text>
         }
     </script>
 }

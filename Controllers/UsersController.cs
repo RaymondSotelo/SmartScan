@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartScan.Data;
 using SmartScan.Models.ViewModels;
+using Microsoft.AspNetCore.Http;
 
 namespace SmartScan.Controllers
 {
@@ -29,20 +30,20 @@ namespace SmartScan.Controllers
                 CurrentFilter = search
             };
 
-            // 1. Get the current logged-in user's ID
+            // Get the current logged-in user's ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // 2. Base Query: Only stores owned by or assigned to the current user
+            // Only stores owned by or assigned to the current user
             var userStoresQuery = _context.Retails.Where(r =>
                 r.AdminOwner == currentUserId ||
                 _context.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId)
             );
 
-            // 3. Calculate KPIs for Store Outlets (unaffected by search)
+            // Calculate KPIs for Store Outlets (unaffected by search)
             vm.TotalRetailCount = await userStoresQuery.CountAsync();
             vm.ActiveRetailCount = await userStoresQuery.CountAsync(r => r.StatusId == 1);
 
-            // 4. Build the Retail Overview list from the base user query
+            // Build the Retail Overview list from the base user query
             var retailQuery = userStoresQuery
                 .Include(r => r.Status)
                 .Include(r => r.AdminOwnerNavigation)
@@ -58,7 +59,7 @@ namespace SmartScan.Controllers
 
             vm.Retails = await retailQuery.ToListAsync();
 
-            // 5. Fetch Profile Map for the displayed retails
+            // Fetch Profile Map for the displayed retails
             var ownerIds = vm.Retails
                 .Select(r => r.AdminOwner)
                 .Where(id => !string.IsNullOrWhiteSpace(id))

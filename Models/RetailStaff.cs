@@ -24,8 +24,6 @@ public partial class RetailStaff
     [ValidateNever]
     public virtual Retail Retail { get; set; } = null!;
 
-    public virtual ICollection<SecurityAlert> SecurityAlerts { get; set; } = new List<SecurityAlert>();
-
     [ValidateNever]
     public virtual Status Status { get; set; } = null!;
 

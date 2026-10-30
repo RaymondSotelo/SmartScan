@@ -122,41 +122,78 @@ public class RetailStaffsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("StaffId,StatusId,RetailId")] RetailStaff retailstaff)
     {
-        // Fetch user directly so username is always available for notifications
-        var targetUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == retailstaff.StaffId);
-        string username = targetUser?.UserName ?? "Staff member";
-
-        // Check for an existing assignment in this specific store
-        var existingStaff = await _context.RetailStaffs
-            .FirstOrDefaultAsync(rs => rs.StaffId == retailstaff.StaffId && rs.RetailId == retailstaff.RetailId);
-
-        if (existingStaff != null)
+        if (ModelState.IsValid)
         {
-            // Reactivate inactive record
-            if (existingStaff.StatusId == 2)
-            {
-                existingStaff.StatusId = 1;
-                _context.Update(existingStaff);
-                await _context.SaveChangesAsync();
+            // Fetch user profile or user entity to resolve the display name
+            var targetUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == retailstaff.StaffId);
+            string staffDisplayName = targetUser?.UserName ?? "A staff member";
 
-                TempData["RetailStaffMessage"] = $"{username} was previously inactive and has been successfully reactivated.";
-                return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
+            var userProfile = await _context.UserProfiles.FirstOrDefaultAsync(up => up.UserId == retailstaff.StaffId);
+            if (userProfile != null && !string.IsNullOrWhiteSpace(userProfile.FirstName))
+            {
+                staffDisplayName = $"{userProfile.FirstName} {userProfile.LastName}".Trim();
             }
 
-            // Prevent duplicate active assignment
-            TempData["ErrorMessage"] = $"{username} is already actively assigned to this retail.";
-            return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
-        }
-        else
-        {
-            // Create brand new active assignment
-            retailstaff.StatusId = 1;
-            _context.Add(retailstaff);
-            await _context.SaveChangesAsync();
+            // Fetch the store name
+            var targetRetail = await _context.Retails.FirstOrDefaultAsync(r => r.RetailId == retailstaff.RetailId);
+            string retailName = targetRetail?.RetailName ?? "Retail Store";
 
-            TempData["RetailStaffMessage"] = $"{username} has been assigned successfully.";
-            return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
+            // Check for existing assignment
+            var existingStaff = await _context.RetailStaffs
+                .FirstOrDefaultAsync(rs => rs.StaffId == retailstaff.StaffId && rs.RetailId == retailstaff.RetailId);
+
+            if (existingStaff != null)
+            {
+                if (existingStaff.StatusId == 2)
+                {
+                    existingStaff.StatusId = 1;
+                    _context.Update(existingStaff);
+
+                    // Reactivation Alert
+                    var reactivateAlert = new SecurityAlert
+                    {
+                        AlertTypeId = 7,
+                        Description = $"{staffDisplayName}'s staff access has been restored at {retailName}",
+                        CreatedAt = DateTime.Now,
+                        RetailId = retailstaff.RetailId,
+                        ActionUrl = Url.Action("Create", "RetailStaffs", new { retailId = retailstaff.RetailId })
+                    };
+                    _context.SecurityAlerts.Add(reactivateAlert);
+
+                    await _context.SaveChangesAsync();
+
+                    TempData["RetailStaffMessage"] = $"{staffDisplayName} was previously inactive and has been successfully reactivated.";
+                    return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
+                }
+
+                TempData["ErrorMessage"] = $"{staffDisplayName} is already actively assigned to this retail.";
+                return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
+            }
+            else
+            {
+                retailstaff.StatusId = 1;
+                _context.Add(retailstaff);
+
+                // New Assignment Alert 
+                var newAlert = new SecurityAlert
+                {
+                    AlertTypeId = 1,
+                    Description = $"{staffDisplayName} has been assigned to {retailName}",
+                    CreatedAt = DateTime.Now,
+                    RetailId = retailstaff.RetailId,
+                    ActionUrl = Url.Action("Create", "RetailStaffs", new { retailId = retailstaff.RetailId })
+                };
+                _context.SecurityAlerts.Add(newAlert);
+
+                await _context.SaveChangesAsync();
+
+                TempData["RetailStaffMessage"] = $"{staffDisplayName} has been assigned successfully.";
+                return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
+            }
         }
+
+        TempData["ErrorMessage"] = "Failed to assign staff. Please check your inputs.";
+        return RedirectToAction(nameof(Create), new { retailId = retailstaff.RetailId });
     }
 
     // GET: RETAILSTAFFS/Delete/5
@@ -198,27 +235,54 @@ public class RetailStaffsController : Controller
         }
 
         var retailId = retailstaff.RetailId;
-        string username = retailstaff.Staff?.UserName ?? "Unknown User";
+        string username = retailstaff.Staff?.UserName ?? "Staff member";
+        string retailName = retailstaff.Retail?.RetailName ?? "Retail Store";
+        string redirectUrl = Url.Action("Index", "RetailStaffs", new { retailId = retailId });
 
         try
         {
+            // Queue removal
             _context.RetailStaffs.Remove(retailstaff);
+
+            // Queue Alert (Hard Delete)
+            var hardDeleteAlert = new SecurityAlert
+            {
+                AlertTypeId = 2,
+                Description = $"{username} has been removed from {retailName}",
+                CreatedAt = DateTime.Now,
+                RetailId = retailId,
+                ActionUrl = redirectUrl
+            };
+            _context.SecurityAlerts.Add(hardDeleteAlert);
+
+            // Save both in one transaction
             await _context.SaveChangesAsync();
 
             TempData["RetailStaffMessage"] = $"{username} has been removed successfully.";
         }
-        catch(DbUpdateException)
+        catch (DbUpdateException)
         {
-            // Reset EF tracking state because .Remove() marked it as Deleted
+            // Detach the failed removal attempt
             _context.Entry(retailstaff).State = EntityState.Unchanged;
 
-            // Soft Delete
+            // Soft Delete (Deactivate)
             retailstaff.StatusId = 2;
             _context.Entry(retailstaff).Property(rs => rs.StatusId).IsModified = true;
 
+            // Queue Alert (Soft Delete)
+            var softDeleteAlert = new SecurityAlert
+            {
+                AlertTypeId = 2,
+                Description = $"{username} has been deactivated and removed from active staff in {retailName}",
+                CreatedAt = DateTime.Now,
+                RetailId = retailId,
+                ActionUrl = redirectUrl
+            };
+            _context.SecurityAlerts.Add(softDeleteAlert);
+
             await _context.SaveChangesAsync();
 
-            TempData["RetailStaffMessage"] = $"{username} has existing transactions and has been deactivated instead.";
+            TempData["RetailStaffMessage"] = $"{username} has existing records and has been deactivated instead.";
         }
 
         return RedirectToAction(nameof(Index), new { retailId = retailId });

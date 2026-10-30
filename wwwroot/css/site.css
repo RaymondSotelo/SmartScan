@@ -681,6 +681,47 @@ input[type="number"] {
     overflow: hidden;
 }
 
+/* Base default colors */
+.alert-dropdown-item {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+    .alert-dropdown-item .alert-item-title {
+        color: #1162a3;
+    }
+
+    .alert-dropdown-item .alert-item-desc {
+        color: #212529;
+    }
+
+    .alert-dropdown-item .alert-item-time {
+        color: #6c757d;
+    }
+
+/* Hover state: high-specificity selector forces white text across all elements */
+.dropdown-menu .alert-dropdown-item:hover,
+.dropdown-menu .alert-dropdown-item:focus {
+    background-color: #1162a3 !important;
+}
+
+    .dropdown-menu .alert-dropdown-item:hover .alert-item-title,
+    .dropdown-menu .alert-dropdown-item:hover .alert-item-desc,
+    .dropdown-menu .alert-dropdown-item:hover .alert-item-time,
+    .dropdown-menu .alert-dropdown-item:hover i {
+        color: #ffffff !important;
+    }
+
+    /* Invert the Read button on hover */
+    .dropdown-menu .alert-dropdown-item:hover .btn-read {
+        background-color: #ffffff !important;
+        border-color: #ffffff !important;
+        color: #1162a3 !important;
+    }
+
+        .dropdown-menu .alert-dropdown-item:hover .btn-read i {
+            color: #1162a3 !important;
+        }
+
 /* ==========================================================================
    6. ANIMATIONS
    ========================================================================== */
@@ -771,4 +812,44 @@ input[type="number"] {
         margin: 0 !important;
         zoom: 1 !important; /* <--- ADD THIS to reset zoom before printing */
     }
+
+    /* Custom Hover Effect for Alerts */
+    .alert-dropdown-item {
+        transition: all 0.2s ease-in-out;
+    }
+
+        .alert-dropdown-item:hover {
+            background-color: #1162a3 !important;
+        }
+
+            .alert-dropdown-item:hover * {
+                color: #ffffff !important;
+            }
+
+            .alert-dropdown-item:hover .btn-read {
+                background-color: #ffffff !important;
+                color: #1162a3 !important;
+                border-color: #ffffff !important;
+            }
+
+                .alert-dropdown-item:hover .btn-read i {
+                    color: #1162a3 !important;
+                }
+
+    /* Base default colors */
+    .alert-dropdown-item {
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        .alert-dropdown-item .alert-item-title {
+            color: #1162a3;
+        }
+
+        .alert-dropdown-item .alert-item-desc {
+            color: #212529;
+        }
+
+        .alert-dropdown-item .alert-item-time {
+            color: #6c757d;
+        }
 }

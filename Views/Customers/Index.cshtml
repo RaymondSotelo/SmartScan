@@ -12,127 +12,138 @@
 
     <!-- Top Card Header -->
     <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0" style="background-color: #1162a3;">
-        <h5 class="mb-0"><i class="fa-solid fa-id-badge me-2"></i>Customer</h5>
+        <h5 class="mb-0"><i class="fa-solid fa-id-badge me-2"></i>Customers</h5>
     </div>
 
-	<!-- Header Info -->
-	<div class="px-4 pt-4 pb-3">
-		<h4 class="mb-0 fw-bold" style="color: #1162a3;">
-			Registered Customer Accounts
-		</h4>
-		<p class="fw-medium pt-1 text-secondary mb-0">Manage customer records, monitor credit balances, and enroll biometric identity profiles.</p>
-	</div>
-
-    <!-- Action Bar & Search -->
-    <div class="px-4 pb-3 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0">
-
-		<!-- Add Button -->
-		<a asp-action="Create"
-		   class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
-		   style="background-color: #1162a3; border-color: #1162a3;">
-			<i class="fa-solid fa-user-plus"></i>
-			<span>Add Customer</span>
-		</a>
-
-        <div class="d-flex justify-content-end align-items-center gap-2 pt-3 pb-3 mt-auto">
-            <!-- Search Bar -->
-            <form asp-action="Index" method="get" class="d-flex gap-2" style="width: 360px; max-width: 100%;">
-                <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-                    <span class="input-group-text bg-white border-0">
-                        <i class="fa-solid fa-magnifying-glass text-muted"></i>
-					</span>
-					<input type="text"
-						   name="search"
-						   value="@currentFilter"
-                           class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-						   placeholder="Search by name, contact..."
-						   aria-label="Search customer" />
-				</div>
-
-				@if (!string.IsNullOrEmpty(currentFilter))
-				{
-					<a asp-action="Index"
-					   class="btn btn-outline-secondary rounded-pill px-3 d-flex align-items-center"
-					   style="height: 38px;"
-					   title="Clear Search">
-						<i class="fa-solid fa-xmark"></i>
-					</a>
-				}
-			</form>
-
-			<!-- Total Customer Badge -->
-			<span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
-				  style="background-color: #1162a3; height: 38px; font-size: 13px;">
-                <i class="fa-solid fa-users me-1"></i>@Model.Count() Enrolled
-			</span>
-        </div>
-    </div>
-
-    <!-- Overhead TempData Alert -->
-    @if (TempData["CustomerMessage"] != null)
-    {
-        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center rounded-3 mb-3 flex-shrink-0" role="alert">
-            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
-            <div>@TempData["CustomerMessage"]</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="flex-grow-1 overflow-auto position-relative d-flex flex-column rounded-bottom-4">
+        <!-- Header Info (Scrolls away) -->
+        <div class="px-4 pt-4 pb-2 flex-shrink-0">
+            <h4 class="mb-0 fw-bold" style="color: #1162a3;">
+                Registered Customer Accounts
+            </h4>
+            <p class="fw-medium pt-1 text-secondary mb-0">Manage customer records, monitor credit balances, and enroll biometric identity profiles.</p>
         </div>
 
-        <script>
-            setTimeout(function () {
-                var alertNode = document.getElementById('autoCloseAlert');
-                if (alertNode) {
-                    // Use Bootstrap's native Alert API to close it smoothly
-                    var bsAlert = new bootstrap.Alert(alertNode);
-                    bsAlert.close();
-                }
-            }, 2000); // 2000 milliseconds = 2 seconds
-        </script>
-    }
-
-    <!-- Scrollable Table Section -->
-    <div class="card-body p-4 pt-0 d-flex flex-column flex-grow-1 overflow-hidden">
-        @if (!Model.Any())
+        <!-- Overhead TempData Alert -->
+        @if (TempData["CustomerMessage"] != null)
         {
-            @if (!string.IsNullOrEmpty(currentFilter))
-            {
-                <div class="alert alert-warning text-center my-4 fw-semibold shadow-sm border-0 rounded-4" role="alert">
-                    <i class="fa-solid fa-circle-exclamation me-2"></i>No customer found matching "<strong>@currentFilter</strong>".
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-5 my-auto">
-                    <div class="text-muted mb-3">
-                        <i class="fa-solid fa-users-slash fa-3x text-secondary opacity-50"></i>
-                    </div>
-                    <h5 class="fw-semibold text-secondary">No Customers Enrolled</h5>
-                    <p class="text-muted small">Click "Add Customer" above to register a new customer account in the system.</p>
-                </div>
-            }
+            <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 my-2 flex-shrink-0 rounded-3" role="alert">
+                <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+                <div>@TempData["CustomerMessage"]</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <script>
+                setTimeout(function () {
+                    var alertNode = document.getElementById('autoCloseAlert');
+                    if (alertNode) {
+                        var bsAlert = new bootstrap.Alert(alertNode);
+                        bsAlert.close();
+                    }
+                }, 2000);
+            </script>
         }
-        else
-        {
-            <div class="table-responsive flex-grow-1 overflow-y-auto pe-1">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light sticky-top">
+
+        <div class="flex-grow-1 pb-3">
+            <table class="table table-hover align-middle mb-0 w-100"
+                   style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
+
+                <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+
+                    <!-- Sticky Action Bar Row -->
+                    <tr class="bg-white">
+                        <th colspan="5" class="p-0 border-0 border-bottom">
+                            <div class="px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                                <!-- Add Button -->
+                                <a asp-action="Create"
+                                   class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                                   style="background-color: #1162a3; border-color: #1162a3;">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                    <span>Add Customer</span>
+                                </a>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    <!-- Search Bar -->
+                                    <form asp-action="Index" method="get" class="d-flex gap-2" style="width: 360px; max-width: 100%;">
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                                            <span class="input-group-text bg-white border-0">
+                                                <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                            </span>
+                                            <input type="text"
+                                                   name="search"
+                                                   value="@currentFilter"
+                                                   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                                   placeholder="Search by name, contact..."
+                                                   aria-label="Search customer" />
+                                        </div>
+
+                                        @if (!string.IsNullOrEmpty(currentFilter))
+                                        {
+                                            <a asp-action="Index"
+                                               class="btn btn-outline-secondary rounded-pill px-3 d-flex align-items-center"
+                                               style="height: 38px;"
+                                               title="Clear Search">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </a>
+                                        }
+                                    </form>
+
+                                    <!-- Total Customer Badge -->
+                                    <span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
+                                          style="background-color: #1162a3; height: 38px; font-size: 13px;">
+                                        <i class="fa-solid fa-users me-1"></i>@Model.Count() Enrolled
+                                    </span>
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+
+                    <!-- Sticky Column Headers Row -->
+                    <tr class="table-light">
+                        <th class="ps-4 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Customer</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Contact</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Credit Limit</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Current Debt</th>
+                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (!Model.Any())
+                    {
                         <tr>
-                            <th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Customer</th>
-                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Contact</th>
-                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Credit Limit</th>
-                            <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;">Current Debt</th>
-                            <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                            <td colspan="5" class="p-0 border-0 bg-white">
+                                @if (!string.IsNullOrEmpty(currentFilter))
+                                {
+                                    <div class="alert alert-warning text-center mx-4 my-4 fw-semibold shadow-sm border-0 rounded-4" role="alert">
+                                        <i class="fa-solid fa-circle-exclamation me-2"></i>No customer found matching "<strong>@currentFilter</strong>".
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-5 my-4">
+                                        <div class="text-muted mb-3">
+                                            <i class="fa-solid fa-users-slash fa-3x text-secondary opacity-50"></i>
+                                        </div>
+                                        <h4 class="fw-semibold text-secondary">No Customers Enrolled</h4>
+                                        <p class="text-muted small">Click "Add Customer" above to register a new customer account in the system.</p>
+                                    </div>
+                                }
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
+                    }
+                    else
+                    {
                         @foreach (var item in Model)
                         {
                             bool hasDebt = item.CurrentDebt > 0;
 
                             <tr>
-                                <!-- 1. Customer Name & Avatar Bubble -->
+                                <!-- 1. Customer Name -->
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="fw-bold text-primary d-block" style="font-size: 14px;">
+                                        <span class="fw-bold text-primary d-block" style="font-size: 14px; color: #1162a3 !important;">
                                             @item.FullName
                                         </span>
                                     </div>
@@ -179,18 +190,18 @@
 
                                         <!-- Edit -->
                                         <a asp-action="Edit"
-                                            asp-route-customerid="@item.CustomerId"
-                                            class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium shadow-sm"
-                                            style="font-size: 14px;">
+                                           asp-route-customerid="@item.CustomerId"
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium shadow-sm"
+                                           style="font-size: 14px;">
                                             <i class="fa-solid fa-pen-to-square me-1"></i>Edit
                                         </a>
 
                                         <!-- Delete -->
                                         <form asp-action="Delete"
-                                                asp-route-customerid="@item.CustomerId"
-                                                method="post"
-                                                id="deleteCustomerForm-@item.CustomerId"
-                                                class="m-0 d-inline">
+                                              asp-route-customerid="@item.CustomerId"
+                                              method="post"
+                                              id="deleteCustomerForm-@item.CustomerId"
+                                              class="m-0 d-inline">
                                             @Html.AntiForgeryToken()
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-medium shadow-sm"
@@ -203,10 +214,10 @@
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
-        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 

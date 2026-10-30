@@ -112,24 +112,41 @@ public class InventoriesController : Controller
         ModelState.Remove("Product");
         ModelState.Remove("Retail");
 
-        // Checks if the product is already exist in the inventory
+        // Get the currently logged-in user's name
+        string currentUsername = User.Identity?.Name ?? "An admin";
+
+        // Fetch product early to use its name in errors and alerts
+        var product = await _context.Products.FindAsync(inventory.ProductId);
+        string productName = product?.ProductName ?? "A product";
+
+        // Checks if the product already exists in the inventory
         bool productExist = await _context.Inventories
             .AnyAsync(i => i.RetailId == inventory.RetailId && i.ProductId == inventory.ProductId);
 
         if (productExist)
         {
-            // Fetch for product name for cleaner error message
-            var product = await _context.Products.FindAsync(inventory.ProductId);
-            string productName = product?.ProductName ?? "This product";
-
             ModelState.AddModelError("ProductId", $"{productName} is already in your inventory.");
         }
 
         if (ModelState.IsValid)
         {
             _context.Add(inventory);
+
+            // Queue Alert
+            var addAlert = new SecurityAlert
+            {
+                AlertTypeId = 3,
+                Description = $"{currentUsername} added {productName} to the active inventory catalog.",
+                CreatedAt = DateTime.Now,
+                RetailId = inventory.RetailId,
+                ActionUrl = Url.Action("Index", "Inventories", new { retailId = inventory.RetailId })
+            };
+            _context.SecurityAlerts.Add(addAlert);
+
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId});
+
+            TempData["InventoryMessage"] = $"{productName} was added successfully.";
+            return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId });
         }
 
         ViewBag.RetailId = inventory.RetailId;
@@ -251,26 +268,41 @@ public class InventoriesController : Controller
     // POST: INVENTORYS/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int? inventoryid)
+    public async Task<IActionResult> DeleteConfirmed(int inventoryid)
     {
-        if (inventoryid == null)
+        var inventory = await _context.Inventories
+            .Include(i => i.Product)
+            .FirstOrDefaultAsync(i => i.InventoryId == inventoryid);
+
+        if (inventory != null)
         {
-            return NotFound();
+            var retailId = inventory.RetailId;
+            string productName = inventory.Product?.ProductName ?? "A product";
+
+            // Get the currently logged-in user's name
+            string currentUsername = User.Identity?.Name ?? "An admin";
+
+            // Queue removal
+            _context.Inventories.Remove(inventory);
+
+            // Queue Alert
+            var removeAlert = new SecurityAlert
+            {
+                AlertTypeId = 8,
+                Description = $"{currentUsername} permanently removed {productName} from the store's inventory.",
+                CreatedAt = DateTime.Now,
+                RetailId = retailId,
+                ActionUrl = Url.Action("Index", "Inventories", new { retailId = retailId })
+            };
+            _context.SecurityAlerts.Add(removeAlert);
+
+            await _context.SaveChangesAsync();
+
+            TempData["InventoryMessage"] = $"{productName} was removed successfully.";
+            return RedirectToAction(nameof(Index), new { retailId = retailId });
         }
 
-        var inventory = await _context.Inventories.FindAsync(inventoryid);
-
-        if (inventory == null)
-        {
-            return NotFound();
-        }
-
-        int retailId = inventory.RetailId;
-
-        _context.Inventories.Remove(inventory);
-        await _context.SaveChangesAsync();
-
-        return RedirectToAction(nameof(Index), new { retailId = retailId });
+        return NotFound();
     }
 
     private bool InventoryExists(int? inventoryid)

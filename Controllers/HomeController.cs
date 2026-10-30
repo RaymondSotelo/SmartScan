@@ -24,6 +24,7 @@ namespace SmartScan.Controllers
             _context = context;
         }
 
+        // GET: Home
         [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
@@ -46,6 +47,7 @@ namespace SmartScan.Controllers
             return View();
         }
 
+        // GET: Home/Payment
         [HttpGet]
         public async Task<IActionResult> Payment(string search)
         {
@@ -68,6 +70,7 @@ namespace SmartScan.Controllers
             return View();
         }
 
+        // GET: Home/CustomerDisplay
         public async Task<IActionResult> CustomerDisplay()
         {
             ViewData["HeaderTitle"] = "Customer View";
@@ -87,6 +90,7 @@ namespace SmartScan.Controllers
             return View();
         }
 
+        // GET: Home/GenerateReceipt
         public async Task<IActionResult> GenerateReceipt()
         {
             ViewData["HeaderTitle"] = "Payment";
@@ -106,6 +110,7 @@ namespace SmartScan.Controllers
             return View();
         }
 
+        // GET: Home/Checkout
         public async Task<IActionResult> Checkout()
         {
             ViewData["HeaderTitle"] = "Checkout";
@@ -125,6 +130,7 @@ namespace SmartScan.Controllers
             return View();
         }
 
+        // GetProductDetails | Retrieves product details inside the inventory for the retail
         [HttpGet]
         public async Task<IActionResult> GetProductDetails(string productName)
         {
@@ -161,6 +167,7 @@ namespace SmartScan.Controllers
             return Json(new { name = product.ProductName, price = localizedPrice, stock = currentStock });
         }
 
+        // SearchProducts | Retrieve searched product
         [HttpGet]
         public async Task<IActionResult> SearchProducts(string term)
         {
@@ -209,7 +216,7 @@ namespace SmartScan.Controllers
             return View();
         }
 
-        // --- FETCH LIVE CREDIT & EARLIEST DUE DATE ---
+        // GetCustomerCredit | Retrieves the credits of the customer
         [HttpGet]
         public async Task<IActionResult> GetCustomerCredit(string customerName)
         {
@@ -242,7 +249,7 @@ namespace SmartScan.Controllers
             });
         }
 
-        // --- NEW API: INCREASE LIMIT & EXTEND DUES ---
+        // IncreaseCreditLimit | Option to increase the credit limit of the customer
         [HttpPost]
         public async Task<IActionResult> IncreaseCreditLimit([FromBody] IncreaseLimitRequest req)
         {
@@ -267,6 +274,7 @@ namespace SmartScan.Controllers
             return Json(new { success = true, newLimit = customer.CreditLimit });
         }
 
+        // AuthenticateFace | Verifies facial biometrics through facial scanning
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AuthenticateFace([FromBody] FaceAuthRequest request)
@@ -359,6 +367,7 @@ namespace SmartScan.Controllers
             return Json(new { success = false, message = "Face not recognized. This person is not enrolled in the customer registry." });
         }
 
+        // GovIdVerifyRequest | Verifies government id when scanned
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult NationalIDVerification([FromBody] GovIdVerifyRequest req)
@@ -392,6 +401,7 @@ namespace SmartScan.Controllers
             });
         }
 
+        // SaveTransaction | Completes and generate the transaction.
         [HttpPost]
         public async Task<IActionResult> SaveTransaction([FromBody] TransactionPayload request)
         {
@@ -410,6 +420,7 @@ namespace SmartScan.Controllers
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // Validate Inventory Before Anything
                 foreach (var item in request.Items)
                 {
                     string normalizedItemName = item.Name.Trim().ToLower().Replace(" ", "_");
@@ -424,6 +435,7 @@ namespace SmartScan.Controllers
                     if (inventory.Stock < item.Qty) return Json(new { success = false, message = $"Insufficient stock for '{product.ProductName}'." });
                 }
 
+                // Setup Transaction Details
                 string receiptNum = "TX" + DateTime.Now.ToString("HHmmssff");
                 int paymentId = 1;
                 DateOnly? transactionDueDate = null;
@@ -465,12 +477,19 @@ namespace SmartScan.Controllers
                 _context.Transactions.Add(newTx);
                 await _context.SaveChangesAsync();
 
+                // Tracker lists for our Security Alerts
+                var lowStockProducts = new List<string>();
+                var depletedProducts = new List<string>();
+                const int LOW_STOCK_THRESHOLD = 5;
+
+                // Process Items and Deduct Inventory
                 foreach (var item in request.Items)
                 {
                     string normalizedItemName = item.Name.Trim().ToLower().Replace(" ", "_");
                     string rawItemLower = item.Name.Trim().ToLower();
 
                     var product = await _context.Products.FirstAsync(p => p.ProductName.ToLower() == normalizedItemName || p.ProductName.ToLower() == rawItemLower);
+
                     var txItem = new TransactionItem
                     {
                         TransactionId = newTx.TransactionId,
@@ -481,10 +500,50 @@ namespace SmartScan.Controllers
                     _context.TransactionItems.Add(txItem);
 
                     var inventory = await _context.Inventories.FirstAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
+
+                    int oldStock = inventory.Stock;
                     inventory.Stock -= item.Qty;
                     _context.Inventories.Update(inventory);
+
+                    // Determine Alerts
+                    if (inventory.Stock <= 0 && oldStock > 0) // Caught it hitting zero
+                    {
+                        depletedProducts.Add(product.ProductName);
+                    }
+                    else if (inventory.Stock > 0 && inventory.Stock <= LOW_STOCK_THRESHOLD && oldStock > LOW_STOCK_THRESHOLD) // Caught it crossing into low territory
+                    {
+                        lowStockProducts.Add(product.ProductName);
+                    }
                 }
 
+                // Generate Security Alerts if necessary
+                string inventoryUrl = Url.Action("Index", "Inventories", new { retailId = currentRetailId }) ?? "/Inventories";
+
+                if (lowStockProducts.Any())
+                {
+                    _context.SecurityAlerts.Add(new SecurityAlert
+                    {
+                        AlertTypeId = 4, // Low Stock Warning
+                        Description = $"Low stock warning ({LOW_STOCK_THRESHOLD} or fewer items left): {string.Join(", ", lowStockProducts)}",
+                        CreatedAt = DateTime.Now,
+                        RetailId = currentRetailId,
+                        ActionUrl = inventoryUrl
+                    });
+                }
+
+                if (depletedProducts.Any())
+                {
+                    _context.SecurityAlerts.Add(new SecurityAlert
+                    {
+                        AlertTypeId = 5, // Stock Depleted
+                        Description = $"Stock completely depleted for: {string.Join(", ", depletedProducts)}",
+                        CreatedAt = DateTime.Now,
+                        RetailId = currentRetailId,
+                        ActionUrl = inventoryUrl
+                    });
+                }
+
+                // Final Save & Commit
                 await _context.SaveChangesAsync();
                 await dbTransaction.CommitAsync();
 
@@ -498,6 +557,7 @@ namespace SmartScan.Controllers
             }
         }
 
+        // GetOldTransactions | Retrieves the transaction history for this retail
         [HttpGet]
         public async Task<IActionResult> GetOldTransactions()
         {
@@ -520,6 +580,7 @@ namespace SmartScan.Controllers
             return Json(new { success = true, transactions });
         }
 
+        // ApplyLateFees | Applies late fees if the due date is passed
         [HttpPost]
         [Authorize(Roles = "Admin,Cashier")]
         public async Task<IActionResult> ApplyLateFees()
@@ -555,6 +616,44 @@ namespace SmartScan.Controllers
             return Json(new { success = true, message = $"Successfully applied 5% late fees to {updatedCount} overdue transactions." });
         }
 
+        // POST: Home/LogCheckoutAnomaly | Triggered in real-time by AI/POS when suspicious behavior occurs
+        [HttpPost]
+        public async Task<IActionResult> LogCheckoutAnomaly([FromBody] CheckoutAnomalyPayload request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.AnomalyDetails))
+                return Json(new { success = false, message = "Invalid anomaly payload." });
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId))
+                return Json(new { success = false, message = "Session expired." });
+
+            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            if (retailStaff == null)
+                return Json(new { success = false, message = "User not assigned to a retail store." });
+
+            try
+            {
+                var anomalyAlert = new SecurityAlert
+                {
+                    AlertTypeId = 6, 
+                    Description = $"Checkout Anomaly: {request.AnomalyDetails}",
+                    CreatedAt = DateTime.Now,
+                    RetailId = retailStaff.RetailId,
+                    ActionUrl = ""
+                };
+
+                _context.SecurityAlerts.Add(anomalyAlert);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ComputeEuclideanDistance | Helps compute facial similarity
         private static double ComputeEuclideanDistance(float[] vA, float[] vB)
         {
             double sum = 0.0;
@@ -566,6 +665,7 @@ namespace SmartScan.Controllers
             return Math.Sqrt(sum);
         }
 
+        // ComputeCosineSimilarity | Helps compute facial similarity
         private static double ComputeCosineSimilarity(float[] vA, float[] vB)
         {
             double sum = 0.0;
@@ -581,6 +681,7 @@ namespace SmartScan.Controllers
         }
     }
 
+    // -- [ HELPER CLASS ] --
     public class TransactionPayload
     {
         public List<CartItemPayload> Items { get; set; } = new();
@@ -615,10 +716,12 @@ namespace SmartScan.Controllers
         public double Distance { get; set; }
         public double SimilarityScore { get; set; }
     }
-
-    // --- PAYLOAD MODEL REQUIRED FOR THE LIMIT EXTENSION API ---
     public class IncreaseLimitRequest
     {
         public int CustomerId { get; set; }
+    }
+    public class CheckoutAnomalyPayload
+    {
+        public string AnomalyDetails { get; set; } = string.Empty;
     }
 }

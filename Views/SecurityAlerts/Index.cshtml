@@ -1,0 +1,387 @@
+﻿@model IEnumerable<SmartScan.Models.SecurityAlert>
+
+@{
+    ViewData["Title"] = "Security Alerts";
+    ViewData["HeaderTitle"] = "System & Audit";
+
+    var readAlertIds = ViewBag.ReadAlertIds as HashSet<int> ?? new HashSet<int>();
+
+    var unreadAlerts = Model.Where(a => !readAlertIds.Contains(a.AlertId)).ToList();
+    var readAlerts = Model.Where(a => readAlertIds.Contains(a.AlertId)).ToList();
+}
+
+@functions {
+    // Dynamic Time Formatter
+    public string GetRelativeTime(DateTime createdAt)
+    {
+        var span = DateTime.Now - createdAt;
+
+        if (span.TotalMinutes < 1)
+            return $"{(int)span.TotalSeconds} seconds ago";
+        if (span.TotalHours < 1)
+            return $"{(int)span.TotalMinutes} mins ago";
+        if (span.TotalDays < 1)
+            return $"{(int)span.TotalHours} hrs, {span.Minutes} mins ago";
+        if (span.TotalDays < 30)
+            return $"{(int)span.TotalDays} days ago";
+
+        return createdAt.ToString("MMM dd, yyyy");
+    }
+}
+
+<style>
+    /* Custom close button mimicking the image */
+    .custom-close-btn {
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        cursor: pointer;
+        opacity: 0.9;
+    }
+
+        .custom-close-btn:hover {
+            opacity: 1;
+        }
+</style>
+
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+     style="height: calc(100dvh - 130px); min-height: 500px;">
+
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center" style="background-color: #1162a3;">
+        <h5 class="mb-0 fw-bold" style="letter-spacing: 0.5px;">
+            <i class="fa-solid fa-server me-2"></i>System Security Logs
+        </h5>
+    </div>
+
+    <!-- Scrollable Workspace -->
+    <div class="flex-grow-1 overflow-auto position-relative d-flex flex-column rounded-bottom-4 bg-light">
+
+        <div class="flex-grow-1 pb-3">
+            <table class="table table-hover align-middle mb-0 w-100 bg-white"
+                   style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
+
+                <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+
+                    <!-- Action Bar (Search & Toggles) -->
+                    <tr class="bg-white">
+                        <th colspan="5" class="p-0 border-0 border-bottom">
+                            <div class="px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+                                <!-- Tab Toggles -->
+                                <div class="btn-group shadow-sm" role="group">
+                                    <input type="radio" class="btn-check" name="logTabs" id="tabUnread" autocomplete="off" checked onchange="switchTab('unread')">
+                                    <label class="btn btn-outline-primary fw-medium px-4" for="tabUnread">
+                                        <i class="fa-solid fa-envelope me-1"></i>Unread (<span id="unreadCountBtn">@unreadAlerts.Count</span>)
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="logTabs" id="tabRead" autocomplete="off" onchange="switchTab('read')">
+                                    <label class="btn btn-outline-secondary fw-medium px-4" for="tabRead">
+                                        <i class="fa-solid fa-envelope-open me-1"></i>Read (<span id="readCountBtn">@readAlerts.Count</span>)
+                                    </label>
+                                </div>
+
+                                <!-- Live Client-Side Search Bar -->
+                                <div class="d-flex gap-2" style="width: 320px;">
+                                    <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                                        <span class="input-group-text bg-white border-0">
+                                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                        </span>
+                                        <input type="text"
+                                               id="logSearchInput"
+                                               onkeyup="filterLogs()"
+                                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                               style="font-size: 13px;"
+                                               placeholder="Search log descriptions..."
+                                               aria-label="Search logs" />
+                                    </div>
+                                    <button class="btn btn-outline-secondary rounded-3 px-3 d-flex align-items-center" onclick="clearSearch()" title="Clear Search">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </th>
+                    </tr>
+
+                    <!-- Column Headers -->
+                    <tr class="table-light border-bottom">
+                        <th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 18%;">Timestamp</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 22%;">Event Type</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 15%;">Location</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 35%;">Log Details</th>
+                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 10%;">Actions</th>
+                    </tr>
+                </thead>
+
+                <!-- UNREAD ALERTS DIV/TBODY -->
+                <tbody id="tbody-unread" class="searchable-tbody">
+                    @if (!unreadAlerts.Any())
+                    {
+                        <tr id="emptyUnreadRow">
+                            <td colspan="5" class="text-center py-5 bg-white">
+                                <i class="fa-solid fa-check-double fa-3x text-success opacity-50 mb-3"></i>
+                                <h5 class="fw-bold text-secondary">All Caught Up!</h5>
+                                <p class="text-muted small">You have no unread security logs.</p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var alert in unreadAlerts)
+                        {
+                            var typeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
+                            var storeName = alert.Retail?.RetailName ?? "System";
+                            var safeDesc = alert.Description.Replace("'", "\\'");
+                            var safeStore = storeName.Replace("'", "\\'");
+
+                            <tr id="alert-row-@alert.AlertId" class="bg-white border-start border-4  position-relative log-row" style="transition: all 0.3s ease;">
+
+                                <td class="ps-4" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
+                                    <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
+                                </td>
+                                <td onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border -subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                        <i class="fa-solid fa-circle-exclamation me-1"></i>@typeName
+                                    </span>
+                                </td>
+                                <td class="fw-semibold text-secondary" style="font-size: 14px;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
+                                    @storeName
+                                </td>
+                                <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
+                                    @alert.Description
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
+                                            onclick="markLogAsRead(@alert.AlertId)"
+                                            title="Mark as Read">
+                                        <i class="fa-solid fa-check me-1"></i>Read
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+
+                <!-- READ ALERTS DIV/TBODY -->
+                <tbody id="tbody-read" class="searchable-tbody d-none">
+                    @if (!readAlerts.Any())
+                    {
+                        <tr id="emptyReadRow">
+                            <td colspan="5" class="text-center py-5 bg-white">
+                                <i class="fa-solid fa-box-open fa-3x text-secondary opacity-50 mb-3"></i>
+                                <h5 class="fw-bold text-secondary">No Read Logs</h5>
+                                <p class="text-muted small">Logs you mark as read will appear here for historical auditing.</p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var alert in readAlerts)
+                        {
+                            var typeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
+                            var storeName = alert.Retail?.RetailName ?? "System";
+                            var safeDesc = alert.Description.Replace("'", "\\'");
+                            var safeStore = storeName.Replace("'", "\\'");
+
+                            <tr class="bg-light log-row" style="cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')">
+                                <td class="ps-4">
+                                    <span class="d-block font-monospace fw-semibold text-secondary" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                        @typeName
+                                    </span>
+                                </td>
+                                <td class="text-muted" style="font-size: 14px;">
+                                    @storeName
+                                </td>
+                                <td class="text-muted text-truncate" style="max-width: 350px; font-size: 14px;">
+                                    @alert.Description
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <span class="text-success small fw-bold"><i class="fa-solid fa-check-double me-1"></i>Read</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Redesigned Security Log Modal -->
+<div class="modal fade" id="alertLogModal" tabindex="-1" aria-labelledby="alertLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
+
+            <!-- Top Header (Using your Adjust Quantity reference) -->
+            <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
+                <h6 class="modal-title fw-bold mb-0 fs-5" id="alertLogModalLabel">
+                    <i class="fa-solid fa-shield-halved me-2"></i>Security Log
+                </h6>
+                <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Readonly Log ID -->
+                <div class="text-start mb-3">
+                    <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Log ID</label>
+                    <input type="text" class="form-control custom-input fw-bold text-dark font-monospace bg-light border-0" id="modalLogId" readonly style="border-radius: 10px; padding: 10px 15px;" />
+                </div>
+
+                <!-- Readonly Alert Type -->
+                <div class="text-start mb-3">
+                    <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Alert Type</label>
+                    <div class="form-control custom-input bg-light border-0 d-flex align-items-center" style="border-radius: 10px; padding: 10px 15px; height: auto;">
+                        <span id="modalLogType" class="fw-bold text-primary"></span>
+                    </div>
+                </div>
+
+                <!-- Readonly Location -->
+                <div class="text-start mb-3">
+                    <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Location</label>
+                    <div class="form-control custom-input bg-light border-0 d-flex align-items-center" style="border-radius: 10px; padding: 10px 15px; height: auto;">
+                        <span id="modalLogStore" class="fw-semibold text-dark"></span>
+                    </div>
+                </div>
+
+                <!-- Readonly Description -->
+                <div class="text-start mb-4">
+                    <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Description</label>
+                    <textarea class="form-control custom-input bg-light fw-medium text-dark border-0 lh-base" id="modalLogDesc" readonly rows="3" style="border-radius: 10px; padding: 12px 15px; resize: none;"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-3 mt-2">
+                    <button type="button" id="btnReviewed" class="btn fw-bold w-100 shadow-sm" style="background-color: #2b7cd3; color: white; border-radius: 12px; padding: 10px 0;">
+                        Reviewed
+                    </button>
+                    <a href="#" id="modalLogActionBtn" class="btn fw-bold w-100 shadow-sm" style="background-color: #ff0000; color: white; border-radius: 12px; padding: 10px 0;">
+                        Request Action
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentModalAlertId = null;
+
+        // Tab Switcher
+        function switchTab(tabName) {
+            const tbodyUnread = document.getElementById('tbody-unread');
+            const tbodyRead = document.getElementById('tbody-read');
+
+            if (tabName === 'unread') {
+                tbodyUnread.classList.remove('d-none');
+                tbodyRead.classList.add('d-none');
+            } else {
+                tbodyUnread.classList.add('d-none');
+                tbodyRead.classList.remove('d-none');
+            }
+            filterLogs(); // Re-apply search filter when switching tabs
+        }
+
+        // Live Client-Side Search
+        function filterLogs() {
+            const input = document.getElementById('logSearchInput').value.toLowerCase();
+            const activeTbody = document.getElementById('tabUnread').checked ? document.getElementById('tbody-unread') : document.getElementById('tbody-read');
+            const rows = activeTbody.getElementsByClassName('log-row');
+
+            for (let i = 0; i < rows.length; i++) {
+                const textContent = rows[i].textContent || rows[i].innerText;
+                if (textContent.toLowerCase().indexOf(input) > -1) {
+                    rows[i].style.display = '';
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('logSearchInput').value = '';
+            filterLogs();
+        }
+
+                // Open Inspector Modal
+        function openAlertModal(id, type, store, desc, url) {
+            currentModalAlertId = id;
+
+            // Updated mapping for the new form fields
+            document.getElementById('modalLogId').value = 'LOG-' + id.toString().padStart(5, '0');
+            document.getElementById('modalLogType').innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> ' + type;
+            document.getElementById('modalLogStore').innerHTML = '<i class="fa-solid fa-shop me-1 text-muted"></i> ' + store;
+            document.getElementById('modalLogDesc').value = desc;
+
+            const actionBtn = document.getElementById('modalLogActionBtn');
+            if (url && url.trim() !== "") {
+                actionBtn.href = url;
+                actionBtn.style.display = 'block';
+            } else {
+                actionBtn.style.display = 'none';
+            }
+
+            const btnReviewed = document.getElementById('btnReviewed');
+            btnReviewed.replaceWith(btnReviewed.cloneNode(true));
+
+            document.getElementById('btnReviewed').addEventListener('click', function() {
+                markLogAsRead(currentModalAlertId);
+                var modalInstance = bootstrap.Modal.getInstance(document.getElementById('alertLogModal'));
+                if(modalInstance) modalInstance.hide();
+            });
+
+            var modal = new bootstrap.Modal(document.getElementById('alertLogModal'));
+            modal.show();
+        }
+
+        // AJAX Mark as Read
+        function markLogAsRead(alertId) {
+            if (!event) event = window.event;
+            if (event.stopPropagation) {
+                event.stopPropagation();
+            }
+
+            // Check if the row even exists in the unread tab (prevents errors if clicking "Reviewed" on an already read log)
+            const row = document.getElementById('alert-row-' + alertId);
+            if (!row) return;
+
+            fetch(`/SecurityAlerts/MarkAsRead?alertId=${alertId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update Counters
+                    let unreadCount = parseInt(document.getElementById('unreadCountBtn').innerText);
+                    let readCount = parseInt(document.getElementById('readCountBtn').innerText);
+
+                    document.getElementById('unreadCountBtn').innerText = unreadCount - 1;
+                    document.getElementById('readCountBtn').innerText = readCount + 1;
+
+                    // Animate and remove row from Unread table
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(20px)';
+
+                    setTimeout(() => {
+                        row.remove();
+                    }, 300);
+                }
+            })
+            .catch(err => console.error("Error updating log status", err));
+        }
+    </script>
+}
