@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text;
+using System.Net.Http.Headers;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -185,7 +187,6 @@ namespace SmartScan.Controllers
             return View();
         }
 
-        // --- FETCH LIVE CREDIT & EARLIEST DUE DATE ---
         [HttpGet]
         public async Task<IActionResult> GetCustomerCredit(string customerName)
         {
@@ -218,7 +219,6 @@ namespace SmartScan.Controllers
             });
         }
 
-        // --- NEW API: INCREASE LIMIT & EXTEND DUES ---
         [HttpPost]
         public async Task<IActionResult> IncreaseCreditLimit([FromBody] IncreaseLimitRequest req)
         {
@@ -366,6 +366,57 @@ namespace SmartScan.Controllers
                 isUnderage = isUnderage,
                 assignedStatusId = statusId
             });
+        }
+
+        // --- NEW XENDIT GCASH CHECKOUT ENDPOINT ---
+        [HttpPost]
+        public async Task<IActionResult> CreateXenditCheckout([FromBody] TransactionPayload request)
+        {
+            try
+            {
+                using var client = new HttpClient();
+
+                // Embedded User Xendit Secret Key 
+                const string SecretKey = "xnd_development_i2JEYU0yrrXSwm0GivqR0pEL9CcLk7znFZIwQ2QDGAPVM7xc1KPLgL6pHykZ";
+
+                var url = "https://api.xendit.co/v2/invoices";
+
+                // Xendit uses Basic Auth with the Secret Key as the username and an empty password
+                var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SecretKey}:"));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+
+                var payload = new
+                {
+                    external_id = "TX-" + DateTime.Now.ToString("yyyyMMddHHmmssffff"),
+                    amount = (double)request.Total, // Xendit uses exact amounts for PHP
+                    description = $"SmartScan Order - {request.CustomerName}",
+                    currency = "PHP",
+                    payment_methods = new[] { "GCASH" },
+                    success_redirect_url = $"{Request.Scheme}://{Request.Host}/Home/Checkout",
+                    failure_redirect_url = $"{Request.Scheme}://{Request.Host}/Home/Checkout"
+                };
+
+                var jsonPayload = JsonSerializer.Serialize(payload);
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync(url, content);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return Json(new { success = false, message = "Xendit Error: " + responseString });
+                }
+
+                // Parse the Xendit Invoice URL
+                using var doc = JsonDocument.Parse(responseString);
+                var checkoutUrl = doc.RootElement.GetProperty("invoice_url").GetString();
+
+                return Json(new { success = true, checkoutUrl = checkoutUrl });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -592,7 +643,6 @@ namespace SmartScan.Controllers
         public double SimilarityScore { get; set; }
     }
 
-    // --- PAYLOAD MODEL REQUIRED FOR THE LIMIT EXTENSION API ---
     public class IncreaseLimitRequest
     {
         public int CustomerId { get; set; }

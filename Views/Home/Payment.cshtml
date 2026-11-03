@@ -284,7 +284,7 @@
                 <h3 class="modal-title-custom">E-Wallet</h3>
                 <p class="modal-subtitle mb-4 fw-medium">Select an e-wallet provider to generate a QR.</p>
 
-                <button class="w-100 ewallet-option-btn d-flex align-items-center shadow-sm" onclick="openGCashQR()">
+                <button id="btnGCashTrigger" class="w-100 ewallet-option-btn d-flex align-items-center shadow-sm" onclick="openGCashQR()">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="24" class="me-3">
                     <span class="fs-5">GCash App</span>
                     <i class="fa-solid fa-chevron-right ms-auto text-muted"></i>
@@ -294,22 +294,17 @@
     </div>
 </div>
 
-<!-- GCash QR Modal -->
-<div class="modal fade" id="gcashQRModal" tabindex="-1" aria-hidden="true">
+<!-- GCash Simulation Modal -->
+<div class="modal fade" id="gcashQRModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-        <div class="modal-content gcash-modal-content position-relative border-0 shadow-lg">
-            <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2" style="border: none;"><i class="fa-solid fa-xmark"></i></button>
-            <div class="modal-body text-center p-2 mt-2">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="30" class="mb-3" style="filter: brightness(0) invert(1);">
-                <p class="mb-4 text-white text-opacity-75 fw-medium" style="font-size: 0.95rem;">Ask customer to scan the QR code using their GCash App to pay.</p>
+        <div class="modal-content gcash-modal-content position-relative border-0 shadow-lg p-4 text-center">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="40" class="mb-3 mx-auto" style="filter: brightness(0) invert(1);">
 
-                <div class="bg-white p-4 d-inline-block rounded-4 shadow mb-4 cursor-pointer transition-all hover-scale" onclick="simulateGCashSuccess()" title="Click to simulate successful scan">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" width="180" height="180" alt="QR Code" />
-                </div>
+            <h4 class="text-white fw-bold mb-3">Awaiting Payment</h4>
+            <p class="text-white text-opacity-75 small mb-4">A new tab has opened for the Xendit GCash simulation. Please complete the test payment there.</p>
 
-                <h2 class="fw-bold text-white mb-0 font-monospace" id="gcashTotalAmount">₱0.00</h2>
-                <small class="text-white text-opacity-50">Amount to send</small>
-            </div>
+            <button type="button" class="btn btn-light fw-bold text-primary w-100 rounded-pill mb-2" onclick="simulateGCashSuccess()">Confirm Payment Received</button>
+            <button type="button" class="btn btn-link text-white text-opacity-75 text-decoration-none w-100" data-bs-dismiss="modal">Cancel Transaction</button>
         </div>
     </div>
 </div>
@@ -438,7 +433,6 @@
 
                 document.getElementById("cashTotalDue").value = formattedTotal;
                 document.getElementById("storeTotalDue").value = formattedTotal;
-                document.getElementById("gcashTotalAmount").textContent = formattedTotal;
 
             } catch (error) {
                 console.error("Cart error", error);
@@ -516,7 +510,6 @@
             finalizeTransaction("Credit Card", total, 0);
         }
 
-        // --- UPDATED LIVE BALANCE GATEKEEPER ---
         function proceedStoreCredit() {
             const errorBox = document.getElementById("storeCreditError");
             const errorText = document.getElementById("storeCreditErrorText");
@@ -541,7 +534,6 @@
             finalizeTransaction("Store Credits", total, 0);
         }
 
-        // --- NEW LIMIT INCREASE API CALL ---
         async function extendCustomerCredit() {
             if (!confirm("Are you sure you want to increase this customer's credit limit by ₱300.00 and extend their due date by 3 days?")) return;
 
@@ -582,9 +574,47 @@
             }
         }
 
-        function openGCashQR() {
+        // --- UPDATED XENDIT GCASH LINK GENERATOR ---
+        async function openGCashQR() {
             ewalletModalInstance.hide();
-            gcashQRModalInstance.show();
+
+            const btn = document.getElementById("btnGCashTrigger");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Generating Link...';
+            btn.disabled = true;
+
+            try {
+                const payload = {
+                    Total: parseFloat(total),
+                    CustomerName: verifiedCustomerName || "Guest",
+                    PaymentMethod: "GCash API"
+                };
+
+                const response = await fetch('/Home/CreateXenditCheckout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Open Xendit checkout in a new browser tab
+                    window.open(result.checkoutUrl, '_blank');
+
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    gcashQRModalInstance.show();
+                } else {
+                    alert("Failed to connect to Xendit API: " + result.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert("Network Error generating GCash link.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         function simulateGCashSuccess() {
