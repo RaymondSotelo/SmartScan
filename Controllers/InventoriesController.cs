@@ -1,4 +1,3 @@
-
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +17,7 @@ public class InventoriesController : Controller
     }
 
     // GET: INVENTORYS
-    public async Task<IActionResult> Index(int? retailId, string search)    
+    public async Task<IActionResult> Index(int? retailId, string search)
     {
         ViewData["CurrentFilter"] = search;
 
@@ -61,6 +60,11 @@ public class InventoriesController : Controller
                (isPrice && i.LocalPrice == parsedPrice) ||
                (isNumeric && i.Stock == parsedNumeric));
         }
+
+        // Apply Sorting: Stock (lowest to highest), then Price (lowest to highest)
+        invQuery = invQuery
+            .OrderBy(i => i.Stock)
+            .ThenBy(i => i.LocalPrice);
 
         ViewBag.RetailName = storeName;
         ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName");
@@ -112,24 +116,45 @@ public class InventoriesController : Controller
         ModelState.Remove("Product");
         ModelState.Remove("Retail");
 
-        // Checks if the product is already exist in the inventory
+        // Get the currently logged-in user's name
+        string currentUsername = User.Identity?.Name ?? "An admin";
+
+        // Fetch product early to use its name in errors and alerts
+        var product = await _context.Products.FindAsync(inventory.ProductId);
+        string productName = product?.ProductName ?? "A product";
+
+        // Checks if the product already exists in the inventory
         bool productExist = await _context.Inventories
             .AnyAsync(i => i.RetailId == inventory.RetailId && i.ProductId == inventory.ProductId);
 
         if (productExist)
         {
-            // Fetch for product name for cleaner error message
-            var product = await _context.Products.FindAsync(inventory.ProductId);
-            string productName = product?.ProductName ?? "This product";
-
             ModelState.AddModelError("ProductId", $"{productName} is already in your inventory.");
         }
 
         if (ModelState.IsValid)
         {
             _context.Add(inventory);
+
+            // Queue Alert if the user is NOT the owner
+            bool isOwner = await IsUserRetailOwnerAsync(inventory.RetailId, currentUsername);
+            if (!isOwner)
+            {
+                var addAlert = new SecurityAlert
+                {
+                    AlertTypeId = 3,
+                    Description = $"{currentUsername} added {productName} to the active inventory catalog.",
+                    CreatedAt = DateTime.Now,
+                    RetailId = inventory.RetailId,
+                    ActionUrl = Url.Action("Index", "Inventories", new { retailId = inventory.RetailId })
+                };
+                _context.SecurityAlerts.Add(addAlert);
+            }
+
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId});
+
+            TempData["InventoryMessage"] = $"{productName} was added successfully.";
+            return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId });
         }
 
         ViewBag.RetailId = inventory.RetailId;
@@ -141,44 +166,12 @@ public class InventoriesController : Controller
         return View(inventory);
     }
 
-    // GET: INVENTORYS/Edit/5
-    public async Task<IActionResult> Edit(int? inventoryid, int? retailId, string? barcodeSearch)
-    {
-        if (inventoryid == null)
-        {
-            return NotFound();
-        }
-
-        var inventory = await _context.Inventories
-            .Include(i => i.Product)
-            .FirstOrDefaultAsync(i => i.InventoryId == inventoryid);
-
-        if (inventory == null)
-        {
-            return NotFound();
-        }
-
-        var barcodeQuery = _context.Barcodes
-            .Where(b => b.InventoryId == inventoryid);
-
-        if (!string.IsNullOrWhiteSpace(barcodeSearch))
-        {
-            string term = barcodeSearch.Trim();
-            barcodeQuery = barcodeQuery.Where(b => b.BarcodeLine.Contains(term));
-        }
-
-        ViewBag.BarcodeList = await barcodeQuery.ToListAsync();
-        ViewBag.BarcodeSearch = barcodeSearch;
-        ViewBag.RetailId = retailId ?? inventory.RetailId;
-        return View(inventory);
-    }
-
     // POST: INVENTORYS/Edit/5
     // To protect from overposting attacks, enable the specific properties you want to bind to.
     // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? inventoryid, [Bind("InventoryId,ProductId,LocalPrice,Stock,BarcodeId,RetailId")] Inventory inventory)
+    public async Task<IActionResult> Edit(int? inventoryid, [Bind("InventoryId,ProductId,LocalPrice,Stock,RetailId")] Inventory inventory)
     {
         if (inventoryid != inventory.InventoryId)
         {
@@ -204,9 +197,30 @@ public class InventoriesController : Controller
                 updInv.LocalPrice = inventory.LocalPrice;
                 updInv.Stock = inventory.Stock;
 
+                string currentUsername = User.Identity?.Name ?? "An admin";
+                string productName = updInv.Product?.ProductName ?? "A product";
+
+                bool isOwner = await IsUserRetailOwnerAsync(inventory.RetailId, currentUsername);
+                if (!isOwner)
+                {
+                    var addAlert = new SecurityAlert
+                    {
+                        AlertTypeId = 9,
+                        Description = $"{currentUsername} updated the inventory details for {productName}.",
+                        CreatedAt = DateTime.Now,
+                        RetailId = inventory.RetailId,
+                        ActionUrl = Url.Action("Index", "Inventories", new { retailId = inventory.RetailId })
+                    };
+                    _context.SecurityAlerts.Add(addAlert);
+                }
+
                 await _context.SaveChangesAsync();
-                
-                return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId });
+
+                TempData["InventoryMessage"] = $"{productName} was updated successfully.";
+                TempData["UpdatedInventoryId"] = inventory.InventoryId;
+
+                // Redirect back to Index with the row's anchor hash:
+                return RedirectToAction(nameof(Index), "Inventories", new { retailId = inventory.RetailId }, $"inventory-{inventory.InventoryId}");
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -222,12 +236,7 @@ public class InventoriesController : Controller
         }
 
         ViewBag.RetailId = inventory.RetailId;
-        ViewBag.ProductList = await _context.Products
-            .Include(p => p.Category)
-            .ToListAsync();
-
-        ViewData["ProductId"] = new SelectList(_context.Products, "ProductId", "ProductName", inventory.ProductId);
-        return View(inventory);
+        return RedirectToAction(nameof(Index), new { retailId = inventory.RetailId });
     }
 
     // GET: INVENTORYS/Delete/5
@@ -251,26 +260,45 @@ public class InventoriesController : Controller
     // POST: INVENTORYS/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int? inventoryid)
+    public async Task<IActionResult> DeleteConfirmed(int inventoryid)
     {
-        if (inventoryid == null)
+        var inventory = await _context.Inventories
+            .Include(i => i.Product)
+            .FirstOrDefaultAsync(i => i.InventoryId == inventoryid);
+
+        if (inventory != null)
         {
-            return NotFound();
+            var retailId = inventory.RetailId;
+            string productName = inventory.Product?.ProductName ?? "A product";
+
+            // Get the currently logged-in user's name
+            string currentUsername = User.Identity?.Name ?? "An admin";
+
+            // Queue removal
+            _context.Inventories.Remove(inventory);
+
+            // Queue Alert if the user is NOT the owner
+            bool isOwner = await IsUserRetailOwnerAsync(retailId, currentUsername);
+            if (!isOwner)
+            {
+                var removeAlert = new SecurityAlert
+                {
+                    AlertTypeId = 8,
+                    Description = $"{currentUsername} permanently removed {productName} from the store's inventory.",
+                    CreatedAt = DateTime.Now,
+                    RetailId = retailId,
+                    ActionUrl = Url.Action("Index", "Inventories", new { retailId = retailId })
+                };
+                _context.SecurityAlerts.Add(removeAlert);
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["InventoryMessage"] = $"{productName} was removed successfully.";
+            return RedirectToAction(nameof(Index), new { retailId = retailId });
         }
 
-        var inventory = await _context.Inventories.FindAsync(inventoryid);
-
-        if (inventory == null)
-        {
-            return NotFound();
-        }
-
-        int retailId = inventory.RetailId;
-
-        _context.Inventories.Remove(inventory);
-        await _context.SaveChangesAsync();
-
-        return RedirectToAction(nameof(Index), new { retailId = retailId });
+        return NotFound();
     }
 
     private bool InventoryExists(int? inventoryid)
@@ -359,6 +387,7 @@ public class InventoriesController : Controller
     {
         // Verify that this inventory item actually belongs to the specified ProductId
         var inventoryItem = await _context.Inventories
+            .Include(i => i.Product) // Included Product to access ProductName for the alert
             .FirstOrDefaultAsync(i => i.InventoryId == inventoryId && i.ProductId == productId);
 
         if (inventoryItem == null)
@@ -372,10 +401,47 @@ public class InventoriesController : Controller
         if (await barcodes.AnyAsync())
         {
             _context.Barcodes.RemoveRange(barcodes);
+
+            // Get the currently logged-in user's name and product name
+            string currentUsername = User.Identity?.Name ?? "An admin";
+            string productName = inventoryItem.Product?.ProductName ?? "A product";
+
+            // Handle nullable retailId fallback for the alert route
+            int activeRetailId = retailId ?? inventoryItem.RetailId;
+
+            // Queue Alert if the user is NOT the owner
+            bool isOwner = await IsUserRetailOwnerAsync(activeRetailId, currentUsername);
+            if (!isOwner)
+            {
+                var addAlert = new SecurityAlert
+                {
+                    AlertTypeId = 9,
+                    Description = $"{currentUsername} cleared all barcodes for {productName}.",
+                    CreatedAt = DateTime.Now,
+                    RetailId = activeRetailId,
+                    ActionUrl = Url.Action("Index", "Inventories", new { retailId = activeRetailId })
+                };
+                _context.SecurityAlerts.Add(addAlert);
+            }
+
             await _context.SaveChangesAsync();
-            TempData["UserMessage"] = "All barcodes for this product item have been removed.";
+            TempData["InventoryMessage"] = "All barcodes for this product item have been removed.";
         }
 
         return RedirectToAction(nameof(Edit), new { inventoryId, retailId });
+    }
+
+    private async Task<bool> IsUserRetailOwnerAsync(int? retailId, string username)
+    {
+        if (retailId == null || string.IsNullOrWhiteSpace(username)) return false;
+
+        var retail = await _context.Retails
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.RetailId == retailId);
+
+        if (retail == null || string.IsNullOrWhiteSpace(retail.AdminOwner)) return false;
+
+        // Force both to uppercase and trim spaces to ensure a perfect match
+        return retail.AdminOwner.Trim().ToUpper() == username.Trim().ToUpper();
     }
 }

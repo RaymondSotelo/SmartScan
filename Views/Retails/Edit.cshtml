@@ -28,21 +28,54 @@
                     <!-- [Retail Name] -->
                     <div class="form-group mb-3">
                         <label asp-for="RetailName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Retail Name</label>
-                        <input asp-for="RetailName" class="form-control rounded-3" placeholder="Enter store name" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+                        <div class="position-relative">
+                            <input asp-for="RetailName" id="RetailName" class="form-control rounded-3 pe-5" placeholder="Enter store name" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+
+                            <!-- Inner Clear Button -->
+                            <button type="button"
+                                    class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
+                                    onclick="document.getElementById('RetailName').value = ''; document.getElementById('RetailName').focus();"
+                                    title="Clear field"
+                                    tabindex="-1">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
                         <span asp-validation-for="RetailName" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <!-- [Description] -->
                     <div class="form-group mb-3">
                         <label asp-for="Description" class="control-label fw-semibold mb-1" style="color: #1162a3;">Retail Description</label>
-                        <textarea asp-for="Description" class="form-control rounded-3" placeholder="Enter store details or notes..." style="height: 110px;"></textarea>
+                        <div class="position-relative">
+                            <textarea asp-for="Description" id="Description" class="form-control rounded-3 pe-5" placeholder="Enter store details or notes..." style="height: 110px;"></textarea>
+
+                            <!-- Inner Clear Button -->
+                            <button type="button"
+                                    class="btn btn-sm text-secondary position-absolute top-0 end-0 mt-1 me-1 border-0 shadow-none z-3"
+                                    onclick="document.getElementById('Description').value = ''; document.getElementById('Description').focus();"
+                                    title="Clear field"
+                                    tabindex="-1">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
                         <span asp-validation-for="Description" class="text-danger small mt-1 d-block"></span>
                     </div>
 
                     <!-- [Address] -->
                     <div class="form-group mb-3">
                         <label asp-for="Address" class="control-label fw-semibold mb-1" style="color: #1162a3;">Store Address</label>
-                        <input asp-for="Address" class="form-control rounded-3" placeholder="e.g. 123 Main Street, City" />
+                        <div class="position-relative">
+                            <input asp-for="Address" id="Address" class="form-control rounded-3 pe-5" placeholder="e.g. 123 Main Street, City" />
+
+                            <!-- Inner Clear Button -->
+                            <button type="button"
+                                    class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
+                                    onclick="document.getElementById('Address').value = ''; document.getElementById('Address').focus();"
+                                    title="Clear field"
+                                    tabindex="-1">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
                         <span asp-validation-for="Address" class="text-danger small mt-1 d-block"></span>
                     </div>
 

@@ -22,11 +22,7 @@ public partial class Inventory
     [Range(0, int.MaxValue, ErrorMessage = "Stock must be a non-negative whole number.")]
     public int Stock { get; set; }
 
-    public int? BarcodeId { get; set; }
-
     public int RetailId { get; set; }
-
-    public virtual ICollection<Barcode> Barcodes { get; set; } = new List<Barcode>();
 
     [ValidateNever]
     public virtual Product Product { get; set; } = null!;

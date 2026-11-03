@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SmartScan.Models;
 
 public partial class Status
 {
     [Key]
+    [Column("statusId")]
     public int StatusId { get; set; }
 
+    [Column("statusName")]
     public string StatusName { get; set; } = null!;
 
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();

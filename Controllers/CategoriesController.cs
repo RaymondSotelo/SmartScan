@@ -33,40 +33,48 @@ public class CategoriesController : Controller
         return View(await category.ToListAsync());
     }
 
-    // POST: CATEGORYS/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    // POST: CATEGORIES/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("CategoryName")] Category category)
     {
         ModelState.Remove("Products");
 
-        // Sanitize & clean trailing/leading whitespace
-        if (!string.IsNullOrWhiteSpace(category.CategoryName))
+        if (string.IsNullOrWhiteSpace(category.CategoryName))
         {
-            category.CategoryName = category.CategoryName.Trim();
+            TempData["CategoryMessage"] = "Category name cannot be empty.";
+            return RedirectToAction(nameof(Index));
         }
+
+        category.CategoryName = category.CategoryName.Trim();
+        string exactName = category.CategoryName.ToLower();
+
+        string variation1 = exactName.EndsWith("s") ? exactName.Substring(0, exactName.Length - 1) : exactName + "s";
+        string variation2 = exactName.EndsWith("es") ? exactName.Substring(0, exactName.Length - 2) : exactName + "es";
 
         if (ModelState.IsValid)
         {
-            // Check for duplicate name (case-insensitive)
+            // Aggressive duplicate check
             bool exists = await _context.Categories
-                .AnyAsync(c => c.CategoryName.ToLower() == category.CategoryName.ToLower());
+                .AnyAsync(c =>
+                    c.CategoryName.Trim().ToLower() == exactName ||
+                    c.CategoryName.Trim().ToLower() == variation1 ||
+                    c.CategoryName.Trim().ToLower() == variation2);
 
             if (exists)
             {
-                TempData["ErrorMessage"] = $"The category \"{category.CategoryName}\" already exists.";
+                TempData["CategoryMessage"] = $"A category similar to \"{category.CategoryName}\" already exists.";
                 return RedirectToAction(nameof(Index));
             }
 
             // Persist new category
             _context.Add(category);
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 
-        TempData["ErrorMessage"] = "Failed to create category. Please provide a valid name.";
+        TempData["CategoryMessage"] = "Failed to create category. Please provide a valid name.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -98,7 +106,7 @@ public class CategoriesController : Controller
 
             if (exists)
             {
-                TempData["ErrorMessage"] = $"Another category named {category.CategoryName} already exists.";
+                TempData["CategoryMessage"] = $"Another category named {category.CategoryName} already exists.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -119,7 +127,7 @@ public class CategoriesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        TempData["ErrorMessage"] = "Failed to update category. Please check your input.";
+        TempData["CategoryMessage"] = "Failed to update category. Please check your input.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -141,7 +149,7 @@ public class CategoriesController : Controller
         }
         catch (DbUpdateException)
         {
-            TempData["ErrorMessage"] = $"Cannot delete '{category.CategoryName}' because products are assigned to it.";
+            TempData["CategoryMessage"] = $"Cannot delete '{category.CategoryName}' because products are assigned to it.";
         }
 
         return RedirectToAction(nameof(Index));

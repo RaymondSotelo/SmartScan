@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Create Product";
-    ViewData["HeaderTitle"] = "Retail Management";
+    ViewData["HeaderTitle"] = "Product Management";
 }
 
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 mb-3"
@@ -27,7 +27,7 @@
                     <!-- Product Name -->
                     <div class="form-group mb-3">
                         <label asp-for="ProductName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Product Name</label>
-                        <input asp-for="ProductName" class="form-control rounded-3" placeholder="e.g. Organic Rolled Oats" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+                        <input asp-for="ProductName" id="ProductName" class="form-control rounded-3" placeholder="e.g. Nescafe Stick" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
                         <span asp-validation-for="ProductName" class="text-danger small mt-1 d-block"></span>
                     </div>
 
@@ -66,47 +66,126 @@
                         <label asp-for="Price" class="control-label fw-semibold mb-1" style="color: #1162a3;">Market Price (PHP)</label>
                         <div class="input-group shadow-sm rounded-3 overflow-hidden border">
                             <span class="input-group-text bg-light border-0 fw-bold text-secondary">₱</span>
-                            <input asp-for="Price" class="form-control border-0 shadow-none fw-semibold" type="number" step="0.01" min="0.01" onwheel="this.blur()" placeholder="0.00" />
+                            <input asp-for="Price" id="Price" class="form-control border-0 shadow-none fw-semibold" type="number" step="0.01" min="0.01" onwheel="this.blur()" placeholder="0.00" />
                         </div>
                         <span asp-validation-for="Price" class="text-danger small mt-1 d-block"></span>
                     </div>
+
+                    <!-- Barcode Field -->
+                    <div class="form-group mb-4">
+                        <label asp-for="Barcode" class="control-label fw-semibold mb-1" style="color: #1162a3;">Product Barcode</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                            <input asp-for="Barcode"
+                                   id="Barcode"
+                                   class="form-control border-0 shadow-none fw-semibold"
+                                   placeholder="Scan or enter barcode"
+                                   autocomplete="off"
+                                   inputmode="numeric"
+                                   maxlength="13"
+                                   oninput="this.value = this.value.replace(/\D/g, '').slice(0, 13)" />
+
+                            <!-- Toggle Live Camera Scanner Button -->
+                            <button type="button"
+                                    class="btn btn-primary fw-medium px-3 z-3"
+                                    id="btnToggleScanner"
+                                    onclick="toggleLiveScanner()"
+                                    style="background-color: #1162a3; border-color: #1162a3;"
+                                    title="Scan Barcode via Camera">
+                                <i class="fa-solid fa-camera"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Barcode" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <!-- Initial AI Scanning Status Notice -->
+                    <div class="form-group mb-3">
+                        <label class="control-label fw-semibold mb-2 d-block" style="color: #1162a3;">AI Detection Status</label>
+
+                        <!-- Hidden input reinforcing default false state -->
+                        <input type="hidden" asp-for="CanScan" value="false" />
+
+                        <div class="d-flex align-items-center p-3 bg-light rounded-3 border shadow-sm">
+                            <div>
+                                <span class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm bg-warning text-dark border border-warning-subtle">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Not Scannable by Default
+                                </span>
+                                <small class="text-muted d-block mt-2">
+                                    New products require dataset labeling and AI detector model training before automated scanning can be enabled.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Right Column: Image and Media -->
+                <!-- Right Column: Image, Media, and Scanner -->
                 <div class="col-lg-6">
                     <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Product Media</h6>
 
-                    <!-- Tab Switcher -->
-                    <ul class="nav nav-pills mb-2" id="imageTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active py-1 px-3 rounded-pill border shadow-sm me-2" id="url-tab" data-bs-toggle="pill" data-bs-target="#url-pane" type="button" role="tab">Link URL</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-3 rounded-pill border shadow-sm" id="upload-tab" data-bs-toggle="pill" data-bs-target="#upload-pane" type="button" role="tab">Upload File</button>
-                        </li>
-                    </ul>
+                    <!-- Default Media Section -->
+                    <div id="productMediaSection">
 
-                    <!-- Tab Content -->
-                    <div class="tab-content border rounded-3 p-3 bg-light shadow-sm mb-3">
-                        <div class="tab-pane fade show active" id="url-pane" role="tabpanel">
-                            <input asp-for="ProductImage" id="productUrlInput" class="form-control rounded-3" placeholder="https://example.com/image.jpg" />
-                            <div class="form-text small mt-1">Paste a valid web link pointing directly to an image.</div>
+                        <!-- Tab Switcher -->
+                        <ul class="nav nav-pills mb-2" id="imageTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active py-1 px-3 rounded-pill border shadow-sm me-2" id="url-tab" data-bs-toggle="pill" data-bs-target="#url-pane" type="button" role="tab">Link URL</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link py-1 px-3 rounded-pill border shadow-sm" id="upload-tab" data-bs-toggle="pill" data-bs-target="#upload-pane" type="button" role="tab">Upload File</button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content border rounded-3 p-3 bg-light shadow-sm mb-3">
+
+                            <!-- Paste Image URL -->
+                            <div class="tab-pane fade show active" id="url-pane" role="tabpanel">
+                                <input asp-for="ProductImage"
+                                       id="productUrlInput"
+                                       class="form-control rounded-3"
+                                       placeholder="https://example.com/image.jpg" />
+                                <div class="form-text small mt-1">Direct web link to an image file.</div>
+                            </div>
+
+                            <!-- Upload Image File -->
+                            <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                                <input type="file" name="ImageUpload" id="ImageUpload" class="form-control rounded-3" accept="image/png, image/jpeg, image/jpg, image/webp" />
+                                <div class="form-text small mt-1">Select a new image file to replace current picture.</div>
+                            </div>
                         </div>
+                        <span asp-validation-for="ProductImage" class="text-danger small mt-1 d-block"></span>
 
-                        <div class="tab-pane fade" id="upload-pane" role="tabpanel">
-                            <input type="file" name="ImageUpload" id="ImageUpload" class="form-control rounded-3" accept="image/png, image/jpeg, image/jpg, image/webp" />
-                            <div class="form-text small mt-1">Supports PNG, JPG, JPEG, and WebP formats.</div>
+                        <!-- Live Image Preview Box -->
+                        <div class="image-preview-box shadow-sm mt-3 mb-3" id="previewContainer">
+                            <div id="previewPlaceholder" class="text-center text-muted" style="display: @(Model == null || string.IsNullOrEmpty(Model.ProductImage) ? "block" : "none");">
+                                <i class="fa-solid fa-image fa-3x opacity-25 mb-2"></i>
+                                <p class="small mb-0">Image preview will appear here</p>
+                            </div>
+                            <img id="livePreviewImg"
+                                 src="@(Model == null || string.IsNullOrEmpty(Model.ProductImage) ? "/images/default-product.png" : Model.ProductImage)"
+                                 onerror="this.onerror=null; this.src='/images/default-product.png';"
+                                 alt="@(Model?.ProductName ?? "Preview")"
+                                 style="display: @(Model == null || string.IsNullOrEmpty(Model.ProductImage) ? "none" : "block");" />
                         </div>
                     </div>
-                    <span asp-validation-for="ProductImage" class="text-danger small mt-1 d-block"></span>
 
-                    <!-- Live Image Preview Container -->
-                    <div class="image-preview-box shadow-sm mt-3 mb-3" id="previewContainer">
-                        <div id="previewPlaceholder" class="text-center text-muted">
-                            <i class="fa-solid fa-image fa-3x opacity-25 mb-2"></i>
-                            <p class="small mb-0">Image preview will appear here</p>
+                    <!-- Hidden Barcode Camera Scanner Section -->
+                    <div id="hiddenScannerSection" class="border rounded-3 p-3 bg-light shadow-sm mb-3" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-secondary mb-0" style="font-size: 14px;">
+                                <i class="fa-solid fa-camera me-1"></i>Live Barcode Scanner
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm" onclick="toggleLiveScanner()">
+                                <i class="fa-solid fa-xmark me-1"></i>Cancel Scan
+                            </button>
                         </div>
-                        <img id="livePreviewImg" src="#" alt="Preview" style="display: none;" />
+
+                        <div id="qrReaderWrapper" class="overflow-hidden rounded-3 border mb-3 bg-white shadow-sm" style="width: 100%; max-width: 400px; margin: auto;">
+                            <div id="qrReader"></div>
+                        </div>
+
+                        <div class="alert alert-info py-2 small fw-semibold text-center mb-0" id="scannerStatus">
+                            <i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -125,9 +204,13 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
+    <!-- Required for Camera Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // Category Combobox Serialization
+
+            // ================= CATEGORY COMBOBOX LOGIC =================
             const categories = [
                 @if (ViewBag.CategoryId != null)
                 {
@@ -143,14 +226,7 @@
             const dropdown = document.getElementById("categoryDropdownList");
             const clearBtn = document.getElementById("clearCategoryBtn");
 
-            // Live Image Preview elements
-            const urlInput = document.getElementById("productUrlInput");
-            const fileInput = document.getElementById("ImageUpload");
-            const previewImg = document.getElementById("livePreviewImg");
-            const previewPlaceholder = document.getElementById("previewPlaceholder");
-
-            // Category pre-fill check
-            if (hiddenId.value) {
+            if (hiddenId && hiddenId.value) {
                 const selected = categories.find(c => c.id === hiddenId.value);
                 if (selected) {
                     searchInput.value = selected.name;
@@ -161,7 +237,6 @@
             function filterCategories(query) {
                 dropdown.innerHTML = "";
                 const cleanQuery = query.trim().toLowerCase();
-
                 const matches = categories
                     .filter(c => c.name.toLowerCase().includes(cleanQuery))
                     .slice(0, 5);
@@ -185,95 +260,193 @@
                             dropdown.style.display = "none";
                             $(hiddenId).valid();
                         });
-
                         dropdown.appendChild(li);
                     });
                 }
-
                 dropdown.style.display = "block";
             }
 
-            searchInput.addEventListener("input", function () {
-                hiddenId.value = "";
-                clearBtn.style.display = this.value ? "block" : "none";
-                filterCategories(this.value);
-            });
+            if (searchInput) {
+                searchInput.addEventListener("input", function () {
+                    hiddenId.value = "";
+                    clearBtn.style.display = this.value ? "block" : "none";
+                    filterCategories(this.value);
+                });
 
-            searchInput.addEventListener("focus", function () {
-                filterCategories(this.value);
-            });
+                searchInput.addEventListener("focus", function () {
+                    filterCategories(this.value);
+                });
+            }
 
-            clearBtn.addEventListener("click", function () {
-                searchInput.value = "";
-                hiddenId.value = "";
-                clearBtn.style.display = "none";
-                dropdown.style.display = "none";
-                searchInput.focus();
-            });
+            if (clearBtn) {
+                clearBtn.addEventListener("click", function () {
+                    searchInput.value = "";
+                    hiddenId.value = "";
+                    clearBtn.style.display = "none";
+                    dropdown.style.display = "none";
+                    searchInput.focus();
+                });
+            }
 
             document.addEventListener("click", function (e) {
-                if (!document.getElementById("categoryCombobox").contains(e.target)) {
+                const combobox = document.getElementById("categoryCombobox");
+                if (combobox && !combobox.contains(e.target)) {
                     dropdown.style.display = "none";
                 }
             });
 
-            // Live Image Preview Handlers
-            function updatePreview(src) {
-                if (src) {
-                    previewImg.src = src;
-                    previewImg.style.display = "block";
-                    previewPlaceholder.style.display = "none";
-                } else {
-                    previewImg.src = "#";
-                    previewImg.style.display = "none";
-                    previewPlaceholder.style.display = "block";
-                }
-            }
+            // ================= IMAGE PREVIEW & TAB LOGIC =================
+            const urlInput = document.getElementById("productUrlInput");
+            const fileInput = document.getElementById("ImageUpload");
+            const previewImg = document.getElementById("livePreviewImg");
+            const previewPlaceholder = document.getElementById("previewPlaceholder");
 
-            // Preview URL image
+            window.updatePreview = function (src) {
+                if (src) {
+                    if (previewImg) {
+                        previewImg.src = src;
+                        previewImg.style.display = "block";
+                    }
+                    if (previewPlaceholder) previewPlaceholder.style.display = "none";
+                } else {
+                    if (previewImg) {
+                        previewImg.src = "#";
+                        previewImg.style.display = "none";
+                    }
+                    if (previewPlaceholder) previewPlaceholder.style.display = "block";
+                }
+            };
+
             if (urlInput) {
                 urlInput.addEventListener("input", function () {
-                    if (this.value.trim().length > 8) {
-                        updatePreview(this.value.trim());
-                    } else {
-                        updatePreview(null);
-                    }
+                    window.updatePreview(this.value.trim().length > 8 ? this.value.trim() : null);
                 });
             }
 
-            // Preview uploaded file
             if (fileInput) {
                 fileInput.addEventListener("change", function () {
                     const file = this.files[0];
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = function (e) {
-                            updatePreview(e.target.result);
+                            window.updatePreview(e.target.result);
                         };
                         reader.readAsDataURL(file);
                     } else {
-                        updatePreview(null);
+                        window.updatePreview(urlInput && urlInput.value ? urlInput.value : null);
                     }
                 });
             }
 
-            // Reset opposing field on tab click
             const urlTab = document.getElementById("url-tab");
             const uploadTab = document.getElementById("upload-tab");
 
             if (urlTab) {
                 urlTab.addEventListener("shown.bs.tab", function () {
-                    fileInput.value = "";
-                    updatePreview(urlInput.value);
+                    if (fileInput) fileInput.value = "";
+                    window.updatePreview(urlInput && urlInput.value ? urlInput.value : null);
                 });
             }
 
             if (uploadTab) {
                 uploadTab.addEventListener("shown.bs.tab", function () {
-                    urlInput.value = "";
-                    updatePreview(null);
+                    if (fileInput && !fileInput.files.length) {
+                        window.updatePreview(null);
+                    }
                 });
             }
-        });
+
+        }); // Close DOMContentLoaded
+
+        // ================= BARCODE SCANNER LOGIC =================
+        let html5QrScanner = null;
+        let isScannerActive = false;
+        let isProcessingScan = false;
+
+        async function toggleLiveScanner() {
+            const mediaSec = document.getElementById("productMediaSection");
+            const scannerSec = document.getElementById("hiddenScannerSection");
+            const btnToggle = document.getElementById("btnToggleScanner");
+
+            if (isScannerActive) {
+                if (html5QrScanner) {
+                    await html5QrScanner.stop();
+                    html5QrScanner.clear();
+                    html5QrScanner = null;
+                }
+                scannerSec.style.display = "none";
+                if (mediaSec) mediaSec.style.display = "block";
+
+                btnToggle.innerHTML = '<i class="fa-solid fa-camera"></i>';
+                btnToggle.classList.replace("btn-danger", "btn-primary");
+                isScannerActive = false;
+                isProcessingScan = false;
+            } else {
+                if (mediaSec) mediaSec.style.display = "none";
+                scannerSec.style.display = "block";
+
+                btnToggle.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                btnToggle.classList.replace("btn-primary", "btn-danger");
+                isScannerActive = true;
+                isProcessingScan = false;
+
+                const status = document.getElementById("scannerStatus");
+                status.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...';
+                status.className = "alert alert-info py-2 small fw-semibold text-center mb-0";
+
+                html5QrScanner = new Html5Qrcode("qrReader");
+                html5QrScanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 280, height: 120 } },
+                    (decodedText) => { processLiveScan(decodedText); },
+                    (errorMessage) => { /* ignore frame miss */ }
+                ).then(() => {
+                    status.innerHTML = '<i class="fa-solid fa-camera me-1"></i>Live scanner active. Hold barcode in view.';
+                    status.className = "alert alert-success py-2 small fw-semibold text-center mb-0";
+                }).catch(err => {
+                    status.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Camera failed to initialize.';
+                    status.className = "alert alert-danger py-2 small fw-semibold text-center mb-0";
+                });
+            }
+        }
+
+        function processLiveScan(decodedText) {
+            if (isProcessingScan) return;
+            isProcessingScan = true;
+
+            let retrievedNumber = decodedText;
+
+            try {
+                const parsedData = JSON.parse(decodedText);
+                if (parsedData && typeof parsedData === "object") {
+                    retrievedNumber = parsedData.barcode || parsedData.Barcode || parsedData.number || parsedData.id || Object.values(parsedData)[0] || decodedText;
+                }
+            } catch (error) {
+                // Raw barcode string fallback
+            }
+
+            if (!retrievedNumber) {
+                isProcessingScan = false;
+                return;
+            }
+
+            const normalizedBarcode = retrievedNumber.toString().replace(/\s+/g, '').trim();
+            const barcodeInput = document.getElementById("Barcode");
+
+            if (barcodeInput) {
+                barcodeInput.value = normalizedBarcode;
+                barcodeInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+                if (typeof $ !== 'undefined' && $.validator) {
+                    try { $(barcodeInput).valid(); } catch (e) { }
+                }
+            }
+
+            setTimeout(() => {
+                if (isScannerActive) {
+                    toggleLiveScanner();
+                }
+            }, 150);
+        }
     </script>
 }

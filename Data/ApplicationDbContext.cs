@@ -38,6 +38,8 @@ namespace SmartScan.Data
 
         public virtual DbSet<Barcode> Barcodes { get; set; }
 
+        public virtual DbSet<AlertType> AlertTypes { get; set; }
+        public virtual DbSet<AdminAlertRead> AdminAlertReads { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

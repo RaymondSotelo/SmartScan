@@ -95,6 +95,7 @@
                     </div>
                 </div>
 
+                <!-- Store Outlet -->
                 <div class="col-12 col-sm-6 col-xl-3">
                     <div class="card kpi-card shadow-sm rounded-4 h-100 p-3"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
@@ -180,7 +181,7 @@
                     </div>
                 </div>
 
-                <!-- Age-Gating Audit (Now Full Width, Stacked Below) -->
+                <!-- Age-Gating Audit -->
                 <div class="col-12">
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
                         <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
@@ -246,7 +247,7 @@
         <!-- SECTION 3: RETAIL OVERVIEW                 -->
         <!-- ========================================== -->
         <!-- Compact Unified Action & Search Bar -->
-        <div class="d-flex justify-content-between align-items-center gap-3 mb-3 pb-3 pt-2 border-bottom flex-shrink-0">
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-3 pb-3 pt-2 border-bottom flex-shrink-0" id="retail-overview-section">
 
             <!-- Header Info -->
             <div class="px-1 pb-1">
@@ -270,7 +271,7 @@
 
                 @if (!string.IsNullOrEmpty(Model.CurrentFilter))
                 {
-                    <a asp-action="Index" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                    <a asp-action="Index" asp-fragment="retail-overview-section" class="btn btn-outline-secondary rounded-3" title="Clear Search">
                         <i class="fa-solid fa-xmark"></i>
                     </a>
                 }
@@ -298,7 +299,7 @@
                     </p>
                     @if (!string.IsNullOrEmpty(Model.CurrentFilter))
                     {
-                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-medium">
+                        <a asp-action="Index" asp-fragment="retail-overview-section" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-medium">
                             <i class="fa-solid fa-arrow-rotate-left me-1"></i>Reset Filter
                         </a>
                     }
@@ -362,7 +363,7 @@
                                         <!-- Owner Section -->
                                         <div class="d-flex align-items-center text-truncate me-2 position-relative" style="z-index: 2;" title="Store Owner">
                                             <img src="@avatarPath"
-                                                 onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
+                                                 onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
                                                  alt="@(item.AdminOwnerNavigation?.UserName ?? "Owner")"
                                                  class="rounded-circle border border-1 object-fit-cover shadow-sm bg-white me-2 flex-shrink-0"
                                                  style="width: 38px; height: 38px;" />
@@ -384,3 +385,15 @@
         </div>
     </div>
 </div>
+@if (!string.IsNullOrEmpty(Model.CurrentFilter))
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const retailSection = document.getElementById("retail-overview-section");
+            if (retailSection) {
+                // Smoothly scroll down to Section 3
+                retailSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    </script>
+}
