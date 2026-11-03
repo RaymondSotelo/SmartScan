@@ -30,20 +30,33 @@
 
             <!-- LEFT COLUMN | Camera View -->
             <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-2 pb-3" style="min-height: 0;">
-
-                <!-- Camera Card -->
                 <div class="card border-0 bg-dark text-white rounded-4 flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden shadow-sm"
                      style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate;">
 
                     <!-- Live Video Stream Container -->
                     <div id="videoContainer" class="position-relative w-100 h-100 rounded-4 overflow-hidden" style="display: none;">
                         <video id="webcamFeed" autoplay playsinline class="w-100 h-100 rounded-4" style="object-fit: cover;"></video>
-
-                        <!-- Canvas overlay for bounding boxes & labels -->
                         <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100 rounded-4" style="pointer-events: none;"></canvas>
+
+                        <!-- Top Left: YOLO Engine Badge -->
+                        <div class="position-absolute top-0 start-0 m-3 z-3" style="pointer-events: none;">
+                            <span class="badge bg-black bg-opacity-50 text-white border border-white border-opacity-25 rounded-pill px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2"
+                                  style="backdrop-filter: blur(4px); font-size: 0.8rem; letter-spacing: 0.5px;">
+                                <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;" role="status"></span>
+                                YOLO
+                            </span>
+                        </div>
+
+                        <!-- Bottom Left: Total Products Detected Badge -->
+                        <div class="position-absolute bottom-0 start-0 m-3 z-3" style="pointer-events: none; margin-bottom: 20px !important;">
+                            <span class="badge bg-black bg-opacity-50 text-white border border-white border-opacity-25 rounded-3 px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2"
+                                  style="backdrop-filter: blur(4px); font-size: 0.82rem;">
+                                <i class="fa-solid fa-boxes-stacked text-white"></i>
+                                <span>Detected: <strong id="detectedCountDisplay" class="text-white">0</strong></span>
+                            </span>
+                        </div>
                     </div>
 
-                    <!-- Hidden canvas for sending frames -->
                     <canvas id="captureCanvas" style="display: none;"></canvas>
 
                     <!-- Idle / Disabled State Placeholder -->
@@ -60,8 +73,6 @@
                     <!-- Enable/Disable Webcam Button -->
                     <div class="position-absolute start-50 translate-middle-x z-3 shadow-lg" style="bottom: 24px;">
                         <div class="btn-group rounded-pill overflow-hidden border border-white border-opacity-25 shadow" role="group">
-
-                            <!-- Start Button -->
                             <button id="startCamBtn"
                                     type="button"
                                     class="btn btn-sm text-white fw-semibold px-3 py-2 d-flex align-items-center gap-2 border-0"
@@ -70,7 +81,6 @@
                                 <span>Enable Scanner</span>
                             </button>
 
-                            <!-- Stop Button -->
                             <button id="stopCamBtn"
                                     type="button"
                                     class="btn btn-sm btn-danger fw-semibold px-3 py-2 d-none d-flex align-items-center gap-2 border-0">
@@ -78,20 +88,15 @@
                                 <span>Stop Feed</span>
                             </button>
 
-                            <!-- Divider & Caret Combobox Trigger -->
                             <div class="position-relative d-flex align-items-center border-start border-white border-opacity-25"
                                  id="cameraDropdownWrapper"
                                  style="background-color: #1162a3; transition: background-color 0.2s ease;">
-
-                                <!-- Visible Down Chevron (v) -->
                                 <button type="button"
                                         tabindex="-1"
                                         class="btn btn-sm text-white px-2 py-2 border-0 h-100 d-flex align-items-center justify-content-center"
                                         style="pointer-events: none; width: 34px;">
                                     <i class="fa-solid fa-chevron-down small"></i>
                                 </button>
-
-                                <!-- Invisible Overlay Select -->
                                 <select id="cameraSelect"
                                         class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
                                         style="cursor: pointer;"
@@ -134,13 +139,13 @@
                             </thead>
                             <tbody id="identifiedItemsList">
                                 <tr>
-                                    <td colspan="5" class="text-muted text-center py-4">Waiting for optical scanner...</td>
+                                    <td colspan="5" class="text-muted text-center py-4">Waiting for item scan or manual entry...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Manual Product Search Input -->
+                    <!-- Manual Product & Barcode Search Input -->
                     <div class="px-2 px-md-3 pt-2 pb-2 border-top bg-light flex-shrink-0 position-relative">
                         <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border bg-white">
                             <span class="input-group-text bg-white border-0 text-muted ps-3 pe-1">
@@ -148,9 +153,20 @@
                             </span>
                             <input type="text"
                                    class="form-control border-0 bg-white shadow-none ps-2 fw-medium"
-                                   placeholder="Manual entry (product name)..."
+                                   placeholder="Scan barcode or enter product name..."
                                    id="manualProductInput"
                                    autocomplete="off" />
+
+                            <!-- Camera Scanner Toggle Button (Similar to Product/Create) -->
+                            <button class="btn btn-outline-secondary border-0 px-3 d-flex align-items-center"
+                                    type="button"
+                                    id="btnToggleScanner"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#barcodeScannerModal"
+                                    title="Scan Barcode via Camera">
+                                <i class="fa-solid fa-camera text-primary"></i>
+                            </button>
+
                             <button class="btn btn-primary fw-semibold px-3"
                                     type="button"
                                     id="btnAddProduct"
@@ -166,30 +182,49 @@
                         </div>
                     </div>
 
+                    <!-- Dedicated Barcode Scanner Modal (Powered by Html5Qrcode like Product/Create) -->
+                    <div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                                <div class="modal-header text-white p-3 border-0" style="background-color: #1162a3;">
+                                    <h6 class="modal-title fw-bold mb-0 fs-5" id="barcodeScannerModalLabel">
+                                        <i class="fa-solid fa-camera me-2"></i>Live Barcode Scanner
+                                    </h6>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-4 text-center bg-light">
+                                    <div id="qrReaderWrapper" class="overflow-hidden rounded-3 border mb-3 bg-white shadow-sm" style="width: 100%; max-width: 380px; margin: auto;">
+                                        <div id="qrReader"></div>
+                                    </div>
+                                    <div class="alert alert-info py-2 small fw-semibold text-center mb-0" id="scannerStatus">
+                                        <i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-white border-top">
+                                    <button type="button" class="btn btn-outline-secondary fw-medium rounded-pill px-4" data-bs-dismiss="modal">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Bottom Settlement Bar -->
                     <div class="p-2 p-md-1 border-0 flex-shrink-0 bg-white rounded-bottom-4">
                         <div class="d-flex justify-content-between align-items-center p-2 px-3 border rounded-4 shadow-sm bg-white">
-
-                            <!-- Total Due -->
                             <div class="text-start">
                                 <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.70rem; letter-spacing: 0.5px;">Total Amount</span>
                                 <span class="fw-bold text-dark lh-1" id="totalDueDisplay" style="font-size: 1.5rem;">₱ 0.00</span>
                             </div>
 
-                            <!-- Action Buttons -->
                             <div class="d-flex gap-2">
-
-                                <!-- Stacked Secondary Buttons -->
                                 <div class="d-flex flex-column gap-2 justify-content-center">
-
-                                    <!-- Receipt History Button -->
                                     <button class="btn btn-warning border-secondary border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm"
                                             style="font-size: 0.85rem; height: 38px;"
                                             onclick="openOldTransactions()">
                                         <i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Transaction
                                     </button>
 
-                                    <!-- Void Cart Button -->
                                     <button class="btn btn-danger border-danger border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm position-relative"
                                             id="btnVoidCart"
                                             style="font-size: 0.85rem; height: 38px;">
@@ -198,7 +233,6 @@
                                     </button>
                                 </div>
 
-                                <!-- Big Primary Button -->
                                 <button class="btn btn-primary d-flex flex-column align-items-center justify-content-center fw-bold px-3 px-sm-4 rounded-3 shadow-sm"
                                         id="btnProceedToPayment"
                                         style="background-color: #1162a3; border-color: #1162a3;">
@@ -208,6 +242,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -215,33 +250,27 @@
 </div>
 
 <!-- Modal: Recent Transactions -->
-<div class="modal fade" id="oldTransactionsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+<div class="modal fade" id="oldTransactionsModal" tabindex="-1" aria-labelledby="oldTransactionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
 
-            <!-- Top Header -->
+            <!-- Modal Header -->
             <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
-                <h6 class="modal-title fw-bold mb-0 fs-5">
+                <h6 class="modal-title fw-bold mb-0 fs-5" id="adjustQuantityModalLabel">
                     <i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Transactions
                 </h6>
                 <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Table -->
-            <div class="modal-body p-2">
-                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
-                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                        <thead class="table-light text-muted sticky-top">
-                            <tr>
-                                <th class="ps-3 py-2">Receipt #</th>
-                                <th class="py-2">Date</th>
-                                <th class="text-end pe-3 py-2">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="oldTransactionsList">
-                            <!-- Injected via JS -->
-                        </tbody>
-                    </table>
+            <!-- Modal Body Container -->
+            <div class="modal-body p-3 bg-light">
+                <div class="overflow-y-auto pe-1" style="max-height: 400px;" id="oldTransactionsContainer">
+                    <div id="oldTransactionsList" class="d-flex flex-column gap-2">
+                        <!-- Dynamic items injected via JS -->
+                        <div class="text-center py-4 text-muted small">
+                            <i class="fa-solid fa-spinner fa-spin me-2"></i>Loading transactions...
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -253,7 +282,7 @@
     <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
         <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
 
-            <!-- Top Header -->
+            <!-- Header -->
             <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
                 <h6 class="modal-title fw-bold mb-0 fs-5" id="adjustQuantityModalLabel">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Adjust Quantity
@@ -264,19 +293,16 @@
             <div class="modal-body p-4">
                 <input type="hidden" id="editItemIndex" />
 
-                <!-- Readonly Product Name -->
                 <div class="text-start mb-3">
                     <label class="custom-input-label text-secondary">Product</label>
                     <input type="text" class="form-control custom-input fw-bold text-primary" id="editProductName" readonly />
                 </div>
 
-                <!-- Readonly Unit Price -->
                 <div class="text-start mb-3">
                     <label class="custom-input-label text-secondary">Unit Price</label>
                     <input type="text" class="form-control custom-input fw-bold text-primary font-monospace" id="editProductPrice" readonly />
                 </div>
 
-                <!-- Editable Quantity with Glow Focus -->
                 <div class="text-start mb-4">
                     <label class="custom-input-label">Quantity</label>
                     <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white cash-focus-group">
@@ -293,7 +319,6 @@
                     <div class="invalid-feedback fw-bold mt-2">Enter a valid quantity (1 or more).</div>
                 </div>
 
-                <!-- Proceed Button -->
                 <button type="button" class="btn w-100 btn-proceed shadow-sm" id="btnConfirmAdjust">
                     Update Quantity
                 </button>
@@ -303,7 +328,9 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script type="text/javascript">
         document.addEventListener("DOMContentLoaded", function () {
@@ -331,10 +358,220 @@
 
             const priceCache = {};
             let manualItems = [];
+            let shouldResumeYoloAfterBarcode = false;
 
-            // SEARCH HISTORY
+            // ============ BARCODE SCANNER LOGIC (Product/Create Pattern) ============
+            let html5QrScanner = null;
+            let isScannerActive = false;
+            let isProcessingScan = false;
+
+            const scannerModalEl = document.getElementById("barcodeScannerModal");
+            const scannerStatus = document.getElementById("scannerStatus");
+
+            // Pause YOLO and release camera hardware
+            function pauseYoloScanner() {
+                isScanningActive = false;
+                isProcessingFrame = false;
+
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+                video.srcObject = null;
+
+                overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+                recentDetections.length = 0;
+            }
+
+            // Resume YOLO scanner automatically
+            async function resumeYoloScanner() {
+                try {
+                    await startSelectedCamera();
+                    isScanningActive = true;
+                    startDetectionLoop();
+                } catch (err) {
+                    console.error("Failed to resume YOLO scanner:", err);
+                }
+            }
+
+            if (scannerModalEl) {
+                scannerModalEl.addEventListener("show.bs.modal", function () {
+                    if (isScanningActive) {
+                        shouldResumeYoloAfterBarcode = true;
+                        pauseYoloScanner();
+                    } else {
+                        shouldResumeYoloAfterBarcode = false;
+                    }
+                });
+
+                scannerModalEl.addEventListener("shown.bs.modal", function () {
+                    // Generous delay to ensure OS releases camera driver
+                    setTimeout(() => {
+                        startBarcodeModalScanner();
+                    }, 300);
+                });
+
+                scannerModalEl.addEventListener("hidden.bs.modal", async function () {
+                    await stopBarcodeModalScanner();
+
+                    if (shouldResumeYoloAfterBarcode) {
+                        shouldResumeYoloAfterBarcode = false;
+                        setTimeout(() => {
+                            resumeYoloScanner();
+                        }, 300);
+                    }
+                });
+            }
+
+            async function startBarcodeModalScanner() {
+                if (isScannerActive) return;
+                isScannerActive = true;
+                isProcessingScan = false;
+
+                scannerStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...';
+                scannerStatus.className = "alert alert-info py-2 small fw-semibold text-center mb-0";
+
+                try {
+                    html5QrScanner = new Html5Qrcode("qrReader");
+                    await html5QrScanner.start(
+                        { facingMode: "environment" },
+                        { fps: 15, qrbox: { width: 280, height: 140 } },
+                        (decodedText) => { processLiveScan(decodedText); },
+                        () => { /* Ignore standard frame read misses */ }
+                    );
+
+                    scannerStatus.innerHTML = '<i class="fa-solid fa-camera me-1"></i>Live scanner active. Hold barcode in view.';
+                    scannerStatus.className = "alert alert-success py-2 small fw-semibold text-center mb-0";
+                } catch (err) {
+                    scannerStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Camera failed to initialize.';
+                    scannerStatus.className = "alert alert-danger py-2 small fw-semibold text-center mb-0";
+                    isScannerActive = false;
+                }
+            }
+
+            async function stopBarcodeModalScanner() {
+                if (html5QrScanner) {
+                    try {
+                        await html5QrScanner.stop();
+                        html5QrScanner.clear();
+                    } catch (e) { }
+                    html5QrScanner = null;
+                }
+                isScannerActive = false;
+                isProcessingScan = false;
+            }
+
+            function playBeepSound() {
+                try {
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.value = 1750;
+                    gain.gain.value = 0.1;
+                    osc.start();
+                    setTimeout(() => osc.stop(), 80);
+                } catch (e) { }
+            }
+
+            async function processLiveScan(decodedText) {
+                if (isProcessingScan) return;
+                isProcessingScan = true;
+
+                let retrievedNumber = decodedText;
+
+                // Handle potential JSON payload directly as in Product/Create
+                try {
+                    const parsedData = JSON.parse(decodedText);
+                    if (parsedData && typeof parsedData === "object") {
+                        retrievedNumber = parsedData.barcode || parsedData.Barcode || parsedData.number || parsedData.id || Object.values(parsedData)[0] || decodedText;
+                    }
+                } catch (error) {
+                    // Raw string fallback
+                }
+
+                if (!retrievedNumber) {
+                    isProcessingScan = false;
+                    return;
+                }
+
+                const normalizedBarcode = retrievedNumber.toString().replace(/\s+/g, '').trim();
+
+                try {
+                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(normalizedBarcode)}`);
+                    if (dbResponse.ok) {
+                        const product = await dbResponse.json();
+
+                        if (product.success && product.price !== undefined) {
+                            // 1. NO-INCREMENT RULE: Verify if already in cart
+                            const alreadyInCart = manualItems.some(i => i.name.toLowerCase() === product.name.toLowerCase());
+                            if (alreadyInCart) {
+                                closeScannerModal();
+                                return;
+                            }
+
+                            // 2. Stock Check
+                            if (product.stock <= 0) {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Out of Stock',
+                                    text: `There are no ${product.name} left in inventory.`,
+                                    confirmButtonColor: '#1162a3'
+                                });
+                                closeScannerModal();
+                                return;
+                            }
+
+                            // 3. Age Restriction Warning
+                            if (product.isAgeRestricted) {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'ID Check Required',
+                                    text: `${product.name} is age-restricted (18+). Verify customer identification.`,
+                                    confirmButtonColor: '#1162a3'
+                                });
+                            }
+
+                            // 4. Add product with Qty = 1
+                            manualItems.push({
+                                name: product.name,
+                                price: product.price,
+                                qty: 1,
+                                stock: product.stock
+                            });
+
+                            playBeepSound();
+                            await buildCartAndRender({}, false);
+                            closeScannerModal();
+                            return;
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Not Found',
+                                text: `No product registered for barcode "${normalizedBarcode}".`,
+                                confirmButtonColor: '#1162a3'
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error("Barcode lookup error:", err);
+                } finally {
+                    isProcessingScan = false;
+                }
+            }
+
+            function closeScannerModal() {
+                const modal = bootstrap.Modal.getInstance(scannerModalEl);
+                if (modal) {
+                    modal.hide();
+                }
+            }
+
+            // ================= SEARCH & MANUAL INPUT =================
             const productSearchInput = document.getElementById("manualProductInput");
             const productSearchResults = document.getElementById("productSearchResults");
+            const btnAddProduct = document.getElementById("btnAddProduct");
             let recentSearches = JSON.parse(localStorage.getItem("smartScanRecentSearches") || "[]");
 
             function showRecentSearches() {
@@ -372,17 +609,19 @@
                 if (productSearchInput.value.trim() === "") showRecentSearches();
             });
 
-            let searchTimeout = null;
+            productSearchInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    btnAddProduct.click();
+                }
+            });
 
-            // UPDATED: Input listener with live search
+            let searchTimeout = null;
             productSearchInput.addEventListener("input", () => {
                 const query = productSearchInput.value.trim();
 
                 if (query !== "") {
-                    // Clear the previous timeout to avoid spamming the server while typing
                     clearTimeout(searchTimeout);
-
-                    // Wait 300ms after the user stops typing before fetching
                     searchTimeout = setTimeout(async () => {
                         try {
                             const response = await fetch(`/Home/SearchProducts?term=${encodeURIComponent(query)}`);
@@ -393,13 +632,12 @@
                         } catch (error) {
                             console.error("Autocomplete search failed:", error);
                         }
-                    }, 300);
+                    }, 250);
                 } else {
                     showRecentSearches();
                 }
             });
 
-            // Function to render the live search matches
             function renderSearchResults(results) {
                 productSearchResults.innerHTML = "";
 
@@ -411,26 +649,24 @@
 
                 productSearchResults.innerHTML = "<div class='px-3 py-1 fw-bold text-muted small border-bottom'>Matching Products</div>";
 
-                results.forEach(productName => {
-                    const item = document.createElement("div");
-                    // Using the same classes as your Recent Searches for visual consistency
-                    item.className = "px-3 py-2 small rounded hover-bg cursor-pointer d-flex align-items-center text-dark";
-                    item.style.cursor = "pointer";
-                    item.innerHTML = `<i class="fa-solid fa-box me-2 text-muted"></i>${productName}`;
+                results.forEach(item => {
+                    const row = document.createElement("div");
+                    row.className = "px-3 py-2 small rounded hover-bg cursor-pointer d-flex justify-content-between align-items-center text-dark";
+                    row.style.cursor = "pointer";
 
-                    // Add mouseover effect for better UX
-                    item.addEventListener("mouseenter", () => item.classList.add("bg-light"));
-                    item.addEventListener("mouseleave", () => item.classList.remove("bg-light"));
+                    const barcodeSnippet = item.barcode ? `<span class="badge bg-light text-secondary border font-monospace ms-2">${item.barcode}</span>` : "";
+                    row.innerHTML = `<span><i class="fa-solid fa-box me-2 text-muted"></i>${item.name}</span>${barcodeSnippet}`;
 
-                    // Auto-fill the input when clicked
-                    item.addEventListener("click", () => {
-                        productSearchInput.value = productName;
+                    row.addEventListener("mouseenter", () => row.classList.add("bg-light"));
+                    row.addEventListener("mouseleave", () => row.classList.remove("bg-light"));
+
+                    row.addEventListener("click", () => {
+                        productSearchInput.value = item.name;
                         productSearchResults.style.display = "none";
-                        // Optional: Automatically trigger the 'Add' button after clicking
-                        // document.getElementById("btnAddProduct").click();
+                        btnAddProduct.click();
                     });
 
-                    productSearchResults.appendChild(item);
+                    productSearchResults.appendChild(row);
                 });
 
                 productSearchResults.style.display = "block";
@@ -442,7 +678,88 @@
                 }
             });
 
-            // POPULATE CONNECTED WEBCAMS
+            // ================= MANUAL ADD BUTTON =================
+            btnAddProduct.addEventListener("click", async () => {
+                const query = productSearchInput.value.trim();
+                if (!query) return;
+
+                try {
+                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(query)}`);
+
+                    if (dbResponse.ok) {
+                        const product = await dbResponse.json();
+
+                        if (product.success === false || product.price === undefined) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Not Found',
+                                text: `No product found matching "${query}".`,
+                                confirmButtonColor: '#1162a3'
+                            });
+                            return;
+                        }
+
+                        if (product.stock <= 0) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Out of Stock',
+                                text: `There are no ${product.name} left in inventory.`,
+                                confirmButtonColor: '#1162a3'
+                            });
+                            return;
+                        }
+
+                        if (product.isAgeRestricted) {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'ID Check Required',
+                                text: `${product.name} is age-restricted (18+). Verify customer identification.`,
+                                confirmButtonColor: '#1162a3'
+                            });
+                        }
+
+                        saveRecentSearch(product.name);
+
+                        const existing = manualItems.find(i => i.name === product.name);
+                        const currentQty = existing ? existing.qty : 0;
+
+                        if (currentQty + 1 > product.stock) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Stock Limit Reached',
+                                text: `Cannot add more ${product.name}. Store inventory limit is ${product.stock}.`,
+                                confirmButtonColor: '#1162a3'
+                            });
+                        } else {
+                            if (existing) {
+                                existing.qty++;
+                            } else {
+                                manualItems.push({
+                                    name: product.name,
+                                    price: product.price,
+                                    qty: 1,
+                                    stock: product.stock
+                                });
+                            }
+                        }
+
+                        productSearchInput.value = "";
+                        productSearchResults.style.display = "none";
+                        await buildCartAndRender({}, false);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to retrieve product details.',
+                            confirmButtonColor: '#1162a3'
+                        });
+                    }
+                } catch (err) {
+                    console.error("Lookup error:", err);
+                }
+            });
+
+            // ================= COUNTER AI SCANNER (YOLO) =================
             async function loadCameras() {
                 try {
                     const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -457,9 +774,7 @@
                         option.value = device.deviceId;
                         option.text = device.label || `Camera ${index + 1}`;
                         const lowerLabel = (device.label || "").toLowerCase();
-                        if (lowerLabel.includes("back") || lowerLabel.includes("rear") || lowerLabel.includes("environment")) {
-                            option.selected = true;
-                        } else if (lowerLabel.includes("usb") || lowerLabel.includes("external") || lowerLabel.includes("webcam")) {
+                        if (lowerLabel.includes("back") || lowerLabel.includes("rear") || lowerLabel.includes("environment") || lowerLabel.includes("usb")) {
                             option.selected = true;
                         }
                         cameraSelect.appendChild(option);
@@ -469,7 +784,6 @@
                         cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
                     }
                 } catch (err) {
-                    console.warn("Could not enumerate camera labels:", err);
                     cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
                 }
             }
@@ -498,29 +812,22 @@
             startBtn.addEventListener("click", async function () {
                 try {
                     await startSelectedCamera();
-
                     placeholder.style.display = "none";
                     videoContainer.style.display = "block";
                     startBtn.classList.add("d-none");
                     stopBtn.classList.remove("d-none");
-
                     document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#dc3545";
 
                     isScanningActive = true;
                     startDetectionLoop();
                 } catch (err) {
-                    console.error("Camera access error:", err);
                     alert("Failed to access camera: " + err.message);
                 }
             });
 
             cameraSelect.addEventListener("change", async function () {
                 if (mediaStream) {
-                    try {
-                        await startSelectedCamera();
-                    } catch (err) {
-                        console.error("Failed to switch camera:", err);
-                    }
+                    try { await startSelectedCamera(); } catch (err) { console.error(err); }
                 }
             });
 
@@ -534,6 +841,11 @@
                 }
                 video.srcObject = null;
 
+                const detectedCountDisplay = document.getElementById("detectedCountDisplay");
+                if (detectedCountDisplay) {
+                    detectedCountDisplay.textContent = "0";
+                }
+
                 overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
                 recentDetections.length = 0;
 
@@ -541,7 +853,6 @@
                 placeholder.style.display = "block";
                 stopBtn.classList.add("d-none");
                 startBtn.classList.remove("d-none");
-
                 document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#1162a3";
 
                 buildCartAndRender({}, false);
@@ -561,8 +872,10 @@
             async function captureAndDetect() {
                 if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
-                captureCanvas.width = video.videoWidth;
-                captureCanvas.height = video.videoHeight;
+                if (captureCanvas.width !== video.videoWidth || captureCanvas.height !== video.videoHeight) {
+                    captureCanvas.width = video.videoWidth;
+                    captureCanvas.height = video.videoHeight;
+                }
 
                 if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
                     overlay.width = video.videoWidth;
@@ -583,6 +896,11 @@
                     const detections = data.detections || [];
                     const now = Date.now();
                     const currentDetections = detections.filter(d => d.box);
+
+                    const detectedCountDisplay = document.getElementById("detectedCountDisplay");
+                    if (detectedCountDisplay) {
+                        detectedCountDisplay.textContent = currentDetections.length;
+                    }
 
                     for (const detected of currentDetections) {
                         const [x1, y1, x2, y2] = detected.box;
@@ -649,9 +967,7 @@
                 }
             }
 
-            // ==========================================
-            // 🔴 UPDATED: INVENTORY STOCK GATEKEEPER
-            // ==========================================
+            // ================= CART RENDERER =================
             window.buildCartAndRender = async function(yoloCounts, hasLowConfidence) {
                 let htmlOutput = "";
                 let currentTotal = 0;
@@ -662,11 +978,9 @@
                             const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(itemName)}`);
                             if (dbResponse.ok) {
                                 const productData = await dbResponse.json();
-                                if (productData.success === false || productData.price === undefined) {
-                                    priceCache[itemName] = { name: itemName, notFound: true };
-                                } else {
-                                    priceCache[itemName] = productData; // Now includes productData.stock!
-                                }
+                                priceCache[itemName] = (productData.success === false || productData.price === undefined)
+                                    ? { name: itemName, notFound: true }
+                                    : productData;
                             } else {
                                 priceCache[itemName] = { name: itemName, notFound: true };
                             }
@@ -677,14 +991,12 @@
 
                     const product = priceCache[itemName];
                     if (!product.notFound) {
-
                         const savedItem = manualItems.find(i => i.name === product.name);
                         const savedQty = savedItem ? savedItem.qty : 0;
                         const availableStock = (product.stock || 0) - savedQty;
                         let newQtyToLock = qty - savedQty;
 
                         if (newQtyToLock > 0) {
-                            // Enforce Stock Limit: Cap the auto-scanner so it can't add more than available
                             if (newQtyToLock > availableStock) {
                                 newQtyToLock = availableStock;
                             }
@@ -714,7 +1026,6 @@
                                         </td>
                                     </tr>`;
                             } else {
-                                // Scanned more items, but stock is completely maxed out!
                                 htmlOutput += `
                                     <tr class="table-danger border-danger">
                                         <td class="fw-medium text-truncate text-danger" style="max-width: 140px;">${product.name} <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">Limit Reached</span></td>
@@ -737,7 +1048,6 @@
                     }
                 }
 
-                // Process Saved Items
                 manualItems.forEach((item, index) => {
                     const subtotal = item.price * item.qty;
                     currentTotal += subtotal;
@@ -775,7 +1085,6 @@
                 list.innerHTML = htmlOutput;
                 totalDueDisplay.innerText = `₱ ${currentTotal.toFixed(2)}`;
 
-                // Broadcast Customer Display
                 const broadcastItems = [];
                 let customerTotal = 0;
                 manualItems.forEach(item => {
@@ -783,102 +1092,83 @@
                     customerTotal += (item.price * item.qty);
                 });
                 localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({ items: broadcastItems, total: customerTotal }));
-            }
+            };
 
-            // MANUAL ADD BUTTON LOGIC
-            document.getElementById("btnAddProduct").addEventListener("click", async () => {
-                const input = document.getElementById("manualProductInput");
-                const name = input.value.trim();
-                if (!name) return;
-
-                try {
-                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(name)}`);
-
-                    if (dbResponse.ok) {
-                        const product = await dbResponse.json();
-
-                        if (product.success === false || product.price === undefined) {
-                            alert("Product not found in database.");
-                            return;
-                        }
-
-                        // Prevent adding if literally out of stock
-                        if (product.stock <= 0) {
-                            alert(`Out of Stock! There are no ${product.name} left in inventory.`);
-                            return;
-                        }
-
-                        saveRecentSearch(product.name);
-
-                        const existing = manualItems.find(i => i.name === product.name);
-                        const currentQty = existing ? existing.qty : 0;
-
-                        // Prevent adding beyond available stock limit
-                        if (currentQty + 1 > product.stock) {
-                            alert(`Inventory Limit: Cannot add more ${product.name}. The store only has ${product.stock} left.`);
-                        } else {
-                            if (existing) {
-                                existing.qty++;
-                            } else {
-                                manualItems.push({
-                                    name: product.name,
-                                    price: product.price,
-                                    qty: 1,
-                                    stock: product.stock // Track max stock inside cart
-                                });
-                            }
-                        }
-
-                        input.value = "";
-                        productSearchResults.style.display = "none";
-                        if (!isScanningActive) buildCartAndRender({}, false);
-                    } else {
-                        alert("Product not found in database.");
-                    }
-                } catch (err) {
-                    alert("Database connection error.");
-                }
-            });
-
+            // ================= CART CONTROLS =================
             document.getElementById("btnVoidCart").addEventListener("click", () => {
                 if (confirm("Are you sure you want to void all saved items?")) {
                     manualItems = [];
-                    if (!isScanningActive) buildCartAndRender({}, false);
+                    buildCartAndRender({}, false);
                 }
             });
 
-            window.openOldTransactions = async function() {
-                const modal = new bootstrap.Modal(document.getElementById('oldTransactionsModal'));
-                modal.show();
+                    window.openOldTransactions = async function() {
+            const modalEl = document.getElementById('oldTransactionsModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
 
-                const tbody = document.getElementById('oldTransactionsList');
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Loading transactions...</td></tr>';
+            const container = document.getElementById('oldTransactionsList');
+            container.innerHTML = `
+                <div class="text-center py-4 text-muted small">
+                    <i class="fa-solid fa-spinner fa-spin text-primary me-2"></i>Loading recent receipts...
+                </div>
+            `;
 
-                try {
-                    const response = await fetch('/Home/GetOldTransactions');
-                    const data = await response.json();
+            try {
+                const response = await fetch('/Home/GetOldTransactions');
+                const data = await response.json();
 
-                    if (data.success && data.transactions.length > 0) {
-                        let html = '';
-                        data.transactions.forEach(tx => {
-                            html += `
-                                <tr>
-                                    <td class="fw-semibold ps-3">${tx.receiptNumber}</td>
-                                    <td><small class="text-muted">${tx.date}</small></td>
-                                    <td class="text-end pe-3 fw-bold text-dark">PHP ${tx.total.toFixed(2)}</td>
-                                </tr>
-                            `;
-                        });
-                        tbody.innerHTML = html;
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">No recent transactions found.</td></tr>';
-                    }
-                } catch (error) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger py-3">Error loading transactions.</td></tr>';
+                if (data.success && data.transactions && data.transactions.length > 0) {
+                    let html = '';
+                    data.transactions.forEach(tx => {
+                        html += `
+                            <div class="card border rounded-3 p-3 bg-white shadow-sm transition-all hover-shadow">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width: 34px; height: 34px;">
+                                            <i class="fa-solid fa-receipt fs-6"></i>
+                                        </div>
+                                        <div class="text-start">
+                                            <span class="fw-bold font-monospace text-dark d-block text-truncate" style="font-size: 0.85rem; max-width: 170px;">
+                                                ${tx.receiptNumber}
+                                            </span>
+                                            <span class="text-muted d-block" style="font-size: 11px;">
+                                                <i class="fa-regular fa-calendar-check me-1"></i>${tx.date}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0 mb-1 fw-bold" style="font-size: 10px;">
+                                            Paid
+                                        </span>
+                                        <div class="fw-bold text-dark font-monospace lh-1" style="font-size: 0.95rem;">
+                                            ₱${parseFloat(tx.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-4 text-muted">
+                            <i class="fa-regular fa-folder-open fa-2x mb-2 opacity-50 d-block"></i>
+                            <span class="small fw-semibold">No recent transactions recorded today.</span>
+                        </div>
+                    `;
                 }
-            };
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-danger small">
+                        <i class="fa-solid fa-triangle-exclamation mb-2 fs-5 d-block"></i>
+                        Failed to load transaction history.
+                    </div>
+                `;
+            }
+        };
 
-            // Locks a scanned Auto item into the permanent Saved cart
             window.lockYoloItem = function (formattedName, displayName, price, qty, maxStock) {
                 const existing = manualItems.find(i => i.name === displayName);
                 const currentQty = existing ? existing.qty : 0;
@@ -897,10 +1187,9 @@
                         manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock });
                     }
                 }
-                if (!isScanningActive) buildCartAndRender({}, false);
+                buildCartAndRender({}, false);
             };
 
-            // EDIT MODAL LOGIC
             window.editManualItem = function (index) {
                 const item = manualItems[index];
                 document.getElementById("editItemIndex").value = index;
@@ -915,7 +1204,6 @@
                 adjustModal.show();
             };
 
-            // CONFIRM ADJUSTMENT BUTTON
             document.getElementById("btnConfirmAdjust").addEventListener("click", function() {
                 const index = document.getElementById("editItemIndex").value;
                 const qtyInput = document.getElementById("editProductQuantity");
@@ -936,16 +1224,15 @@
                 qtyInput.classList.remove("is-invalid");
                 manualItems[index].qty = newQty;
 
-                const adjustModalEl = document.getElementById("adjustQuantityModal");
-                const adjustModal = bootstrap.Modal.getInstance(adjustModalEl);
+                const adjustModal = bootstrap.Modal.getInstance(document.getElementById("adjustQuantityModal"));
                 adjustModal.hide();
 
-                if (!isScanningActive) buildCartAndRender({}, false);
+                buildCartAndRender({}, false);
             });
 
             window.removeManualItem = function (index) {
                 manualItems.splice(index, 1);
-                if (!isScanningActive) buildCartAndRender({}, false);
+                buildCartAndRender({}, false);
             };
 
             document.getElementById("btnProceedToPayment").addEventListener("click", () => {
@@ -961,22 +1248,15 @@
             buildCartAndRender({}, false);
         });
 
-        // BACKGROUND PRE-FETCHER: Download AI models into browser cache while scanning items
         window.addEventListener('load', () => {
-            // Wait 3 seconds after the page loads before tying up the CPU with WebGL compilation
             setTimeout(() => {
                 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
-
-                console.log("Pre-fetching Biometric Models in background...");
                 Promise.all([
                     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]).then(() => {
-                    console.log("Biometric Models cached! Verification page will now load instantly.");
-                }).catch(err => console.warn("Background model fetch delayed.", err));
-
-            }, 3000); // 3000ms delay
+                ]).catch(err => console.warn("Background model fetch delayed.", err));
+            }, 3000);
         });
     </script>
 }

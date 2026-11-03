@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Security Alerts";
-    ViewData["HeaderTitle"] = "System & Audit";
+    ViewData["HeaderTitle"] = "Retail Management";
 
     var readAlertIds = ViewBag.ReadAlertIds as HashSet<int> ?? new HashSet<int>();
 
@@ -29,35 +29,13 @@
     }
 }
 
-<style>
-    /* Custom close button mimicking the image */
-    .custom-close-btn {
-        background-color: #333;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        cursor: pointer;
-        opacity: 0.9;
-    }
-
-        .custom-close-btn:hover {
-            opacity: 1;
-        }
-</style>
-
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
      style="height: calc(100dvh - 130px); min-height: 500px;">
 
     <!-- Top Card Header -->
     <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center" style="background-color: #1162a3;">
         <h5 class="mb-0 fw-bold" style="letter-spacing: 0.5px;">
-            <i class="fa-solid fa-server me-2"></i>System Security Logs
+            <i class="fa-solid fa-clipboard-check me-2"></i>Security Logs
         </h5>
     </div>
 
@@ -89,7 +67,7 @@
                                 </div>
 
                                 <!-- Live Client-Side Search Bar -->
-                                <div class="d-flex gap-2" style="width: 320px;">
+                                <div class="d-flex gap-2" style="max-width: 320px; width: 100%;">
                                     <div class="input-group shadow-sm rounded-3 overflow-hidden border">
                                         <span class="input-group-text bg-white border-0">
                                             <i class="fa-solid fa-magnifying-glass text-muted"></i>
@@ -98,11 +76,17 @@
                                                id="logSearchInput"
                                                onkeyup="filterLogs()"
                                                class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-                                               style="font-size: 13px;"
-                                               placeholder="Search log descriptions..."
+                                               placeholder="Search logs..."
                                                aria-label="Search logs" />
                                     </div>
-                                    <button class="btn btn-outline-secondary rounded-3 px-3 d-flex align-items-center" onclick="clearSearch()" title="Clear Search">
+
+                                    <!-- Clear Search Button -->
+                                    <button type="button"
+                                            id="clearLogSearchBtn"
+                                            class="btn btn-outline-secondary rounded-3"
+                                            onclick="clearSearch()"
+                                            title="Clear Search"
+                                            style="display: none;">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
@@ -113,10 +97,10 @@
                     <!-- Column Headers -->
                     <tr class="table-light border-bottom">
                         <th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 18%;">Timestamp</th>
-                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 22%;">Event Type</th>
                         <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 15%;">Location</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 22%;">Event Type</th>
                         <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 35%;">Log Details</th>
-                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 10%;">Actions</th>
+                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 13px; letter-spacing: 0.5px; width: 10%;"></th>
                     </tr>
                 </thead>
 
@@ -126,7 +110,7 @@
                     {
                         <tr id="emptyUnreadRow">
                             <td colspan="5" class="text-center py-5 bg-white">
-                                <i class="fa-solid fa-check-double fa-3x text-success opacity-50 mb-3"></i>
+                                <i class="fa-solid fa-envelope-circle-check fa-3x text-success opacity-50 mb-3"></i>
                                 <h5 class="fw-bold text-secondary">All Caught Up!</h5>
                                 <p class="text-muted small">You have no unread security logs.</p>
                             </td>
@@ -146,18 +130,18 @@
                                 <td class="ps-4" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
                                     <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
                                 </td>
+								<td class="fw-semibold text-secondary" style="font-size: 14px;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
+									@storeName
+								</td>
                                 <td onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
                                     <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border -subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
                                         <i class="fa-solid fa-circle-exclamation me-1"></i>@typeName
                                     </span>
                                 </td>
-                                <td class="fw-semibold text-secondary" style="font-size: 14px;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
-                                    @storeName
-                                </td>
                                 <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
                                     @alert.Description
                                 </td>
-                                <td class="pe-4 text-end">
+                                <td class="pe-4 text-end text-nowrap">
                                     <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
                                             onclick="markLogAsRead(@alert.AlertId)"
                                             title="Mark as Read">
@@ -194,19 +178,16 @@
                                 <td class="ps-4">
                                     <span class="d-block font-monospace fw-semibold text-secondary" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
                                 </td>
+                                <td class="text-muted" style="font-size: 14px;">
+                                    @storeName
+                                </td>
                                 <td>
                                     <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
                                         @typeName
                                     </span>
                                 </td>
-                                <td class="text-muted" style="font-size: 14px;">
-                                    @storeName
-                                </td>
-                                <td class="text-muted text-truncate" style="max-width: 350px; font-size: 14px;">
+                                <td colspan="2" class="text-muted text-truncate pe-4" style="max-width: 350px; font-size: 14px;">
                                     @alert.Description
-                                </td>
-                                <td class="pe-4 text-end">
-                                    <span class="text-success small fw-bold"><i class="fa-solid fa-check-double me-1"></i>Read</span>
                                 </td>
                             </tr>
                         }
@@ -217,26 +198,26 @@
     </div>
 </div>
 
-<!-- Redesigned Security Log Modal -->
+<!-- Security Log Modal -->
 <div class="modal fade" id="alertLogModal" tabindex="-1" aria-labelledby="alertLogModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
         <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
 
-            <!-- Top Header (Using your Adjust Quantity reference) -->
+            <!-- Top Header -->
             <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
                 <h6 class="modal-title fw-bold mb-0 fs-5" id="alertLogModalLabel">
-                    <i class="fa-solid fa-shield-halved me-2"></i>Security Log
+                    <i class="fa-solid fa-circle-info me-2"></i>Log Details
                 </h6>
-                <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
             <div class="modal-body p-4">
-                <!-- Readonly Log ID -->
+                <!-- Readonly Location -->
                 <div class="text-start mb-3">
-                    <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Log ID</label>
-                    <input type="text" class="form-control custom-input fw-bold text-dark font-monospace bg-light border-0" id="modalLogId" readonly style="border-radius: 10px; padding: 10px 15px;" />
+                    <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Location</label>
+                    <div class="form-control custom-input bg-light border-0 d-flex align-items-center" style="border-radius: 10px; padding: 10px 15px; height: auto;">
+                        <span id="modalLogStore" class="fw-semibold text-dark"></span>
+                    </div>
                 </div>
 
                 <!-- Readonly Alert Type -->
@@ -244,14 +225,6 @@
                     <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Alert Type</label>
                     <div class="form-control custom-input bg-light border-0 d-flex align-items-center" style="border-radius: 10px; padding: 10px 15px; height: auto;">
                         <span id="modalLogType" class="fw-bold text-primary"></span>
-                    </div>
-                </div>
-
-                <!-- Readonly Location -->
-                <div class="text-start mb-3">
-                    <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Location</label>
-                    <div class="form-control custom-input bg-light border-0 d-flex align-items-center" style="border-radius: 10px; padding: 10px 15px; height: auto;">
-                        <span id="modalLogStore" class="fw-semibold text-dark"></span>
                     </div>
                 </div>
 
@@ -263,11 +236,11 @@
 
                 <!-- Action Buttons -->
                 <div class="d-flex gap-3 mt-2">
-                    <button type="button" id="btnReviewed" class="btn fw-bold w-100 shadow-sm" style="background-color: #2b7cd3; color: white; border-radius: 12px; padding: 10px 0;">
-                        Reviewed
+                    <button type="button" id="btnReviewed" class="btn btn-outline-secondary rounded-pill fw-bold w-100 shadow-sm">
+                        Mark as Read
                     </button>
-                    <a href="#" id="modalLogActionBtn" class="btn fw-bold w-100 shadow-sm" style="background-color: #ff0000; color: white; border-radius: 12px; padding: 10px 0;">
-                        Request Action
+                    <a href="#" id="modalLogActionBtn" class="btn btn-outline-primary rounded-pill fw-bold w-100 shadow-sm">
+                        Take Action
                     </a>
                 </div>
             </div>
@@ -298,6 +271,13 @@
         // Live Client-Side Search
         function filterLogs() {
             const input = document.getElementById('logSearchInput').value.toLowerCase();
+            const clearBtn = document.getElementById('clearLogSearchBtn');
+
+            // Show the clear button if there is text, hide it if empty
+            if (clearBtn) {
+                clearBtn.style.display = input.trim().length > 0 ? 'block' : 'none';
+            }
+
             const activeTbody = document.getElementById('tabUnread').checked ? document.getElementById('tbody-unread') : document.getElementById('tbody-read');
             const rows = activeTbody.getElementsByClassName('log-row');
 
@@ -316,12 +296,11 @@
             filterLogs();
         }
 
-                // Open Inspector Modal
+        // Open Inspector Modal
         function openAlertModal(id, type, store, desc, url) {
             currentModalAlertId = id;
 
             // Updated mapping for the new form fields
-            document.getElementById('modalLogId').value = 'LOG-' + id.toString().padStart(5, '0');
             document.getElementById('modalLogType').innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> ' + type;
             document.getElementById('modalLogStore').innerHTML = '<i class="fa-solid fa-shop me-1 text-muted"></i> ' + store;
             document.getElementById('modalLogDesc').value = desc;
@@ -347,14 +326,11 @@
             modal.show();
         }
 
-        // AJAX Mark as Read
+        // AJAX: Mark as Read (From Index Table Button)
         function markLogAsRead(alertId) {
             if (!event) event = window.event;
-            if (event.stopPropagation) {
-                event.stopPropagation();
-            }
+            if (event.stopPropagation) event.stopPropagation();
 
-            // Check if the row even exists in the unread tab (prevents errors if clicking "Reviewed" on an already read log)
             const row = document.getElementById('alert-row-' + alertId);
             if (!row) return;
 
@@ -365,23 +341,138 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update Counters
-                    let unreadCount = parseInt(document.getElementById('unreadCountBtn').innerText);
-                    let readCount = parseInt(document.getElementById('readCountBtn').innerText);
+                    // 1. Update Index Counters
+                    let unreadCountBtn = document.getElementById('unreadCountBtn');
+                    let readCountBtn = document.getElementById('readCountBtn');
+                    if(unreadCountBtn && readCountBtn) {
+                        unreadCountBtn.innerText = Math.max(0, parseInt(unreadCountBtn.innerText) - 1);
+                        readCountBtn.innerText = parseInt(readCountBtn.innerText) + 1;
+                    }
 
-                    document.getElementById('unreadCountBtn').innerText = unreadCount - 1;
-                    document.getElementById('readCountBtn').innerText = readCount + 1;
+                    // 2. Live Sync Navbar Dropdown
+                    const dropdownItem = document.getElementById(`alert-item-${alertId}`);
+                    if (dropdownItem) dropdownItem.remove();
 
-                    // Animate and remove row from Unread table
+                    const remaining = document.querySelectorAll('.alert-dropdown-item').length;
+                    const badge = document.getElementById('alertBadge');
+                    const countSpan = document.getElementById('alertCount');
+                    const readAllBtn = document.getElementById('readAllBtn');
+
+                    if (remaining === 0) {
+                        if (badge) badge.remove();
+                        if (readAllBtn) readAllBtn.style.display = 'none';
+                        const scrollContainer = document.getElementById('alertListContainer');
+                        if (scrollContainer) {
+                            scrollContainer.innerHTML = `
+                                <div class="dropdown-item py-4 text-muted text-center">
+                                    <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i><br />
+                                    No unread alerts.
+                                </div>`;
+                        }
+                    } else if (countSpan) {
+                        countSpan.textContent = remaining > 9 ? "9+" : remaining;
+                    }
+                    // Inform the live poller so it doesn't immediately overwrite us
+                    if (typeof currentAlertCount !== 'undefined') currentAlertCount = remaining;
+
+                    // 3. Animate and MOVE row from Unread to Read table
                     row.style.opacity = '0';
                     row.style.transform = 'translateX(20px)';
 
-                    setTimeout(() => {
-                        row.remove();
-                    }, 300);
+                    setTimeout(() => transitionRowToReadTable(row), 300);
                 }
             })
             .catch(err => console.error("Error updating log status", err));
         }
+
+        // --- LIVE INDEX POLLING SYSTEM ---
+
+        // JS Time formatter helper
+        function getRelativeTimeJS(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+
+            if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours} hrs, ${diffInMinutes % 60} mins ago`;
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 30) return `${diffInDays} days ago`;
+
+            return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        }
+
+        function fetchLiveIndexAlerts() {
+            fetch('/SecurityAlerts/GetLiveAlerts')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.alerts && data.alerts.length > 0) {
+                        const tbodyUnread = document.getElementById('tbody-unread');
+                        const emptyRow = document.getElementById('emptyUnreadRow');
+                        let newAlertsAdded = 0;
+
+                        // Reverse loop so the newest alert gets prepended at the very top
+                        data.alerts.reverse().forEach(alert => {
+                            // Only add if the row doesn't already exist on the page
+                            if (!document.getElementById('alert-row-' + alert.alertId)) {
+                                if (emptyRow) emptyRow.remove();
+
+                                // Escape single quotes to prevent breaking the onclick function
+                                const safeDesc = alert.description.replace(/'/g, "\\'");
+                                const safeStore = alert.storeName.replace(/'/g, "\\'");
+                                const typeName = alert.alertTypeName;
+
+                                const tr = document.createElement('tr');
+                                tr.id = `alert-row-${alert.alertId}`;
+                                tr.className = "bg-white border-start border-4 position-relative log-row";
+                                tr.style.transition = "all 0.3s ease";
+
+                                tr.innerHTML = `
+                                    <td class="ps-4" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                        <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">${getRelativeTimeJS(alert.timeString)}</span>
+                                    </td>
+                                    <td class="fw-semibold text-secondary" style="font-size: 14px;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                        ${alert.storeName}
+                                    </td>
+                                    <td onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                            <i class="fa-solid fa-circle-exclamation me-1"></i>${typeName}
+                                        </span>
+                                    </td>
+                                    <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                        ${alert.description}
+                                    </td>
+                                    <td class="pe-4 text-end text-nowrap">
+                                        <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
+                                                onclick="markLogAsRead(${alert.alertId})"
+                                                title="Mark as Read">
+                                            <i class="fa-solid fa-check me-1"></i>Read
+                                        </button>
+                                    </td>
+                                `;
+
+                                tbodyUnread.prepend(tr);
+                                newAlertsAdded++;
+                            }
+                        });
+
+                        if (newAlertsAdded > 0) {
+                            // Update the Unread Tab Counter
+                            const unreadCountBtn = document.getElementById('unreadCountBtn');
+                            let currentCount = parseInt(unreadCountBtn.innerText) || 0;
+                            unreadCountBtn.innerText = currentCount + newAlertsAdded;
+
+                            // Re-apply live search just in case the user is currently typing
+                            filterLogs();
+                        }
+                    }
+                })
+                .catch(err => console.error("Error fetching live index alerts:", err));
+        }
+
+        // Poll every 15 seconds
+        setInterval(fetchLiveIndexAlerts, 15000);
     </script>
 }

@@ -130,63 +130,77 @@ namespace SmartScan.Controllers
             return View();
         }
 
-        // GetProductDetails | Retrieves product details inside the inventory for the retail
+        // GetProductDetails | Retrieves product details inside the inventory for the current cashier's retail store
         [HttpGet]
         public async Task<IActionResult> GetProductDetails(string productName)
         {
-            if (string.IsNullOrWhiteSpace(productName)) return NotFound();
-
-            string normalizedName = productName.Trim().ToLower().Replace(" ", "_");
-            string rawNameLower = productName.Trim().ToLower();
-
-            var product = await _context.Products
-                .FirstOrDefaultAsync(p => p.ProductName.ToLower() == normalizedName || p.ProductName.ToLower() == rawNameLower);
-
-            if (product == null) return NotFound();
-
-            decimal localizedPrice = product.Price;
-            int currentStock = 0;
-
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!string.IsNullOrEmpty(currentUserId))
+            if (string.IsNullOrWhiteSpace(productName))
             {
-                var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
-                if (retailStaff != null)
-                {
-                    var inventory = await _context.Inventories
-                        .FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == retailStaff.RetailId);
-
-                    if (inventory != null)
-                    {
-                        currentStock = inventory.Stock;
-                        localizedPrice = inventory.LocalPrice;
-                    }
-                }
+                return Json(new { success = false, message = "Product identifier required." });
             }
 
-            return Json(new { name = product.ProductName, price = localizedPrice, stock = currentStock });
+            productName = productName.Trim();
+
+            // 1. Resolve logged-in Cashier's assigned store
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            int currentRetailId = staffAssignment?.RetailId ?? 0;
+
+            // 2. Try finding by exact Barcode first, then fall back to ProductName
+            var product = await _context.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p =>
+                    (!string.IsNullOrEmpty(p.Barcode) && p.Barcode == productName) ||
+                    p.ProductName.ToLower() == productName.ToLower());
+
+            if (product == null)
+            {
+                return Json(new { success = false, message = "Product not found." });
+            }
+
+            // 3. Fetch inventory specifically for this cashier's retail store
+            var inventoryItem = await _context.Inventories
+                .FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
+
+            decimal price = inventoryItem?.LocalPrice ?? product.Price;
+            int stock = inventoryItem?.Stock ?? 0;
+
+            return Json(new
+            {
+                success = true,
+                productId = product.ProductId,
+                name = product.ProductName,
+                barcode = product.Barcode,
+                price = price,
+                stock = stock,
+                isAgeRestricted = product.IsAgeRestricted,
+                imageUrl = product.ProductImage ?? "/images/default-product.png"
+            });
         }
 
-        // SearchProducts | Retrieve searched product
+        // SearchProducts | Filters products matching either name or barcode
         [HttpGet]
         public async Task<IActionResult> SearchProducts(string term)
         {
-            if (string.IsNullOrWhiteSpace(term)) return Json(new List<string>());
+            if (string.IsNullOrWhiteSpace(term))
+            {
+                return Json(new List<object>());
+            }
 
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            term = term.Trim().ToLower();
 
-            if (retailStaff == null) return Json(new List<string>());
-
-            // Fetch up to 8 products matching the term in this specific store's inventory
-            var matchedProducts = await _context.Inventories
-                .Include(i => i.Product)
-                .Where(i => i.RetailId == retailStaff.RetailId && i.Product.ProductName.Contains(term))
-                .Select(i => i.Product.ProductName)
-                .Take(8)
+            var suggestions = await _context.Products
+                .Where(p => p.ProductName.ToLower().Contains(term) ||
+                           (!string.IsNullOrEmpty(p.Barcode) && p.Barcode.Contains(term)))
+                .Select(p => new
+                {
+                    name = p.ProductName,
+                    barcode = p.Barcode ?? ""
+                })
+                .Take(5)
                 .ToListAsync();
 
-            return Json(matchedProducts);
+            return Json(suggestions);
         }
 
         [AllowAnonymous]
@@ -196,6 +210,7 @@ namespace SmartScan.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
+        // GET: CustomerVerification
         [HttpGet]
         public async Task<IActionResult> CustomerVerification()
         {

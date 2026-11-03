@@ -49,23 +49,21 @@ public class ProductsController : Controller
         ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryName");
         ViewData["StatusId"] = new SelectList(_context.Statuses, "StatusId", "StatusName");
         return View();
-
     }
 
     // POST: PRODUCTS/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("ProductName,CategoryId,Price,ProductImage,ImageUpload")] Product product)
+    public async Task<IActionResult> Create([Bind("ProductName,CategoryId,Price,ProductImage,ImageUpload,Barcode")] Product product)
     {
         // Ignore relational navigation properties during model validation
         ModelState.Remove("Category");
         ModelState.Remove("Status");
 
-        // Checks in the database for similar prodduct name before adding
+        // Checks in the database for similar product name before adding
         if (!string.IsNullOrWhiteSpace(product.ProductName))
         {
             string exactName = product.ProductName.Trim().ToLower();
-
             string variation1 = exactName.EndsWith("s") ? exactName.Substring(0, exactName.Length - 1) : exactName + "s";
             string variation2 = exactName.EndsWith("es") ? exactName.Substring(0, exactName.Length - 2) : exactName + "es";
 
@@ -81,16 +79,25 @@ public class ProductsController : Controller
             }
         }
 
+        // Optional: Check if barcode already exists
+        if (!string.IsNullOrWhiteSpace(product.Barcode))
+        {
+            product.Barcode = product.Barcode.Trim();
+            bool barcodeExists = await _context.Products.AnyAsync(p => p.Barcode == product.Barcode);
+            if (barcodeExists)
+            {
+                ModelState.AddModelError("Barcode", $"The barcode '{product.Barcode}' is already assigned to another product.");
+            }
+        }
+
         if (ModelState.IsValid)
         {
             // Checks if an image was uploaded via file tab
             if (product.ImageUpload != null && product.ImageUpload.Length > 0)
             {
-                // Note: Updated to match your physical folder path "images/products"
                 string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
                 Directory.CreateDirectory(uploadsFolder);
 
-                // Sanitize file name
                 string cleanFileName = Path.GetFileName(product.ImageUpload.FileName);
                 string uniqueFileName = Guid.NewGuid().ToString() + "_" + cleanFileName;
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
@@ -100,19 +107,17 @@ public class ProductsController : Controller
                     await product.ImageUpload.CopyToAsync(fileStream);
                 }
 
-                // Assign the saved file path to the non-nullable string
                 product.ProductImage = "/images/products/" + uniqueFileName;
             }
 
-            // Strip the model validation error that was generated on initial binding if a file was uploaded
             if (product.ImageUpload != null)
             {
                 ModelState.Remove("ProductImage");
             }
 
-            // Set default status to Active (Assuming StatusId 1 is Active)
             product.StatusId = 1;
             product.CanScan = false;
+            product.IsAgeRestricted = false;
 
             _context.Add(product);
             await _context.SaveChangesAsync();
@@ -147,11 +152,9 @@ public class ProductsController : Controller
     }
 
     // POST: PRODUCTS/Edit/5
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? productid, [Bind("ProductId,ProductName,CategoryId,Price,ProductImage,StatusId,ImageUpload")] Product product)
+    public async Task<IActionResult> Edit(int? productid, [Bind("ProductId,ProductName,CategoryId,Price,ProductImage,StatusId,ImageUpload,IsAgeRestricted,Barcode")] Product product)
     {
         if (productid != product.ProductId)
         {
@@ -165,6 +168,19 @@ public class ProductsController : Controller
         if (existProduct == null)
         {
             return NotFound();
+        }
+
+        // Optional: Check if barcode already exists on a DIFFERENT product
+        if (!string.IsNullOrWhiteSpace(product.Barcode))
+        {
+            product.Barcode = product.Barcode.Trim();
+            bool barcodeExists = await _context.Products
+                .AnyAsync(p => p.Barcode == product.Barcode && p.ProductId != productid);
+
+            if (barcodeExists)
+            {
+                ModelState.AddModelError("Barcode", $"The barcode '{product.Barcode}' is already assigned to another product.");
+            }
         }
 
         // Process new file upload if supplied
@@ -182,18 +198,15 @@ public class ProductsController : Controller
                 await product.ImageUpload.CopyToAsync(fileStream);
             }
 
-            // Assign newly generated local file path
-            product.ProductImage = "/uploads/products/" + uniqueFileName;
+            product.ProductImage = "/images/products/" + uniqueFileName;
             ModelState.Remove("ProductImage");
         }
         else if (string.IsNullOrWhiteSpace(product.ProductImage))
         {
-            // Retain the existing image if the user didn't enter a new URL or upload a file
             product.ProductImage = existProduct.ProductImage;
             ModelState.Remove("ProductImage");
         }
 
-        // Verify that an image path exists
         if (string.IsNullOrWhiteSpace(product.ProductImage))
         {
             ModelState.AddModelError("ProductImage", "Please provide a valid image URL or upload an image file.");
@@ -207,6 +220,10 @@ public class ProductsController : Controller
             existProduct.Price = product.Price;
             existProduct.ProductImage = product.ProductImage;
             existProduct.StatusId = product.StatusId;
+            existProduct.IsAgeRestricted = product.IsAgeRestricted;
+
+            // --- NEW: Map the Barcode Update ---
+            existProduct.Barcode = product.Barcode;
 
             try
             {
@@ -224,7 +241,6 @@ public class ProductsController : Controller
             }
         }
 
-        // Reload dropdown options if validation fails
         ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryName", product.CategoryId);
         ViewData["StatusId"] = new SelectList(_context.Statuses, "StatusId", "StatusName", product.StatusId);
         return View(product);

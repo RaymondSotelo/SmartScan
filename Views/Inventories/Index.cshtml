@@ -6,217 +6,329 @@
     Layout = "_RetailLayout";
 }
 
-<!-- Content fills the parent layout container -->
-<div class="d-flex flex-column h-100">
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+     style="height: calc(100dvh - 130px); min-height: 500px;">
 
-    <!-- Header Info -->
-    <div class="pt-2 pb-2 flex-shrink-0">
-        <h4 class="mb-0 fw-bold" style="color: #1162a3;">Store Inventory</h4>
-        <p class="fw-medium pt-1 text-secondary mb-0">Manage stock quantities, localized store pricing, and item availability.</p>
-    </div>
+    <div class="flex-grow-1 overflow-auto no-scrollbar position-relative d-flex flex-column rounded-4">
 
-    <!-- Overhead TempData Alert -->
-    @if (TempData["InventoryMessage"] != null)
-    {
-        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center my-2 flex-shrink-0 rounded-3" role="alert">
-            <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
-            <div>@TempData["InventoryMessage"]</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <!-- Header Info -->
+        <div class="px-4 pt-4 pb-2 flex-shrink-0">
+            <h4 class="mb-0 fw-bold" style="color: #1162a3;">Store Inventory</h4>
+            <p class="fw-medium pt-1 text-secondary mb-0">Manage stock quantities, localized store pricing, and item availability.</p>
         </div>
 
-        <script>
-            setTimeout(function () {
-                var alertNode = document.getElementById('autoCloseAlert');
-                if (alertNode) {
-                    var bsAlert = new bootstrap.Alert(alertNode);
-                    bsAlert.close();
-                }
-            }, 2000);
-        </script>
-    }
+        <!-- Overhead TempData Alert -->
+        @if (TempData["InventoryMessage"] != null)
+        {
+            <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 my-2 flex-shrink-0 rounded-3" role="alert">
+                <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
+                <div>@TempData["InventoryMessage"]</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
 
-    <!-- Unified Table with Sticky Action Bar AND Headers -->
-    <div class="flex-grow-1 overflow-auto position-relative mt-2">
+            <script>
+                setTimeout(function () {
+                    var alertNode = document.getElementById('autoCloseAlert');
+                    if (alertNode) {
+                        var bsAlert = new bootstrap.Alert(alertNode);
+                        bsAlert.close();
+                    }
+                }, 2000);
+            </script>
+        }
 
-        <table class="table table-hover align-middle mb-0 w-100"
-               style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
+        <!-- Unified Table with Sticky Action Bar AND Headers -->
+        <div class="flex-grow-1 pb-3">
 
-            <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+            <table class="table table-hover align-middle mb-0 w-100"
+                   style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
 
-                <!-- Sticky Action Bar Row -->
-                <tr class="bg-white">
-                    <th colspan="5" class="p-0 border-0 border-bottom">
-                        <div class="py-3 px-2 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
 
-                            <!-- Add Button -->
-                            <a asp-action="Create"
-                               asp-route-retailId="@ViewBag.RetailId"
-                               class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
-                               style="background-color: #1162a3; border-color: #1162a3;">
-                                <i class="fa-solid fa-plus"></i>
-                                <span>Add Stock Item</span>
-                            </a>
+                    <!-- Sticky Action Bar Row -->
+                    <tr class="bg-white">
+                        <th colspan="5" class="p-0 border-0 border-bottom">
+                            <div class="px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
 
-                            <div class="d-flex align-items-center gap-2">
-                                <!-- Search Bar -->
-                                <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
-                                    <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
+                                <!-- Add Button -->
+                                <a asp-action="Create"
+                                   asp-route-retailId="@ViewBag.RetailId"
+                                   class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                                   style="background-color: #1162a3; border-color: #1162a3;">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>Add Stock Item</span>
+                                </a>
 
-                                    <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-                                        <span class="input-group-text bg-white border-0">
-                                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
-                                        </span>
-                                        <input type="text"
-                                               name="search"
-                                               value="@ViewData["CurrentFilter"]"
-                                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-                                               placeholder="Search product..."
-                                               aria-label="Search" />
-                                    </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <!-- Search Bar -->
+                                    <form asp-action="Index" method="get" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+                                        <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
 
-                                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-                                    {
-                                        <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary rounded-3" title="Clear Search">
-                                            <i class="fa-solid fa-xmark"></i>
-                                        </a>
-                                    }
-                                </form>
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                                            <span class="input-group-text bg-white border-0">
+                                                <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                            </span>
+                                            <input type="text"
+                                                   name="search"
+                                                   value="@ViewData["CurrentFilter"]"
+                                                   class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                                   placeholder="Search product..."
+                                                   aria-label="Search" />
+                                        </div>
 
-                                <!-- Total Items Badge -->
-                                <span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
-                                      style="background-color: #1162a3; height: 38px; font-size: 13px;">
-                                    <i class="fa-solid fa-boxes-stacked me-1"></i>Total Items: @(ViewBag.TotalProducts ?? Model?.Count() ?? 0)
-                                </span>
+                                        @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                                        {
+                                            <a asp-action="Index" asp-route-retailId="@ViewBag.RetailId" class="btn btn-outline-secondary rounded-3" title="Clear Search">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </a>
+                                        }
+                                    </form>
+
+                                    <!-- Total Items Badge -->
+                                    <span class="badge rounded-pill fw-semibold px-3 shadow-sm text-white flex-shrink-0 d-flex align-items-center"
+                                          style="background-color: #1162a3; height: 38px; font-size: 13px;">
+                                        <i class="fa-solid fa-boxes-stacked me-1"></i>Total Items: @(ViewBag.TotalProducts ?? Model?.Count() ?? 0)
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    </th>
-                </tr>
-
-                <!-- Sticky Column Headers Row -->
-                <tr class="table-light">
-                    <th class="ps-3 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Product</th>
-                    <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Category</th>
-                    <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Local Price</th>
-                    <th class="py-3 text-center text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Stock Level</th>
-                    <th class="pe-3 py-3 text-end text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;"></th>
-                </tr>
-            </thead>
-
-            <tbody>
-                @if (Model == null || !Model.Any())
-                {
-                    <tr>
-                        <td colspan="5" class="p-0 border-0 bg-white">
-                            @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-                            {
-                                <div class="alert alert-warning text-center mx-2 my-4 fw-semibold shadow-sm rounded-4" role="alert">
-                                    <i class="fa-solid fa-circle-exclamation me-2"></i>No inventory items matching "<strong>@ViewData["CurrentFilter"]</strong>".
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="text-center py-5 my-4">
-                                    <div class="text-muted mb-3">
-                                        <i class="fa-solid fa-warehouse fa-3x text-secondary opacity-50"></i>
-                                    </div>
-                                    <h5 class="fw-semibold text-secondary">No Stock Registered</h5>
-                                    <p class="text-muted small">Click "Add Stock Item" above to allocate catalog products to this store.</p>
-                                </div>
-                            }
-                        </td>
+                        </th>
                     </tr>
-                }
-                else
-                {
-                    @foreach (var item in Model)
+            
+                    <!-- Sticky Column Headers Row -->
+                    <tr class="table-light">
+                        <th class="ps-4 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Product</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Category</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Local Price</th>
+                        <th class="py-3 text-center text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Stock Level</th>
+                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model == null || !Model.Any())
                     {
-                        var imgUrl = string.IsNullOrWhiteSpace(item.Product?.ProductImage) ? "/images/default-product.png" : item.Product.ProductImage;
-
                         <tr>
-                            <!-- Product Image + Name -->
-                            <td class="ps-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    <img src="@imgUrl"
-                                         onerror="this.onerror=null; this.src='/images/default-product.png';"
-                                         alt="@item.Product?.ProductName"
-                                         class="rounded-3 border object-fit-cover shadow-sm bg-white flex-shrink-0"
-                                         style="width: 48px; height: 48px;" />
-                                    <span class="fw-semibold text-truncate" style="max-width: 200px; color: #1162a3;" title="@item.Product?.ProductName">
-                                        @(item.Product?.ProductName ?? "Unknown Product")
-                                    </span>
-                                </div>
-                            </td>
-
-                            <!-- Category Badge -->
-                            <td>
-                                <span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-1">
-                                    <i class="fa-solid fa-tag me-1"></i>@(item.Product?.Category?.CategoryName ?? "Unassigned")
-                                </span>
-                            </td>
-
-                            <!-- Local Price -->
-                            <td>
-                                <span class="fw-bold text-dark">₱@item.LocalPrice.ToString("N2")</span>
-                            </td>
-
-                            <!-- Stock Status Pill -->
-                            <td class="text-center">
-                                @if (item.Stock <= 0)
+                            <td colspan="5" class="p-0 border-0 bg-white">
+                                @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
                                 {
-                                    <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
-                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Out of Stock (@item.Stock)
-                                    </span>
-                                }
-                                else if (item.Stock <= 5)
-                                {
-                                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba; border-color:#856404;">
-                                        <i class="fa-solid fa-clock me-1"></i>Low (@item.Stock)
-                                    </span>
+                                    <div class="alert alert-warning text-center mx-4 my-4 fw-semibold shadow-sm rounded-4" role="alert">
+                                        <i class="fa-solid fa-circle-exclamation me-2"></i>No inventory items matching "<strong>@ViewData["CurrentFilter"]</strong>".
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
-                                        <i class="fa-solid fa-check me-1"></i>@item.Stock units
-                                    </span>
+                                    <div class="text-center py-5 my-4">
+                                        <div class="text-muted mb-3">
+                                            <i class="fa-solid fa-warehouse fa-3x text-secondary opacity-50"></i>
+                                        </div>
+                                        <h5 class="fw-semibold text-secondary">No Stock Registered</h5>
+                                        <p class="text-muted small">Click "Add Stock Item" above to allocate catalog products to this store.</p>
+                                    </div>
                                 }
-                            </td>
-
-                            <!-- Actions -->
-                            <td class="pe-3 text-end" style="white-space: nowrap;">
-                                <div class="d-inline-flex align-items-center gap-1">
-                                    <!-- Edit Button -->
-                                    <a class="btn btn-sm btn-outline-primary fw-medium rounded-pill px-3 shadow-sm"
-                                       asp-action="Edit"
-                                       asp-route-inventoryId="@item.InventoryId"
-                                       asp-route-retailId="@item.RetailId"
-                                       style="font-size: 14px;"
-                                       title="Edit Item">
-                                        <i class="fa-solid fa-pen-to-square me-1"></i>Edit
-                                    </a>
-
-                                    <!-- Remove Form & Button -->
-                                    <form asp-action="Delete"
-                                          asp-route-inventoryId="@item.InventoryId"
-                                          asp-route-retailId="@item.RetailId"
-                                          method="post"
-                                          id="removeInventoryForm-@item.InventoryId"
-                                          class="d-inline m-0 p-0">
-                                        @Html.AntiForgeryToken()
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger fw-medium rounded-pill px-3 shadow-sm"
-                                                style="font-size: 14px;"
-                                                title="Remove Item"
-                                                onclick="confirmInventoryRemoval('@item.InventoryId', '@Html.Raw(item.Product?.ProductName?.Replace("'", "\\'") ?? "this item")')">
-                                            <i class="fa-solid fa-trash me-1"></i>Remove
-                                        </button>
-                                    </form>
-                                </div>
                             </td>
                         </tr>
                     }
-                }
-            </tbody>
-        </table>
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            var imgUrl = string.IsNullOrWhiteSpace(item.Product?.ProductImage) ? "/images/default-product.png" : item.Product.ProductImage;
+
+                            <tr id="inventory-@item.InventoryId" class="inventory-row transition-all">
+                                
+                                <!-- Product Image + Name -->
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="@imgUrl"
+                                             onerror="this.onerror=null; this.src='/images/default-product.png';"
+                                             alt="@item.Product?.ProductName"
+                                             class="rounded-3 border object-fit-cover shadow-sm bg-white flex-shrink-0"
+                                             style="width: 48px; height: 48px;" />
+                                        <span class="fw-semibold text-truncate" style="max-width: 200px; color: #1162a3;" title="@item.Product?.ProductName">
+                                            @(item.Product?.ProductName ?? "Unknown Product")
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- Category Badge -->
+                                <td>
+                                    <span class="badge rounded-pill bg-light text-secondary border fw-medium px-2 py-1">
+                                        <i class="fa-solid fa-tag me-1"></i>@(item.Product?.Category?.CategoryName ?? "Unassigned")
+                                    </span>
+                                </td>
+
+                                <!-- Local Price -->
+                                <td>
+                                    <span class="fw-bold text-dark">₱@item.LocalPrice.ToString("N2")</span>
+                                </td>
+
+                                <!-- Stock Status Pill -->
+                                <td class="text-center">
+                                    @if (item.Stock <= 0)
+                                    {
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i>Out of Stock (@item.Stock)
+                                        </span>
+                                    }
+                                    else if (item.Stock <= 5)
+                                    {
+                                        <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba; border-color:#856404;">
+                                            <i class="fa-solid fa-clock me-1"></i>Low (@item.Stock)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                            <i class="fa-solid fa-check me-1"></i>@item.Stock units
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="pe-4 text-end" style="white-space: nowrap;">
+                                    <div class="d-inline-flex align-items-center gap-1">
+
+                                        <!-- Edit Button (Opens Modal) -->
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary fw-medium rounded-pill px-3 shadow-sm"
+                                                style="font-size: 14px;"
+                                                title="Edit Item"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editInventoryModal"
+                                                data-inventoryid="@item.InventoryId"
+                                                data-productid="@item.ProductId"
+                                                data-productname="@item.Product?.ProductName"
+                                                data-categoryname="@(item.Product?.Category?.CategoryName ?? "General")"
+                                                data-baseprice="@(item.Product?.Price.ToString("N2") ?? "0.00")"
+                                                data-image="@imgUrl"
+                                                data-localprice="@item.LocalPrice"
+                                                data-stock="@item.Stock"
+                                                data-agerestricted="@(item.Product?.IsAgeRestricted == true ? "true" : "false")">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                                        </button>
+
+                                        <!-- Remove Form & Button -->
+                                        <form asp-action="Delete"
+                                              asp-route-inventoryId="@item.InventoryId"
+                                              asp-route-retailId="@item.RetailId"
+                                              method="post"
+                                              id="removeInventoryForm-@item.InventoryId"
+                                              class="d-inline m-0 p-0">
+                                            @Html.AntiForgeryToken()
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger fw-medium rounded-pill px-3 shadow-sm"
+                                                    style="font-size: 14px;"
+                                                    title="Remove Item"
+                                                    onclick="confirmInventoryRemoval('@item.InventoryId', '@Html.Raw(item.Product?.ProductName?.Replace("'", "\\'") ?? "this item")')">
+                                                <i class="fa-solid fa-trash me-1"></i>Remove
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Inventory Modal -->
+<div class="modal fade" id="editInventoryModal" tabindex="-1" aria-labelledby="editInventoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+
+            <!-- Modal Header -->
+            <div class="modal-header rounded-top-4 text-white p-3" style="background-color: #1162a3;">
+                <h5 class="modal-title mb-0" id="editInventoryModalLabel">
+                    <i class="fa-solid fa-boxes-stacked me-2"></i>Update Inventory Item
+                </h5>
+            </div>
+
+            <!-- Form -->
+            <form asp-action="Edit" asp-controller="Inventories" method="post" id="editInventoryModalForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4 bg-white">
+                    <input type="hidden" name="InventoryId" id="modalInventoryId" />
+                    <input type="hidden" name="ProductId" id="modalProductId" />
+                    <input type="hidden" name="RetailId" value="@ViewBag.RetailId" />
+
+                    <!-- Associated Product Summary Card -->
+                    <div class="card border rounded-3 p-3 bg-light shadow-sm mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-3 border shadow-sm bg-white flex-shrink-0 d-flex align-items-center justify-content-center overflow-hidden"
+                                 style="width: 58px; height: 58px;">
+                                <img id="modalProductImg"
+                                     src="/images/default-product.png"
+                                     alt="Product Image"
+                                     class="w-100 h-100 object-fit-cover"
+                                     onerror="this.src='/images/default-product.png';" />
+                            </div>
+                            <div class="overflow-hidden flex-grow-1">
+                                <!-- Badge Row: Category on left, Age-Restriction on far right -->
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge rounded-pill bg-white text-secondary border fw-medium px-2 py-1" style="font-size: 11px;">
+                                        <i class="fa-solid fa-tag me-1"></i><span id="modalProductCategory">General</span>
+                                    </span>
+
+                                    <!-- Age-Restricted Awareness Badge -->
+                                    <span id="modalAgeBadge" class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px; display: none;">
+                                        <!-- Content dynamically populated via JS -->
+                                    </span>
+                                </div>
+
+                                <h6 class="mb-0 fw-bold text-truncate" style="color: #1162a3;" id="modalProductName">
+                                    Inventory Item
+                                </h6>
+                                <small class="text-muted d-block">
+                                    Base Market Price: ₱<span id="modalBasePrice">0.00</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Store Local Price -->
+                    <div class="form-group mb-3">
+                        <label for="modalLocalPrice" class="control-label fw-semibold mb-1" style="color: #1162a3;">Store Local Price (PHP)</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                            <span class="input-group-text bg-light border-0 fw-bold text-secondary">₱</span>
+                            <input type="number"
+                                   step="0.01"
+                                   min="0.01"
+                                   name="LocalPrice"
+                                   id="modalLocalPrice"
+                                   class="form-control border-0 shadow-none fw-semibold no-spin"
+                                   placeholder="0.00"
+                                   onwheel="this.blur()"
+                                   required />
+                        </div>
+                    </div>
+
+                    <!-- Current Stock Count -->
+                    <div class="form-group mb-2">
+                        <label for="modalStock" class="control-label fw-semibold mb-1" style="color: #1162a3;">Current Stock Count</label>
+                        <input type="number"
+                               step="1"
+                               min="0"
+                               name="Stock"
+                               id="modalStock"
+                               class="form-control rounded-3 no-spin shadow-sm"
+                               placeholder="e.g. 25"
+                               onwheel="this.blur()"
+                               required />
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="modal-footer bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-outline-secondary fw-medium rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-medium rounded-pill px-4 shadow-sm" style="background-color: #1162a3; border-color: #1162a3;">
+                        <i class="fa-solid fa-check me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -242,14 +354,132 @@
 
         @if (TempData["NoEntryMessage"] != null)
         {
-                    <text>
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Access Denied',
-                        text: @Html.Raw(Json.Serialize(TempData["NoEntryMessage"])),
-                        confirmButtonColor: '#1162a3'
-                    });
-                    </text>
+                <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Access Denied',
+                    text: @Html.Raw(Json.Serialize(TempData["NoEntryMessage"])),
+                    confirmButtonColor: '#1162a3'
+                });
+                </text>
         }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const editModal = document.getElementById("editInventoryModal");
+            if (editModal) {
+                editModal.addEventListener("show.bs.modal", function (event) {
+                    const button = event.relatedTarget;
+                    if (!button) return;
+
+                    // Extract data attributes from button
+                    const inventoryId = button.getAttribute("data-inventoryid");
+                    const productId = button.getAttribute("data-productid");
+                    const productName = button.getAttribute("data-productname") || "Inventory Item";
+                    const categoryName = button.getAttribute("data-categoryname") || "General";
+                    const basePrice = button.getAttribute("data-baseprice") || "0.00";
+                    const image = button.getAttribute("data-image") || "/images/default-product.png";
+                    const localPrice = button.getAttribute("data-localprice") || "0.00";
+                    const stock = button.getAttribute("data-stock") || "0";
+
+                    // Populate form inputs
+                    document.getElementById("modalInventoryId").value = inventoryId;
+                    document.getElementById("modalProductId").value = productId;
+                    document.getElementById("modalLocalPrice").value = localPrice;
+                    document.getElementById("modalStock").value = stock;
+
+                    // Populate preview card
+                    document.getElementById("modalProductName").textContent = productName;
+                    document.getElementById("modalProductCategory").textContent = categoryName;
+                    document.getElementById("modalBasePrice").textContent = basePrice;
+                    document.getElementById("modalProductImg").src = image;
+
+                    // Set form submission route parameter
+                    document.getElementById("editInventoryModalForm").action = `/Inventories/Edit/${inventoryId}`;
+                });
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Check for hash or TempData
+            let targetId = window.location.hash;
+            @if (TempData["UpdatedInventoryId"] != null)
+            {
+                    <text>
+                    if (!targetId) {
+                        targetId = "#inventory-@TempData["UpdatedInventoryId"]";
+                    }
+                    </text>
+            }
+
+            if (targetId) {
+                const targetRow = document.querySelector(targetId);
+                if (targetRow) {
+                    // Small delay to ensure table rendering and layout dimensions are set
+                    setTimeout(function () {
+                        targetRow.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center"
+                        });
+
+                        // Visual highlight pulse
+                        targetRow.style.transition = "background-color 0.4s ease";
+                        targetRow.classList.add("table-primary");
+
+                        setTimeout(function () {
+                            targetRow.classList.remove("table-primary");
+                        }, 2500);
+                    }, 150);
+                }
+            }
+        });
+
+                document.addEventListener("DOMContentLoaded", function () {
+            const editModal = document.getElementById("editInventoryModal");
+            if (editModal) {
+                editModal.addEventListener("show.bs.modal", function (event) {
+                    const button = event.relatedTarget;
+                    if (!button) return;
+
+                    // Extract data attributes
+                    const inventoryId = button.getAttribute("data-inventoryid");
+                    const productId = button.getAttribute("data-productid");
+                    const productName = button.getAttribute("data-productname") || "Inventory Item";
+                    const categoryName = button.getAttribute("data-categoryname") || "General";
+                    const basePrice = button.getAttribute("data-baseprice") || "0.00";
+                    const image = button.getAttribute("data-image") || "/images/default-product.png";
+                    const localPrice = button.getAttribute("data-localprice") || "0.00";
+                    const stock = button.getAttribute("data-stock") || "0";
+                    const isAgeRestricted = button.getAttribute("data-agerestricted") === "true";
+
+                    // Populate form inputs
+                    document.getElementById("modalInventoryId").value = inventoryId;
+                    document.getElementById("modalProductId").value = productId;
+                    document.getElementById("modalLocalPrice").value = localPrice;
+                    document.getElementById("modalStock").value = stock;
+
+                    // Populate preview details
+                    document.getElementById("modalProductName").textContent = productName;
+                    document.getElementById("modalProductCategory").textContent = categoryName;
+                    document.getElementById("modalBasePrice").textContent = basePrice;
+                    document.getElementById("modalProductImg").src = image;
+
+                    // Configure Age Restriction Badge
+                    const ageBadge = document.getElementById("modalAgeBadge");
+                    if (ageBadge) {
+                        ageBadge.style.display = "inline-flex";
+                        if (isAgeRestricted) {
+                            ageBadge.className = "badge rounded-pill bg-danger text-white border border-danger-subtle fw-bold px-2 py-1 shadow-sm";
+                            ageBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>18+ Restricted';
+                        } else {
+                            ageBadge.className = "badge rounded-pill bg-white text-success border border-success-subtle fw-medium px-2 py-1 shadow-sm";
+                            ageBadge.innerHTML = '<i class="fa-solid fa-check me-1"></i>All Ages';
+                        }
+                    }
+
+                    // Set form submission route
+                    document.getElementById("editInventoryModalForm").action = `/Inventories/Edit/${inventoryId}`;
+                });
+            }
+        });
     </script>
 }

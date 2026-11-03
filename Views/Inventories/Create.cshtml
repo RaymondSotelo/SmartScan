@@ -10,7 +10,7 @@
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
      style="height: calc(100dvh - 130px); min-height: 520px;">
 
-    <!-- Top Card Header (Fixed) -->
+    <!-- Top Card Header -->
     <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
          style="background-color: #1162a3;">
         <h5 class="mb-0">
@@ -44,7 +44,7 @@
                     <!-- Selected Product Input / Search Indicator -->
                     <div class="form-group mb-3 position-relative">
                         <label class="control-label fw-semibold mb-1" style="color: #1162a3;">Selected Product</label>
-                        <div class="input-group search-input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                        <div class="input-group search-input-group shadow-sm rounded-3 overflow-hidden border bg-white position-relative">
                             <span class="input-group-text bg-white border-0 pe-2">
                                 <i class="fa-solid fa-magnifying-glass text-muted"></i>
                             </span>
@@ -52,8 +52,10 @@
                                    id="productSearchInput"
                                    class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
                                    placeholder="Search or pick a product from the right..."
-                                   value="@selectedProduct?.ProductName"
+                                   value="@(selectedProduct?.ProductName ?? "")"
                                    autocomplete="off" />
+
+                            <!-- Inner Clear Button -->
                             <button class="btn btn-white border-0 text-secondary pe-3"
                                     type="button"
                                     id="clearProductBtn"
@@ -67,16 +69,26 @@
                     <!-- Local Store Price (PHP) -->
                     <div class="form-group mb-3">
                         <label asp-for="LocalPrice" class="control-label fw-semibold mb-1" style="color: #1162a3;">Store Local Price (PHP)</label>
-                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border position-relative">
                             <span class="input-group-text bg-light border-0 fw-bold text-secondary">₱</span>
                             <input asp-for="LocalPrice"
                                    id="LocalPriceInput"
-                                   class="form-control border-0 shadow-none fw-semibold no-spin"
+                                   class="form-control border-0 shadow-none fw-semibold no-spin pe-5"
                                    type="number"
                                    step="0.01"
                                    min="0.01"
                                    onwheel="this.blur()"
                                    placeholder="0.00" />
+
+                            <!-- Inner Clear Button -->
+                            <button type="button"
+                                    id="clearLocalPriceBtn"
+                                    class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
+                                    style="display: none;"
+                                    title="Clear field"
+                                    tabindex="-1">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
                         </div>
                         <span asp-validation-for="LocalPrice" class="text-danger small mt-1 d-block"></span>
                     </div>
@@ -84,13 +96,26 @@
                     <!-- Stock Quantity -->
                     <div class="form-group mb-3">
                         <label asp-for="Stock" class="control-label fw-semibold mb-1" style="color: #1162a3;">Initial Quantity in Stock</label>
-                        <input asp-for="Stock"
-                               class="form-control rounded-3 no-spin shadow-sm"
-                               type="number"
-                               step="1"
-                               min="0"
-                               onwheel="this.blur()"
-                               placeholder="e.g. 50" />
+                        <div class="position-relative">
+                            <input asp-for="Stock"
+                                   id="StockInput"
+                                   class="form-control rounded-3 no-spin shadow-sm pe-5"
+                                   type="number"
+                                   step="1"
+                                   min="0"
+                                   onwheel="this.blur()"
+                                   placeholder="e.g. 50" />
+
+                            <!-- Inner Clear Button -->
+                            <button type="button"
+                                    id="clearStockBtn"
+                                    class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
+                                    style="display: none;"
+                                    title="Clear field"
+                                    tabindex="-1">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
                         <span asp-validation-for="Stock" class="text-danger small mt-1 d-block"></span>
                     </div>
 
@@ -106,7 +131,7 @@
                                 <!-- Empty / Broken Icon Placeholder -->
                                 <div id="selectedProductPlaceholder"
                                      class="text-muted d-flex align-items-center justify-content-center h-100 w-100"
-                                     style="display: @(string.IsNullOrEmpty(selectedProduct?.ProductImage) ? "flex" : "none") !important;">
+                                     style="display: @(selectedProduct == null || string.IsNullOrEmpty(selectedProduct.ProductImage) ? "flex" : "none") !important;">
                                     <i class="fa-regular fa-image fa-2x opacity-25"></i>
                                 </div>
 
@@ -118,10 +143,22 @@
                                      style="display: @(!string.IsNullOrEmpty(selectedProduct?.ProductImage) ? "block" : "none");"
                                      onerror="showFallbackIcon();" />
                             </div>
-                            <div class="overflow-hidden">
-                                <span class="badge rounded-pill bg-white text-secondary border fw-medium px-2 py-1 mb-1" id="selectedProductCategory">
-                                    <i class="fa-solid fa-tag me-1"></i>@(selectedProduct?.Category?.CategoryName ?? "No selection")
-                                </span>
+
+                            <div class="overflow-hidden flex-grow-1">
+                                <!-- Badges Row: Category on the left, 18+ Badge on the far right -->
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="badge rounded-pill bg-white text-secondary border fw-medium px-2 py-1" id="selectedProductCategory">
+                                        <i class="fa-solid fa-tag me-1"></i>@(selectedProduct?.Category?.CategoryName ?? "No selection")
+                                    </span>
+
+                                    <!-- 18+ Restricted Badge -->
+                                    <span id="selectedProductAgeBadge"
+                                          class="badge rounded-pill bg-danger text-white border border-danger-subtle fw-bold px-2 py-1 shadow-sm"
+                                          style="font-size: 11px; display: @(selectedProduct?.IsAgeRestricted == true ? "inline-flex" : "none");">
+                                        <i class="fa-solid fa-ban me-1"></i>18+
+                                    </span>
+                                </div>
+
                                 <h6 class="mb-0 fw-bold text-truncate" id="selectedProductName" style="color: #1162a3;">
                                     @(selectedProduct?.ProductName ?? "No Product Selected")
                                 </h6>
@@ -182,7 +219,8 @@
                                                 data-name="@item.ProductName"
                                                 data-category="@(item.Category?.CategoryName ?? "General")"
                                                 data-price="@item.Price"
-                                                data-img="@imgUrl">
+                                                data-img="@imgUrl"
+                                                data-age-restricted="@(item.IsAgeRestricted == true ? "1" : "0")">
 
                                                 <td class="ps-3">
                                                     <div class="d-flex align-items-center gap-2">
@@ -306,6 +344,7 @@
             const previewPrice = document.getElementById("selectedProductPrice");
 
             const productRows = document.querySelectorAll(".product-row");
+            const previewAgeBadge = document.getElementById("selectedProductAgeBadge");
 
             function selectProduct(row) {
                 const id = row.getAttribute("data-id");
@@ -313,6 +352,7 @@
                 const category = row.getAttribute("data-category");
                 const price = row.getAttribute("data-price");
                 const img = row.getAttribute("data-img");
+                const isAgeRestricted = row.getAttribute("data-age-restricted"); // "1" or "0"
 
                 // Populate hidden model-bound input and search box
                 hiddenProductId.value = id;
@@ -322,10 +362,12 @@
                 // Autofill Local Price if empty or untouched
                 if (localPriceInput && price) {
                     localPriceInput.value = parseFloat(price).toFixed(2);
-                    $(localPriceInput).valid();
+                    if (typeof $ !== 'undefined' && $(localPriceInput).valid) {
+                        $(localPriceInput).valid();
+                    }
                 }
 
-                // Update bottom-left preview card
+                // Update image/placeholder
                 const placeholder = document.getElementById("selectedProductPlaceholder");
                 if (img && img.trim() !== "") {
                     previewImg.src = img;
@@ -337,9 +379,19 @@
                     placeholder.innerHTML = '<i class="fa-regular fa-image fa-2x opacity-25"></i>';
                 }
 
+                // Update labels
                 previewName.textContent = name;
                 previewCategory.innerHTML = `<i class="fa-solid fa-tag me-1"></i>${category}`;
                 previewPrice.textContent = `Base Market Price: ₱${parseFloat(price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+                // Show or hide the 18+ badge
+                if (previewAgeBadge) {
+                    if (isAgeRestricted === "1" || isAgeRestricted === "true") {
+                        previewAgeBadge.style.display = "inline-flex";
+                    } else {
+                        previewAgeBadge.style.display = "none";
+                    }
+                }
 
                 // Update row highlight & button state safely
                 productRows.forEach(r => {
@@ -349,6 +401,10 @@
 
                 row.classList.add("table-primary");
                 updateSelectButton(row.querySelector(".select-product-btn"), true);
+
+                if (typeof $ !== 'undefined' && $(hiddenProductId).valid) {
+                    $(hiddenProductId).valid();
+                }
 
                 // Trigger unobtrusive validation pass on ProductId
                 $(hiddenProductId).valid();
@@ -361,55 +417,108 @@
                 });
             });
 
-            // Live instant filter on search typing
-            searchInput.addEventListener("input", function () {
-                const query = this.value.trim().toLowerCase();
-                clearBtn.style.display = query ? "block" : "none";
-                let visibleCount = 0;
+        // Live instant filter on search typing
+        searchInput.addEventListener("input", function () {
+            const query = this.value.trim().toLowerCase();
+            clearBtn.style.display = query ? "block" : "none";
+            let visibleCount = 0;
 
-                productRows.forEach(row => {
-                    const name = (row.getAttribute("data-name") || "").toLowerCase();
-                    const category = (row.getAttribute("data-category") || "").toLowerCase();
+            productRows.forEach(row => {
+                const name = (row.getAttribute("data-name") || "").toLowerCase();
+                const category = (row.getAttribute("data-category") || "").toLowerCase();
 
-                    if (name.includes(query) || category.includes(query)) {
-                        row.style.display = "";
-                        visibleCount++;
-                    } else {
-                        row.style.display = "none";
-                    }
-                });
-
-                if (matchCounter) {
-                    matchCounter.textContent = `${visibleCount} match${visibleCount === 1 ? '' : 'es'}`;
+                if (name.includes(query) || category.includes(query)) {
+                    row.style.display = "";
+                    visibleCount++;
+                } else {
+                    row.style.display = "none";
                 }
             });
 
-            // Clear button
+            if (matchCounter) {
+                matchCounter.textContent = `${visibleCount} match${visibleCount === 1 ? '' : 'es'}`;
+            }
+        }); 
+
+        // Handle clicking the custom Search Clear Button
+        if (clearBtn) {
             clearBtn.addEventListener("click", function () {
+                // Clear inputs and hide button
                 searchInput.value = "";
                 hiddenProductId.value = "";
-                this.style.display = "none";
+                clearBtn.style.display = "none";
+                searchInput.focus();
 
-                const placeholder = document.getElementById("selectedProductPlaceholder");
+                // Reset the Table (Show all rows, remove highlights, reset buttons)
+                let visibleCount = 0;
+                productRows.forEach(r => {
+                    r.style.display = ""; // Un-hide all rows
+                    r.classList.remove("table-primary");
+                    updateSelectButton(r.querySelector(".select-product-btn"), false);
+                    visibleCount++;
+                });
+
+                // Reset the Match Counter
+                if (matchCounter) {
+                    matchCounter.textContent = `${visibleCount} available`;
+                }
+
+                // Reset the Preview Card to empty state
                 previewImg.style.display = "none";
-                placeholder.style.setProperty("display", "flex", "important");
-                placeholder.innerHTML = '<i class="fa-regular fa-image fa-2x opacity-25"></i>';
-
+                document.getElementById("selectedProductPlaceholder").style.setProperty("display", "flex", "important");
                 previewName.textContent = "No Product Selected";
                 previewCategory.innerHTML = `<i class="fa-solid fa-tag me-1"></i>No selection`;
                 previewPrice.textContent = "Pick an item from the catalog";
 
-                productRows.forEach(r => {
-                    r.style.display = "";
-                    r.classList.remove("table-primary");
-                    updateSelectButton(r.querySelector(".select-product-btn"), false);
+                // Trigger validation pass to show error if required
+                $(hiddenProductId).valid();
+            });
+        }
+
+            // Auto clear input & Dynamic Clear Buttons
+            function setupDynamicClearField(inputId, btnId) {
+                const input = document.getElementById(inputId);
+                const btn = document.getElementById(btnId);
+                if (!input) return;
+
+                let previousValue = "";
+
+                // Show/Hide button on input typing
+                if (btn) {
+                    // Set initial state on page load (handles validation post-backs)
+                    btn.style.display = input.value ? "block" : "none";
+
+                    input.addEventListener("input", function () {
+                        btn.style.display = this.value ? "block" : "none";
+                    });
+
+                    // Handle the click on the X button
+                    btn.addEventListener("click", function () {
+                        input.value = "";
+                        btn.style.display = "none";
+                        input.focus();
+                    });
+                }
+
+                // Auto-clear on focus / Restore on blur
+                input.addEventListener("focus", function () {
+                    previousValue = this.value;
+                    this.value = "";
+                    if (btn) btn.style.display = "none"; // Hide button while temporarily cleared
                 });
 
-                if (matchCounter) {
-                    matchCounter.textContent = `${productRows.length} available`;
-                }
-                searchInput.focus();
-            });
+                input.addEventListener("blur", function () {
+                    // Restore previous value only if left empty or only whitespace
+                    if (this.value.trim() === "") {
+                        this.value = previousValue;
+                    }
+                    if (btn) btn.style.display = this.value ? "block" : "none";
+                });
+            }
+
+            // Attach to fields
+            setupDynamicClearField("LocalPriceInput", "clearLocalPriceBtn");
+            setupDynamicClearField("StockInput", "clearStockBtn");
         });
     </script>
 }
