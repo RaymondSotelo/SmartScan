@@ -233,10 +233,7 @@ namespace SmartScan.Controllers
             return View();
         }
 
-<<<<<<< HEAD
-=======
         // GetCustomerCredit | Retrieves the credits of the customer
->>>>>>> 091090a719ba69d99e65cf1cbaee2e5a77be7778
         [HttpGet]
         public async Task<IActionResult> GetCustomerCredit(string customerName)
         {
@@ -269,10 +266,7 @@ namespace SmartScan.Controllers
             });
         }
 
-<<<<<<< HEAD
-=======
         // IncreaseCreditLimit | Option to increase the credit limit of the customer
->>>>>>> 091090a719ba69d99e65cf1cbaee2e5a77be7778
         [HttpPost]
         public async Task<IActionResult> IncreaseCreditLimit([FromBody] IncreaseLimitRequest req)
         {
@@ -424,8 +418,7 @@ namespace SmartScan.Controllers
             });
         }
 
-<<<<<<< HEAD
-        // --- NEW XENDIT GCASH CHECKOUT ENDPOINT ---
+        // --- NEW XENDIT CHECKOUT ENDPOINT (SUPPORTS GCASH & CREDIT CARD) ---
         [HttpPost]
         public async Task<IActionResult> CreateXenditCheckout([FromBody] TransactionPayload request)
         {
@@ -442,13 +435,16 @@ namespace SmartScan.Controllers
                 var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SecretKey}:"));
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
 
+                // Dynamically select the Xendit payment method based on the frontend request
+                string xenditMethod = request.PaymentMethod == "Credit Card" ? "CREDIT_CARD" : "GCASH";
+
                 var payload = new
                 {
                     external_id = "TX-" + DateTime.Now.ToString("yyyyMMddHHmmssffff"),
                     amount = (double)request.Total, // Xendit uses exact amounts for PHP
                     description = $"SmartScan Order - {request.CustomerName}",
                     currency = "PHP",
-                    payment_methods = new[] { "GCASH" },
+                    payment_methods = new[] { xenditMethod }, // Now dynamically supports both Credit Card and GCash
                     success_redirect_url = $"{Request.Scheme}://{Request.Host}/Home/Checkout",
                     failure_redirect_url = $"{Request.Scheme}://{Request.Host}/Home/Checkout"
                 };
@@ -476,9 +472,7 @@ namespace SmartScan.Controllers
             }
         }
 
-=======
         // SaveTransaction | Completes and generate the transaction.
->>>>>>> 091090a719ba69d99e65cf1cbaee2e5a77be7778
         [HttpPost]
         public async Task<IActionResult> SaveTransaction([FromBody] TransactionPayload request)
         {
@@ -712,7 +706,7 @@ namespace SmartScan.Controllers
             {
                 var anomalyAlert = new SecurityAlert
                 {
-                    AlertTypeId = 6, 
+                    AlertTypeId = 6,
                     Description = $"Checkout Anomaly: {request.AnomalyDetails}",
                     CreatedAt = DateTime.Now,
                     RetailId = retailStaff.RetailId,
@@ -793,14 +787,12 @@ namespace SmartScan.Controllers
         public double Distance { get; set; }
         public double SimilarityScore { get; set; }
     }
-<<<<<<< HEAD
 
-=======
->>>>>>> 091090a719ba69d99e65cf1cbaee2e5a77be7778
     public class IncreaseLimitRequest
     {
         public int CustomerId { get; set; }
     }
+
     public class CheckoutAnomalyPayload
     {
         public string AnomalyDetails { get; set; } = string.Empty;

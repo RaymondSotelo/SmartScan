@@ -126,7 +126,6 @@
 </div>
 
 <!-- ================= MODALS ================= -->
-
 <!-- Cash In Hand Modal -->
 <div class="modal fade" id="cashModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
@@ -177,66 +176,20 @@
     </div>
 </div>
 
-<!-- Credit Card Modal -->
+<!-- Online Credit Card Modal -->
 <div class="modal fade" id="creditModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
         <div class="modal-content position-relative p-2">
             <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             <div class="modal-body text-center p-4">
-                <h3 class="modal-title-custom">Credit Card</h3>
-                <p class="modal-subtitle mb-4 fw-medium">Swipe, insert, or enter card details.</p>
-
-                <!-- Card Number -->
-                <div class="text-start mb-3">
-                    <label class="custom-input-label">Card Number</label>
-                    <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white custom-focus-group">
-                        <span class="input-group-text bg-white border-0 text-muted ps-3 py-2">
-                            <i class="fa-regular fa-credit-card"></i>
-                        </span>
-                        <input type="text"
-                               class="form-control border-0 bg-white shadow-none font-monospace ps-2 py-2"
-                               id="ccNumber"
-                               inputmode="numeric"
-                               maxlength="19"
-                               placeholder="0000 0000 0000 0000">
-                    </div>
+                <h3 class="modal-title-custom">Credit/Debit Card</h3>
+                <p class="modal-subtitle mb-4 fw-medium">Generate a secure payment link for Visa, Mastercard, or JCB.</p>
+                <div class="alert alert-light border small text-muted text-start mb-4">
+                    <i class="fa-solid fa-lock text-success me-1"></i> Card details are securely collected and processed by Xendit.
                 </div>
-
-                <!-- Cardholder Name -->
-                <div class="text-start mb-3">
-                    <label class="custom-input-label">Cardholder Name</label>
-                    <input type="text"
-                           class="form-control custom-input text-uppercase"
-                           id="ccName"
-                           maxlength="50"
-                           placeholder="Full Name on Card" />
-                </div>
-
-                <div class="row mb-4 g-3">
-                    <!-- Expiry Date -->
-                    <div class="col-6 text-start">
-                        <label class="custom-input-label">Expiry Date</label>
-                        <input type="text"
-                               class="form-control custom-input font-monospace"
-                               id="ccExpiry"
-                               inputmode="numeric"
-                               maxlength="5"
-                               placeholder="MM/YY">
-                    </div>
-
-                    <!-- CVV / CVC -->
-                    <div class="col-6 text-start">
-                        <label class="custom-input-label">CVV / CVC</label>
-                        <input type="password"
-                               class="form-control custom-input font-monospace"
-                               id="ccCvv"
-                               inputmode="numeric"
-                               placeholder="***"
-                               maxlength="4">
-                    </div>
-                </div>
-
-                <button type="button" class="btn w-100 btn-proceed shadow-sm" onclick="proceedCreditCard()">Process Card</button>
+                <button id="btnCreditTrigger" type="button" class="btn w-100 btn-proceed shadow-sm d-flex justify-content-center align-items-center" onclick="proceedCreditCard()">
+                    Open Secure Checkout
+                </button>
             </div>
         </div>
     </div>
@@ -296,7 +249,7 @@
             <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             <div class="modal-body text-center p-4">
                 <h3 class="modal-title-custom">E-Wallet</h3>
-                <p class="modal-subtitle mb-4 fw-medium">Select an e-wallet provider to generate a QR.</p>
+                <p class="modal-subtitle mb-4 fw-medium">Select an e-wallet provider to generate a checkout link.</p>
 
                 <button id="btnGCashTrigger" class="w-100 ewallet-option-btn d-flex align-items-center shadow-sm" onclick="openGCashQR()">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="24" class="me-3">
@@ -308,16 +261,16 @@
     </div>
 </div>
 
-<!-- GCash Simulation Modal -->
+<!-- Xendit Simulation Waiting Modal (Shared for GCash & Credit Card) -->
 <div class="modal fade" id="gcashQRModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content gcash-modal-content position-relative border-0 shadow-lg p-4 text-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="40" class="mb-3 mx-auto" style="filter: brightness(0) invert(1);">
+            <img id="waitingModalIcon" src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="Payment Logo" height="40" class="mb-3 mx-auto" style="filter: brightness(0) invert(1);">
 
-            <h4 class="text-white fw-bold mb-3">Awaiting Payment</h4>
-            <p class="text-white text-opacity-75 small mb-4">A new tab has opened for the Xendit GCash simulation. Please complete the test payment there.</p>
+            <h4 id="waitingModalTitle" class="text-white fw-bold mb-3">Awaiting Payment</h4>
+            <p id="waitingModalDesc" class="text-white text-opacity-75 small mb-4">A new tab has opened for the Xendit simulation. Please complete the test payment there.</p>
 
-            <button type="button" class="btn btn-light fw-bold text-primary w-100 rounded-pill mb-2" onclick="simulateGCashSuccess()">Confirm Payment Received</button>
+            <button id="waitingModalConfirmBtn" type="button" class="btn btn-light fw-bold text-primary w-100 rounded-pill mb-2">Confirm Payment Received</button>
             <button type="button" class="btn btn-link text-white text-opacity-75 text-decoration-none w-100" data-bs-dismiss="modal">Cancel Transaction</button>
         </div>
     </div>
@@ -328,56 +281,6 @@
         let liveStoreCreditLimit = 0;
         let liveAvailableBalance = 0;
         let liveCustomerId = 0;
-
-        document.addEventListener("DOMContentLoaded", function () {
-            const ccNumberInput = document.getElementById('ccNumber');
-            const ccNameInput = document.getElementById('ccName');
-            const ccExpiryInput = document.getElementById('ccExpiry');
-            const ccCvvInput = document.getElementById('ccCvv');
-
-            ccNumberInput.addEventListener('input', function (e) {
-                let val = e.target.value.replace(/\D/g, '');
-                if (val.length > 16) val = val.substring(0, 16);
-                const parts = val.match(/.{1,4}/g);
-                e.target.value = parts ? parts.join(' ') : '';
-            });
-
-            ccNameInput.addEventListener('input', function (e) {
-                e.target.value = e.target.value.replace(/[^a-zA-Z\s\.\-]/g, '').toUpperCase();
-            });
-
-            ccExpiryInput.addEventListener('input', function (e) {
-                let val = e.target.value.replace(/\D/g, '');
-                if (val.length > 4) val = val.substring(0, 4);
-
-                if (val.length >= 1) {
-                    if (val[0] > '1') val = '0' + val;
-                }
-                if (val.length >= 2) {
-                    let month = parseInt(val.substring(0, 2), 10);
-                    if (month === 0) val = '01' + val.substring(2);
-                    else if (month > 12) val = '12' + val.substring(2);
-                }
-
-                if (val.length > 2) {
-                    e.target.value = val.substring(0, 2) + '/' + val.substring(2);
-                } else {
-                    e.target.value = val;
-                }
-            });
-
-            ccExpiryInput.addEventListener('keydown', function (e) {
-                if (e.key === 'Backspace' && this.value.length === 3) {
-                    this.value = this.value.substring(0, 2);
-                }
-            });
-
-            ccCvvInput.addEventListener('input', function (e) {
-                let val = e.target.value.replace(/\D/g, '');
-                if (val.length > 4) val = val.substring(0, 4);
-                e.target.value = val;
-            });
-        });
 
         (function checkCartStatus() {
             const savedCart = sessionStorage.getItem("smartScanCart");
@@ -510,20 +413,6 @@
             finalizeTransaction("Cash In Hand", amountReceived, changeAmount);
         }
 
-        function proceedCreditCard() {
-            const ccNum = document.getElementById("ccNumber").value;
-            const ccName = document.getElementById("ccName").value;
-            const ccExp = document.getElementById("ccExpiry").value;
-            const ccCvv = document.getElementById("ccCvv").value;
-
-            if (!ccNum || !ccName || !ccExp || !ccCvv) {
-                alert("Error: Please fill in all Credit Card fields before proceeding.");
-                return;
-            }
-
-            finalizeTransaction("Credit Card", total, 0);
-        }
-
         function proceedStoreCredit() {
             const errorBox = document.getElementById("storeCreditError");
             const errorText = document.getElementById("storeCreditErrorText");
@@ -588,6 +477,59 @@
             }
         }
 
+        // --- NEW ONLINE CREDIT CARD LINK GENERATOR ---
+        async function proceedCreditCard() {
+            creditModalInstance.hide();
+
+            const btn = document.getElementById("btnCreditTrigger");
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Generating Link...';
+            btn.disabled = true;
+
+            try {
+                const payload = {
+                    Total: parseFloat(total),
+                    CustomerName: verifiedCustomerName || "Guest",
+                    PaymentMethod: "Credit Card"
+                };
+
+                const response = await fetch('/Home/CreateXenditCheckout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.open(result.checkoutUrl, '_blank');
+
+                    // Update waiting modal UI for Credit Card
+                    document.getElementById('waitingModalIcon').style.display = 'none';
+                    document.getElementById('waitingModalTitle').innerText = "Awaiting Credit Card";
+                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit Credit Card simulation. Please complete the test payment there.";
+
+                    // Assign transaction finalizer
+                    document.getElementById('waitingModalConfirmBtn').onclick = function() {
+                        gcashQRModalInstance.hide();
+                        finalizeTransaction("Credit Card", total, 0);
+                    };
+
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    gcashQRModalInstance.show();
+                } else {
+                    alert("Failed to connect to Xendit API: " + result.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert("Network Error generating Credit Card link.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
         // --- UPDATED XENDIT GCASH LINK GENERATOR ---
         async function openGCashQR() {
             ewalletModalInstance.hide();
@@ -613,8 +555,18 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Open Xendit checkout in a new browser tab
                     window.open(result.checkoutUrl, '_blank');
+
+                    // Update waiting modal UI back for GCash
+                    document.getElementById('waitingModalIcon').style.display = 'block';
+                    document.getElementById('waitingModalTitle').innerText = "Awaiting Payment";
+                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit GCash simulation. Please complete the test payment there.";
+
+                    // Assign transaction finalizer
+                    document.getElementById('waitingModalConfirmBtn').onclick = function() {
+                        gcashQRModalInstance.hide();
+                        finalizeTransaction("GCash API", total, 0);
+                    };
 
                     btn.innerHTML = originalText;
                     btn.disabled = false;
@@ -629,11 +581,6 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
-        }
-
-        function simulateGCashSuccess() {
-            gcashQRModalInstance.hide();
-            finalizeTransaction("GCash API", total, 0);
         }
 
         async function finalizeTransaction(method, amountPaid, changeAmount) {
