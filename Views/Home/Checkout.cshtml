@@ -117,12 +117,9 @@
                     <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom flex-shrink-0"
                          style="background-color: #f8fafc;">
                         <div class="d-flex align-items-center gap-2">
-                            <i class="fa-solid fa-receipt text-primary"></i>
-                            <span class="fw-bold text-primary small text-uppercase">Receipt Queue</span>
+                            <i class="fa-solid fa-basket-shopping text-primary"></i>
+                            <span class="fw-bold text-primary small text-uppercase">Digital Cart</span>
                         </div>
-                        <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1" style="font-size: 11px;">
-                            Live Cart
-                        </span>
                     </div>
 
                     <!-- Scrollable Receipt Item Table -->
@@ -157,7 +154,6 @@
                                    id="manualProductInput"
                                    autocomplete="off" />
 
-                            <!-- Camera Scanner Toggle Button (Similar to Product/Create) -->
                             <button class="btn btn-outline-secondary border-0 px-3 d-flex align-items-center"
                                     type="button"
                                     id="btnToggleScanner"
@@ -182,34 +178,7 @@
                         </div>
                     </div>
 
-                    <!-- Dedicated Barcode Scanner Modal (Powered by Html5Qrcode like Product/Create) -->
-                    <div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                                <div class="modal-header text-white p-3 border-0" style="background-color: #1162a3;">
-                                    <h6 class="modal-title fw-bold mb-0 fs-5" id="barcodeScannerModalLabel">
-                                        <i class="fa-solid fa-camera me-2"></i>Live Barcode Scanner
-                                    </h6>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body p-4 text-center bg-light">
-                                    <div id="qrReaderWrapper" class="overflow-hidden rounded-3 border mb-3 bg-white shadow-sm" style="width: 100%; max-width: 380px; margin: auto;">
-                                        <div id="qrReader"></div>
-                                    </div>
-                                    <div class="alert alert-info py-2 small fw-semibold text-center mb-0" id="scannerStatus">
-                                        <i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...
-                                    </div>
-                                </div>
-                                <div class="modal-footer bg-white border-top">
-                                    <button type="button" class="btn btn-outline-secondary fw-medium rounded-pill px-4" data-bs-dismiss="modal">
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Settlement Bar -->
+                    <!-- Bottom Settlement Bar with Pay Debt & Proceed Buttons -->
                     <div class="p-2 p-md-1 border-0 flex-shrink-0 bg-white rounded-bottom-4">
                         <div class="d-flex justify-content-between align-items-center p-2 px-3 border rounded-4 shadow-sm bg-white">
                             <div class="text-start">
@@ -228,10 +197,18 @@
                                     <button class="btn btn-danger border-danger border-opacity-25 fw-bold rounded-3 d-flex align-items-center px-3 shadow-sm position-relative"
                                             id="btnVoidCart"
                                             style="font-size: 0.85rem; height: 38px;">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                        <span class="flex-grow-1 text-center">Void Cart</span>
+                                        <i class="fa-solid fa-trash-can me-2"></i>Void Cart
                                     </button>
                                 </div>
+
+                                <!-- GREEN Pay Debt Button -->
+                                <button class="btn btn-success d-flex flex-column align-items-center justify-content-center fw-bold px-3 px-sm-4 rounded-3 shadow-sm"
+                                        id="btnPayDebt"
+                                        style="background-color: #198754; border-color: #198754;"
+                                        onclick="initiateDebtPayment()">
+                                    <i class="fa-solid fa-hand-holding-dollar mb-1" style="font-size: 1.4rem;"></i>
+                                    <span class="text-center" style="font-size: 0.85rem; letter-spacing: 0.3px; line-height: 1.2;">PAY<br>DEBT</span>
+                                </button>
 
                                 <button class="btn btn-primary d-flex flex-column align-items-center justify-content-center fw-bold px-3 px-sm-4 rounded-3 shadow-sm"
                                         id="btnProceedToPayment"
@@ -249,29 +226,164 @@
     </div>
 </div>
 
-<!-- Modal: Recent Transactions -->
-<div class="modal fade" id="oldTransactionsModal" tabindex="-1" aria-labelledby="oldTransactionsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+<!-- Modal: Recent Transaction UI Model -->
+<div class="modal fade" id="oldTransactionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
 
             <!-- Modal Header -->
             <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
-                <h6 class="modal-title fw-bold mb-0 fs-5" id="adjustQuantityModalLabel">
-                    <i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Transactions
+                <h6 class="modal-title fw-bold mb-0 fs-5" id="txModalHeaderTitle">
+                    <i class="fa-solid fa-clock-rotate-left me-2"></i>Today's Completed Transactions
                 </h6>
                 <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Modal Body Container -->
-            <div class="modal-body p-3 bg-light">
-                <div class="overflow-y-auto pe-1" style="max-height: 400px;" id="oldTransactionsContainer">
-                    <div id="oldTransactionsList" class="d-flex flex-column gap-2">
-                        <!-- Dynamic items injected via JS -->
-                        <div class="text-center py-4 text-muted small">
-                            <i class="fa-solid fa-spinner fa-spin me-2"></i>Loading transactions...
+            <!-- Modal Body -->
+            <div class="modal-body p-3 p-md-4 bg-light">
+
+                <!-- VIEW A: Transactions List Section -->
+                <div id="txListViewSection">
+                    <!-- Search Bar -->
+                    <div class="input-group input-group-sm mb-3 shadow-sm rounded-pill overflow-hidden border bg-white">
+                        <span class="input-group-text bg-white border-0 text-muted ps-3">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="txSearchInput" class="form-control border-0 bg-white shadow-none ps-2"
+                               placeholder="Search receipt #, customer, method..." oninput="filterTransactionsList()" />
+                    </div>
+
+                    <!-- Scrollable List Container -->
+                    <div class="overflow-y-auto pe-1 no-scrollbar" style="max-height: 460px;" id="oldTransactionsContainer">
+                        <div id="oldTransactionsList" class="d-flex flex-column gap-2">
+                            <div class="text-center py-4 text-muted small">
+                                <i class="fa-solid fa-spinner fa-spin text-primary me-2"></i>Loading transactions...
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- VIEW B: Thermal Mini-Receipt Section -->
+                <div id="txReceiptViewSection" style="display: none;">
+
+                    <!-- Thermal POS Paper Card (Utilizing Site CSS) -->
+                    <div class="receipt-paper w-100 p-4 border bg-white rounded-4 shadow-sm mx-auto mb-3" style="max-width: 460px;">
+
+                        <!-- Top Status Indicator -->
+                        <div class="text-end mb-2">
+                            <span id="modalReceiptStatusBadge" class="badge rounded-pill px-3 py-1 fw-bold" style="font-size: 11px;">
+                                Completed
+                            </span>
+                        </div>
+
+                        <!-- Store Branding -->
+                        <div class="text-center mb-3">
+                            <div class="d-inline-flex p-2 rounded-circle bg-primary bg-opacity-10 text-primary mb-1">
+                                <img src="/images/SmartScanLogo.png"
+                                     alt="Smart Scan Logo"
+                                     width="48"
+                                     height="48"
+                                     class="object-fit-contain"
+                                     onerror="this.style.display='none'" />
+                            </div>
+                            <h5 class="fw-bold text-uppercase mb-0 text-dark" style="letter-spacing: 0.5px; font-size: 1.15rem;">
+                                SmartScan Retail
+                            </h5>
+                            <p class="text-muted small mb-1" style="font-size: 11px;">
+                                Automated Vision Checkout System
+                            </p>
+                            <span class="badge rounded-pill bg-light text-secondary border fw-medium px-3 py-1" style="font-size: 10px;">
+                                OFFICIAL TRANSACTION RECEIPT
+                            </span>
+                        </div>
+
+                        <div class="receipt-dashed-line"></div>
+
+                        <!-- Meta Data -->
+                        <div class="small text-secondary mb-2" style="font-size: 12px;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Receipt #:</span>
+                                <strong class="font-monospace text-dark" id="modalReceiptNumber">#REC-000000</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Date & Time:</span>
+                                <span class="text-dark" id="modalReceiptDate">--</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Cashier / POS:</span>
+                                <span class="text-dark">@(User.Identity?.Name ?? "Main Station")</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1" id="modalCustomerRow" style="display: none;">
+                                <span>Customer:</span>
+                                <span class="text-dark fw-semibold" id="modalReceiptCustomer">Walk-in Guest</span>
+                            </div>
+                            <div class="justify-content-between" id="modalDueDateRow" style="display: none !important;">
+                                <span class="text-danger fw-bold">Due Date:</span>
+                                <span class="text-danger fw-bold font-monospace" id="modalReceiptDueDate"></span>
+                            </div>
+                        </div>
+
+                        <div class="receipt-dashed-line"></div>
+
+                        <!-- Itemized Purchase List -->
+                        <div class="py-1">
+                            <div class="d-flex justify-content-between text-muted fw-bold text-uppercase mb-2" style="font-size: 11px;">
+                                <span>Item Description</span>
+                                <span class="text-end">Total</span>
+                            </div>
+                            <div id="modalReceiptItemList" class="d-flex flex-column gap-2 mb-2 no-scrollbar" style="max-height: 200px; overflow-y: auto;">
+                                <!-- Injected via JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="receipt-double-line"></div>
+
+                        <!-- Financial Summary -->
+                        <div class="small" style="font-size: 12px;">
+                            <div class="d-flex justify-content-between text-secondary mb-1">
+                                <span>Total Quantity:</span>
+                                <span class="fw-semibold text-dark" id="modalReceiptTotalQty">0 units</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-secondary mb-2">
+                                <span>Subtotal:</span>
+                                <span class="fw-semibold text-dark" id="modalReceiptSubtotal">₱0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2 pt-1 border-top">
+                                <span class="fs-6 fw-bold text-dark">TOTAL PAID:</span>
+                                <span class="fs-5 fw-bold text-success font-monospace" id="modalReceiptGrandTotal">₱0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-secondary pt-1">
+                                <span>Payment Tender:</span>
+                                <span id="modalReceiptMethodBadge" class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                                    Cash
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="receipt-dashed-line"></div>
+
+                        <!-- CSS Barcode Strip & Footer -->
+                        <div class="text-center pt-1">
+                            <div class="barcode-strip mb-2"></div>
+                            <span class="font-monospace small text-muted d-block mb-1" id="modalBarcodeNumber" style="letter-spacing: 2px;">
+                                *00000000*
+                            </span>
+                            <p class="small text-muted mb-0 fst-italic" style="font-size: 10px;">
+                                Thank you for shopping with us!<br />
+                                Verified by SmartScan Automated Vision System
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Single Return Button at Bottom -->
+                    <div class="text-center mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4 fw-semibold shadow-sm" onclick="closeReceiptPreview()">
+                            <i class="fa-solid fa-arrow-left me-1"></i>Return to Transactions List
+                        </button>
+                    </div>
+
+                </div>
+
             </div>
         </div>
     </div>
@@ -281,8 +393,6 @@
 <div class="modal fade" id="adjustQuantityModal" tabindex="-1" aria-labelledby="adjustQuantityModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
         <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
-
-            <!-- Header -->
             <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
                 <h6 class="modal-title fw-bold mb-0 fs-5" id="adjustQuantityModalLabel">
                     <i class="fa-solid fa-pen-to-square me-2"></i>Adjust Quantity
@@ -331,17 +441,38 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/@@zxing/library@latest"></script>
 
     <script type="text/javascript">
+        // Helper to prevent XSS and prevent ReferenceError crashes
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return "";
+            const element = document.createElement("div");
+            element.textContent = String(value);
+            return element.innerHTML;
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
+            // Purge stale customer & debt session data if starting a fresh checkout session
+            if (!sessionStorage.getItem("verificationReason")) {
+                sessionStorage.removeItem("verifiedCustomerId");
+                sessionStorage.removeItem("verifiedCustomerName");
+                sessionStorage.removeItem("activeDebtTransactionIds");
+                sessionStorage.removeItem("activeDebtPenalty");
+                sessionStorage.removeItem("activeDebtDueDate");
+                sessionStorage.removeItem("customerAgeVerified");
+            }
+
+            // Initialize secondary customer display cleanly
             localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({ items: [], total: 0 }));
 
+            // Bind UI & Video stream elements
             const video = document.getElementById("webcamFeed");
             const videoContainer = document.getElementById("videoContainer");
             const captureCanvas = document.getElementById("captureCanvas");
-            const captureCtx = captureCanvas.getContext("2d");
+            const captureCtx = captureCanvas ? captureCanvas.getContext("2d") : null;
             const overlay = document.getElementById("overlayCanvas");
-            const overlayCtx = overlay.getContext("2d");
+            const overlayCtx = overlay ? overlay.getContext("2d") : null;
 
             const placeholder = document.getElementById("cameraPlaceholder");
             const startBtn = document.getElementById("startCamBtn");
@@ -360,7 +491,105 @@
             let manualItems = [];
             let shouldResumeYoloAfterBarcode = false;
 
-            // ============ BARCODE SCANNER LOGIC (Product/Create Pattern) ============
+            // ================= BARCODE PREPROCESSING =================
+            const barcodeCanvas = document.createElement("canvas");
+            const barcodeCtx = barcodeCanvas.getContext("2d", { willReadFrequently: true });
+            let isZxingBusy = false;
+
+            let barcodeDetector = null;
+            if ('BarcodeDetector' in window) {
+                barcodeDetector = new BarcodeDetector({
+                    formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code']
+                });
+            }
+
+            let zxingReader = null;
+            if (!barcodeDetector && typeof ZXing !== 'undefined') {
+                zxingReader = new ZXing.BrowserMultiFormatReader();
+            }
+
+            const scannedBarcodeCooldown = new Map();
+            const BARCODE_COOLDOWN_MS = 2500;
+
+            function preprocessBarcodeFrame(sourceVideo) {
+                const sw = sourceVideo.videoWidth;
+                const sh = sourceVideo.videoHeight;
+                if (!sw || !sh) return null;
+
+                const cropWidth = Math.round(sw * 0.55);
+                const cropHeight = Math.round(sh * 0.55);
+                const cropX = Math.round((sw - cropWidth) / 2);
+                const cropY = Math.round((sh - cropHeight) / 2);
+
+                barcodeCanvas.width = cropWidth;
+                barcodeCanvas.height = cropHeight;
+
+                barcodeCtx.drawImage(
+                    sourceVideo,
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, cropWidth, cropHeight
+                );
+
+                const imgData = barcodeCtx.getImageData(0, 0, cropWidth, cropHeight);
+                const d = imgData.data;
+
+                for (let i = 0; i < d.length; i += 4) {
+                    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                    d[i] = gray > 115 ? 255 : 0;
+                    d[i + 1] = gray > 115 ? 255 : 0;
+                    d[i + 2] = gray > 115 ? 255 : 0;
+                }
+
+                barcodeCtx.putImageData(imgData, 0, 0);
+                return barcodeCanvas;
+            }
+
+            async function handleWebcamBarcodeDetected(rawCode) {
+                const code = String(rawCode || '').trim();
+                if (!code) return;
+
+                const now = Date.now();
+                const lastSeen = scannedBarcodeCooldown.get(code) || 0;
+                if (now - lastSeen < BARCODE_COOLDOWN_MS) return;
+                scannedBarcodeCooldown.set(code, now);
+
+                try {
+                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(code)}`);
+                    if (!dbResponse.ok) return;
+
+                    const product = await dbResponse.json();
+                    if (!product.success || product.price === undefined) return;
+
+                    const alreadyInCart = manualItems.some(i => i.name.toLowerCase() === product.name.toLowerCase());
+                    if (alreadyInCart) return;
+
+                    if (product.stock <= 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Out of Stock',
+                            text: `There are no ${product.name} left in inventory.`,
+                            confirmButtonColor: '#1162a3'
+                        });
+                        return;
+                    }
+
+                    manualItems.push({
+                        name: product.name,
+                        price: product.price,
+                        qty: 1,
+                        stock: product.stock,
+                        isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1
+                    });
+
+                    playBeepSound();
+                    await buildCartAndRender({}, false);
+
+                } catch (err) {
+                    console.error("Webcam barcode lookup error:", err);
+                }
+            }
+
+            // ================= BARCODE MODAL SCANNER =================
             let html5QrScanner = null;
             let isScannerActive = false;
             let isProcessingScan = false;
@@ -368,7 +597,6 @@
             const scannerModalEl = document.getElementById("barcodeScannerModal");
             const scannerStatus = document.getElementById("scannerStatus");
 
-            // Pause YOLO and release camera hardware
             function pauseYoloScanner() {
                 isScanningActive = false;
                 isProcessingFrame = false;
@@ -377,13 +605,11 @@
                     mediaStream.getTracks().forEach(track => track.stop());
                     mediaStream = null;
                 }
-                video.srcObject = null;
-
-                overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+                if (video) video.srcObject = null;
+                if (overlayCtx && overlay) overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
                 recentDetections.length = 0;
             }
 
-            // Resume YOLO scanner automatically
             async function resumeYoloScanner() {
                 try {
                     await startSelectedCamera();
@@ -405,7 +631,6 @@
                 });
 
                 scannerModalEl.addEventListener("shown.bs.modal", function () {
-                    // Generous delay to ensure OS releases camera driver
                     setTimeout(() => {
                         startBarcodeModalScanner();
                     }, 300);
@@ -413,7 +638,6 @@
 
                 scannerModalEl.addEventListener("hidden.bs.modal", async function () {
                     await stopBarcodeModalScanner();
-
                     if (shouldResumeYoloAfterBarcode) {
                         shouldResumeYoloAfterBarcode = false;
                         setTimeout(() => {
@@ -428,8 +652,10 @@
                 isScannerActive = true;
                 isProcessingScan = false;
 
-                scannerStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...';
-                scannerStatus.className = "alert alert-info py-2 small fw-semibold text-center mb-0";
+                if (scannerStatus) {
+                    scannerStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...';
+                    scannerStatus.className = "alert alert-info py-2 small fw-semibold text-center mb-0";
+                }
 
                 try {
                     html5QrScanner = new Html5Qrcode("qrReader");
@@ -437,14 +663,18 @@
                         { facingMode: "environment" },
                         { fps: 15, qrbox: { width: 280, height: 140 } },
                         (decodedText) => { processLiveScan(decodedText); },
-                        () => { /* Ignore standard frame read misses */ }
+                        () => { }
                     );
 
-                    scannerStatus.innerHTML = '<i class="fa-solid fa-camera me-1"></i>Live scanner active. Hold barcode in view.';
-                    scannerStatus.className = "alert alert-success py-2 small fw-semibold text-center mb-0";
+                    if (scannerStatus) {
+                        scannerStatus.innerHTML = '<i class="fa-solid fa-camera me-1"></i>Live scanner active. Hold barcode in view.';
+                        scannerStatus.className = "alert alert-success py-2 small fw-semibold text-center mb-0";
+                    }
                 } catch (err) {
-                    scannerStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Camera failed to initialize.';
-                    scannerStatus.className = "alert alert-danger py-2 small fw-semibold text-center mb-0";
+                    if (scannerStatus) {
+                        scannerStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Camera failed to initialize.';
+                        scannerStatus.className = "alert alert-danger py-2 small fw-semibold text-center mb-0";
+                    }
                     isScannerActive = false;
                 }
             }
@@ -479,24 +709,20 @@
                 if (isProcessingScan) return;
                 isProcessingScan = true;
 
-                let retrievedNumber = decodedText;
+                let retrievedNumber = String(decodedText || '');
 
-                // Handle potential JSON payload directly as in Product/Create
                 try {
                     const parsedData = JSON.parse(decodedText);
                     if (parsedData && typeof parsedData === "object") {
                         retrievedNumber = parsedData.barcode || parsedData.Barcode || parsedData.number || parsedData.id || Object.values(parsedData)[0] || decodedText;
                     }
-                } catch (error) {
-                    // Raw string fallback
-                }
+                } catch (error) { }
 
-                if (!retrievedNumber) {
+                const normalizedBarcode = String(retrievedNumber).replace(/\s+/g, '').trim();
+                if (!normalizedBarcode) {
                     isProcessingScan = false;
                     return;
                 }
-
-                const normalizedBarcode = retrievedNumber.toString().replace(/\s+/g, '').trim();
 
                 try {
                     const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(normalizedBarcode)}`);
@@ -504,14 +730,12 @@
                         const product = await dbResponse.json();
 
                         if (product.success && product.price !== undefined) {
-                            // 1. NO-INCREMENT RULE: Verify if already in cart
                             const alreadyInCart = manualItems.some(i => i.name.toLowerCase() === product.name.toLowerCase());
                             if (alreadyInCart) {
                                 closeScannerModal();
                                 return;
                             }
 
-                            // 2. Stock Check
                             if (product.stock <= 0) {
                                 Swal.fire({
                                     icon: 'warning',
@@ -523,22 +747,12 @@
                                 return;
                             }
 
-                            // 3. Age Restriction Warning
-                            if (product.isAgeRestricted) {
-                                Swal.fire({
-                                    icon: 'info',
-                                    title: 'ID Check Required',
-                                    text: `${product.name} is age-restricted (18+). Verify customer identification.`,
-                                    confirmButtonColor: '#1162a3'
-                                });
-                            }
-
-                            // 4. Add product with Qty = 1
                             manualItems.push({
                                 name: product.name,
                                 price: product.price,
                                 qty: 1,
-                                stock: product.stock
+                                stock: product.stock,
+                                isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1
                             });
 
                             playBeepSound();
@@ -562,10 +776,9 @@
             }
 
             function closeScannerModal() {
+                if (!scannerModalEl) return;
                 const modal = bootstrap.Modal.getInstance(scannerModalEl);
-                if (modal) {
-                    modal.hide();
-                }
+                if (modal) modal.hide();
             }
 
             // ================= SEARCH & MANUAL INPUT =================
@@ -575,6 +788,7 @@
             let recentSearches = JSON.parse(localStorage.getItem("smartScanRecentSearches") || "[]");
 
             function showRecentSearches() {
+                if (!productSearchResults) return;
                 productSearchResults.innerHTML = "";
                 if (recentSearches.length === 0) {
                     productSearchResults.style.display = "none";
@@ -586,7 +800,7 @@
                     const item = document.createElement("div");
                     item.className = "px-3 py-2 small rounded hover-bg cursor-pointer d-flex align-items-center";
                     item.style.cursor = "pointer";
-                    item.innerHTML = `<i class="fa-solid fa-clock me-2 text-muted"></i>${search}`;
+                    item.innerHTML = `<i class="fa-solid fa-clock me-2 text-muted"></i>${escapeHtml(search)}`;
                     item.addEventListener("click", () => {
                         productSearchInput.value = search;
                         productSearchResults.style.display = "none";
@@ -597,7 +811,7 @@
             }
 
             function saveRecentSearch(search) {
-                search = search.trim();
+                search = (search || '').trim();
                 if (!search) return;
                 recentSearches = recentSearches.filter(item => item.toLowerCase() !== search.toLowerCase());
                 recentSearches.unshift(search);
@@ -605,40 +819,43 @@
                 localStorage.setItem("smartScanRecentSearches", JSON.stringify(recentSearches));
             }
 
-            productSearchInput.addEventListener("focus", () => {
-                if (productSearchInput.value.trim() === "") showRecentSearches();
-            });
+            if (productSearchInput) {
+                productSearchInput.addEventListener("focus", () => {
+                    if (productSearchInput.value.trim() === "") showRecentSearches();
+                });
 
-            productSearchInput.addEventListener("keydown", (e) => {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    btnAddProduct.click();
-                }
-            });
+                productSearchInput.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (btnAddProduct) btnAddProduct.click();
+                    }
+                });
 
-            let searchTimeout = null;
-            productSearchInput.addEventListener("input", () => {
-                const query = productSearchInput.value.trim();
+                let searchTimeout = null;
+                productSearchInput.addEventListener("input", () => {
+                    const query = productSearchInput.value.trim();
 
-                if (query !== "") {
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(async () => {
-                        try {
-                            const response = await fetch(`/Home/SearchProducts?term=${encodeURIComponent(query)}`);
-                            if (response.ok) {
-                                const results = await response.json();
-                                renderSearchResults(results);
+                    if (query !== "") {
+                        clearTimeout(searchTimeout);
+                        searchTimeout = setTimeout(async () => {
+                            try {
+                                const response = await fetch(`/Home/SearchProducts?term=${encodeURIComponent(query)}`);
+                                if (response.ok) {
+                                    const results = await response.json();
+                                    renderSearchResults(results);
+                                }
+                            } catch (error) {
+                                console.error("Autocomplete search failed:", error);
                             }
-                        } catch (error) {
-                            console.error("Autocomplete search failed:", error);
-                        }
-                    }, 250);
-                } else {
-                    showRecentSearches();
-                }
-            });
+                        }, 250);
+                    } else {
+                        showRecentSearches();
+                    }
+                });
+            }
 
             function renderSearchResults(results) {
+                if (!productSearchResults) return;
                 productSearchResults.innerHTML = "";
 
                 if (!results || results.length === 0) {
@@ -654,8 +871,8 @@
                     row.className = "px-3 py-2 small rounded hover-bg cursor-pointer d-flex justify-content-between align-items-center text-dark";
                     row.style.cursor = "pointer";
 
-                    const barcodeSnippet = item.barcode ? `<span class="badge bg-light text-secondary border font-monospace ms-2">${item.barcode}</span>` : "";
-                    row.innerHTML = `<span><i class="fa-solid fa-box me-2 text-muted"></i>${item.name}</span>${barcodeSnippet}`;
+                    const barcodeSnippet = item.barcode ? `<span class="badge bg-light text-secondary border font-monospace ms-2"><i class="fa-solid fa-barcode"></i> ${escapeHtml(item.barcode)}</span>` : "";
+                    row.innerHTML = `<span><i class="fa-solid fa-box me-2 text-muted"></i>${escapeHtml(item.name)}</span>${barcodeSnippet}`;
 
                     row.addEventListener("mouseenter", () => row.classList.add("bg-light"));
                     row.addEventListener("mouseleave", () => row.classList.remove("bg-light"));
@@ -663,7 +880,7 @@
                     row.addEventListener("click", () => {
                         productSearchInput.value = item.name;
                         productSearchResults.style.display = "none";
-                        btnAddProduct.click();
+                        if (btnAddProduct) btnAddProduct.click();
                     });
 
                     productSearchResults.appendChild(row);
@@ -673,93 +890,87 @@
             }
 
             document.addEventListener("click", event => {
-                if (!productSearchInput.contains(event.target) && !productSearchResults.contains(event.target)) {
+                if (productSearchInput && productSearchResults && !productSearchInput.contains(event.target) && !productSearchResults.contains(event.target)) {
                     productSearchResults.style.display = "none";
                 }
             });
 
             // ================= MANUAL ADD BUTTON =================
-            btnAddProduct.addEventListener("click", async () => {
-                const query = productSearchInput.value.trim();
-                if (!query) return;
+            if (btnAddProduct) {
+                btnAddProduct.addEventListener("click", async () => {
+                    const query = productSearchInput ? productSearchInput.value.trim() : "";
+                    if (!query) return;
 
-                try {
-                    const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(query)}`);
+                    try {
+                        const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(query)}`);
 
-                    if (dbResponse.ok) {
-                        const product = await dbResponse.json();
+                        if (dbResponse.ok) {
+                            const product = await dbResponse.json();
 
-                        if (product.success === false || product.price === undefined) {
+                            if (product.success === false || product.price === undefined) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Not Found',
+                                    text: `No product found matching "${query}".`,
+                                    confirmButtonColor: '#1162a3'
+                                });
+                                return;
+                            }
+
+                            if (product.stock <= 0) {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Out of Stock',
+                                    text: `There are no ${product.name} left in inventory.`,
+                                    confirmButtonColor: '#1162a3'
+                                });
+                                return;
+                            }
+
+                            saveRecentSearch(product.name);
+
+                            const existing = manualItems.find(i => i.name === product.name);
+                            const currentQty = existing ? existing.qty : 0;
+
+                            if (currentQty + 1 > product.stock) {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Stock Limit Reached',
+                                    text: `Cannot add more ${product.name}. Store inventory limit is ${product.stock}.`,
+                                    confirmButtonColor: '#1162a3'
+                                });
+                            } else {
+                                if (existing) {
+                                    existing.qty++;
+                                } else {
+                                    manualItems.push({
+                                        name: product.name,
+                                        price: product.price,
+                                        qty: 1,
+                                        stock: product.stock,
+                                        isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1
+                                    });
+                                }
+                            }
+
+                            productSearchInput.value = "";
+                            productSearchResults.style.display = "none";
+                            await buildCartAndRender({}, false);
+                        } else {
                             Swal.fire({
                                 icon: 'error',
-                                title: 'Not Found',
-                                text: `No product found matching "${query}".`,
-                                confirmButtonColor: '#1162a3'
-                            });
-                            return;
-                        }
-
-                        if (product.stock <= 0) {
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Out of Stock',
-                                text: `There are no ${product.name} left in inventory.`,
-                                confirmButtonColor: '#1162a3'
-                            });
-                            return;
-                        }
-
-                        if (product.isAgeRestricted) {
-                            Swal.fire({
-                                icon: 'info',
-                                title: 'ID Check Required',
-                                text: `${product.name} is age-restricted (18+). Verify customer identification.`,
+                                title: 'Error',
+                                text: 'Failed to retrieve product details.',
                                 confirmButtonColor: '#1162a3'
                             });
                         }
-
-                        saveRecentSearch(product.name);
-
-                        const existing = manualItems.find(i => i.name === product.name);
-                        const currentQty = existing ? existing.qty : 0;
-
-                        if (currentQty + 1 > product.stock) {
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Stock Limit Reached',
-                                text: `Cannot add more ${product.name}. Store inventory limit is ${product.stock}.`,
-                                confirmButtonColor: '#1162a3'
-                            });
-                        } else {
-                            if (existing) {
-                                existing.qty++;
-                            } else {
-                                manualItems.push({
-                                    name: product.name,
-                                    price: product.price,
-                                    qty: 1,
-                                    stock: product.stock
-                                });
-                            }
-                        }
-
-                        productSearchInput.value = "";
-                        productSearchResults.style.display = "none";
-                        await buildCartAndRender({}, false);
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Failed to retrieve product details.',
-                            confirmButtonColor: '#1162a3'
-                        });
+                    } catch (err) {
+                        console.error("Lookup error:", err);
                     }
-                } catch (err) {
-                    console.error("Lookup error:", err);
-                }
-            });
+                });
+            }
 
-            // ================= COUNTER AI SCANNER (YOLO) =================
+            // ================= COUNTER CAMERA SETUP =================
             async function loadCameras() {
                 try {
                     const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -768,6 +979,7 @@
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const videoDevices = devices.filter(d => d.kind === "videoinput");
 
+                    if (!cameraSelect) return;
                     cameraSelect.innerHTML = "";
                     videoDevices.forEach((device, index) => {
                         const option = document.createElement("option");
@@ -784,7 +996,7 @@
                         cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
                     }
                 } catch (err) {
-                    cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
+                    if (cameraSelect) cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
                 }
             }
             loadCameras();
@@ -794,73 +1006,97 @@
                     mediaStream.getTracks().forEach(track => track.stop());
                 }
 
-                const selectedDeviceId = cameraSelect.value;
-                const constraints = {
-                    video: {
-                        deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
-                        facingMode: selectedDeviceId ? undefined : { ideal: "environment" },
-                        width: { ideal: 1280, min: 640 },
-                        height: { ideal: 720, min: 480 },
-                        frameRate: { ideal: 30, max: 30 }
-                    }
+                const selectedDeviceId = cameraSelect ? cameraSelect.value : "";
+                const videoConstraints = {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    frameRate: { ideal: 30 }
                 };
 
-                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = mediaStream;
+                if (selectedDeviceId) {
+                    videoConstraints.deviceId = { exact: selectedDeviceId };
+                }
+
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+                } catch (primaryErr) {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                }
+
+                if (video) video.srcObject = mediaStream;
+
+                const track = mediaStream.getVideoTracks()[0];
+                const capabilities = track && track.getCapabilities ? track.getCapabilities() : {};
+                if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+                    try {
+                        await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
+                    } catch (e) { }
+                }
             }
 
-            startBtn.addEventListener("click", async function () {
-                try {
-                    await startSelectedCamera();
-                    placeholder.style.display = "none";
-                    videoContainer.style.display = "block";
-                    startBtn.classList.add("d-none");
-                    stopBtn.classList.remove("d-none");
-                    document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#dc3545";
+            if (startBtn) {
+                startBtn.addEventListener("click", async function () {
+                    try {
+                        await startSelectedCamera();
+                        if (placeholder) placeholder.style.display = "none";
+                        if (videoContainer) videoContainer.style.display = "block";
+                        startBtn.classList.add("d-none");
+                        if (stopBtn) stopBtn.classList.remove("d-none");
+                        const wrapper = document.getElementById("cameraDropdownWrapper");
+                        if (wrapper) wrapper.style.backgroundColor = "#dc3545";
 
-                    isScanningActive = true;
-                    startDetectionLoop();
-                } catch (err) {
-                    alert("Failed to access camera: " + err.message);
-                }
-            });
+                        isScanningActive = true;
+                        startDetectionLoop();
+                    } catch (err) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Camera Error',
+                            text: 'Failed to access camera: ' + err.message,
+                            confirmButtonColor: '#1162a3'
+                        });
+                    }
+                });
+            }
 
-            cameraSelect.addEventListener("change", async function () {
-                if (mediaStream) {
-                    try { await startSelectedCamera(); } catch (err) { console.error(err); }
-                }
-            });
+            if (cameraSelect) {
+                cameraSelect.addEventListener("change", async function () {
+                    if (mediaStream) {
+                        try { await startSelectedCamera(); } catch (err) { console.error(err); }
+                    }
+                });
+            }
 
-            stopBtn.addEventListener("click", function () {
-                isScanningActive = false;
-                isProcessingFrame = false;
+            if (stopBtn) {
+                stopBtn.addEventListener("click", function () {
+                    isScanningActive = false;
+                    isProcessingFrame = false;
 
-                if (mediaStream) {
-                    mediaStream.getTracks().forEach(track => track.stop());
-                    mediaStream = null;
-                }
-                video.srcObject = null;
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+                    }
+                    if (video) video.srcObject = null;
 
-                const detectedCountDisplay = document.getElementById("detectedCountDisplay");
-                if (detectedCountDisplay) {
-                    detectedCountDisplay.textContent = "0";
-                }
+                    const detectedCountDisplay = document.getElementById("detectedCountDisplay");
+                    if (detectedCountDisplay) detectedCountDisplay.textContent = "0";
 
-                overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
-                recentDetections.length = 0;
+                    if (overlayCtx && overlay) overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+                    recentDetections.length = 0;
 
-                videoContainer.style.display = "none";
-                placeholder.style.display = "block";
-                stopBtn.classList.add("d-none");
-                startBtn.classList.remove("d-none");
-                document.getElementById("cameraDropdownWrapper").style.backgroundColor = "#1162a3";
+                    if (videoContainer) videoContainer.style.display = "none";
+                    if (placeholder) placeholder.style.display = "block";
+                    stopBtn.classList.add("d-none");
+                    if (startBtn) startBtn.classList.remove("d-none");
+                    const wrapper = document.getElementById("cameraDropdownWrapper");
+                    if (wrapper) wrapper.style.backgroundColor = "#1162a3";
 
-                buildCartAndRender({}, false);
-            });
+                    buildCartAndRender({}, false);
+                });
+            }
 
             async function startDetectionLoop() {
                 while (isScanningActive) {
-                    if (!isProcessingFrame && video.readyState === video.HAVE_ENOUGH_DATA) {
+                    if (!isProcessingFrame && video && video.readyState === video.HAVE_ENOUGH_DATA) {
                         isProcessingFrame = true;
                         await captureAndDetect();
                         isProcessingFrame = false;
@@ -870,22 +1106,44 @@
             }
 
             async function captureAndDetect() {
-                if (video.videoWidth === 0 || video.videoHeight === 0) return;
+                if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
 
-                if (captureCanvas.width !== video.videoWidth || captureCanvas.height !== video.videoHeight) {
+                if (captureCanvas && (captureCanvas.width !== video.videoWidth || captureCanvas.height !== video.videoHeight)) {
                     captureCanvas.width = video.videoWidth;
                     captureCanvas.height = video.videoHeight;
                 }
 
-                if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
+                if (overlay && (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight)) {
                     overlay.width = video.videoWidth;
                     overlay.height = video.videoHeight;
                 }
 
-                captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-                const frameBase64 = captureCanvas.toDataURL("image/jpeg", 0.5);
+                if (captureCtx && captureCanvas) {
+                    captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+                }
+
+                const enhancedCanvas = preprocessBarcodeFrame(video);
+                if (enhancedCanvas) {
+                    if (barcodeDetector) {
+                        barcodeDetector.detect(enhancedCanvas).then(barcodes => {
+                            if (barcodes && barcodes.length > 0) {
+                                for (const b of barcodes) {
+                                    if (b.rawValue) handleWebcamBarcodeDetected(b.rawValue);
+                                }
+                            }
+                        }).catch(() => { });
+                    } else if (zxingReader && !isZxingBusy) {
+                        isZxingBusy = true;
+                        zxingReader.decodeFromCanvas(enhancedCanvas).then(result => {
+                            if (result && result.getText()) handleWebcamBarcodeDetected(result.getText());
+                        }).catch(() => { }).finally(() => {
+                            isZxingBusy = false;
+                        });
+                    }
+                }
 
                 try {
+                    const frameBase64 = captureCanvas.toDataURL("image/jpeg", 0.5);
                     const response = await fetch("/api/Scan/detect", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -935,17 +1193,19 @@
                         }
                     }
 
-                    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+                    if (overlayCtx && overlay) {
+                        overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
 
-                    for (const detected of recentDetections) {
-                        const [x1, y1, x2, y2] = detected.box;
-                        const boxColor = detected.confidence >= 80 ? "#00FF00" : "#FFA500";
-                        overlayCtx.lineWidth = 3;
-                        overlayCtx.strokeStyle = boxColor;
-                        overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-                        overlayCtx.fillStyle = boxColor;
-                        overlayCtx.font = "bold 15px Arial";
-                        overlayCtx.fillText(`${detected.name} (${detected.confidence}%)`, x1, Math.max(18, y1 - 8));
+                        for (const detected of recentDetections) {
+                            const [x1, y1, x2, y2] = detected.box;
+                            const boxColor = detected.confidence >= 80 ? "#00FF00" : "#FFA500";
+                            overlayCtx.lineWidth = 3;
+                            overlayCtx.strokeStyle = boxColor;
+                            overlayCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                            overlayCtx.fillStyle = boxColor;
+                            overlayCtx.font = "bold 15px Arial";
+                            overlayCtx.fillText(`${detected.name} (${detected.confidence}%)`, x1, Math.max(18, y1 - 8));
+                        }
                     }
 
                     const yoloCounts = {};
@@ -963,7 +1223,7 @@
 
                 } catch (error) {
                     console.error("Cannot connect to Python Server:", error);
-                    list.innerHTML = "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
+                    if (list) list.innerHTML = "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
                 }
             }
 
@@ -1015,12 +1275,16 @@
 
                                 htmlOutput += `
                                     <tr>
-                                        <td class="fw-medium text-truncate" style="max-width: 140px;">${product.name} <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span>${stockBadge}</td>
+                                        <td class="fw-medium text-truncate" style="max-width: 140px;">
+                                            ${escapeHtml(product.name)}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span>
+                                            ${stockBadge}
+                                        </td>
                                         <td class="text-center fw-bold">${newQtyToLock}</td>
                                         <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
                                         <td class="text-end text-dark fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
                                         <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock}, ${product.stock})" title="Lock Item in Cart">
+                                            <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock}, ${product.stock}, ${product.isAgeRestricted ? 'true' : 'false'})" title="Lock Item in Cart">
                                                 <i class="fa-solid fa-check" style="font-size: 14px;"></i>
                                             </button>
                                         </td>
@@ -1028,7 +1292,7 @@
                             } else {
                                 htmlOutput += `
                                     <tr class="table-danger border-danger">
-                                        <td class="fw-medium text-truncate text-danger" style="max-width: 140px;">${product.name} <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">Limit Reached</span></td>
+                                        <td class="fw-medium text-truncate text-danger" style="max-width: 140px;">${escapeHtml(product.name)} <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">Limit Reached</span></td>
                                         <td class="text-center fw-bold text-danger">Max</td>
                                         <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
                                         <td class="text-end text-danger fw-bold small fw-medium">Stock: ${product.stock}</td>
@@ -1039,7 +1303,7 @@
                     } else {
                         htmlOutput += `
                             <tr>
-                                <td class="text-warning fw-bold text-truncate" style="max-width: 140px;"><i class="fa-solid fa-triangle-exclamation me-1"></i>${itemName}</td>
+                                <td class="text-warning fw-bold text-truncate" style="max-width: 140px;"><i class="fa-solid fa-triangle-exclamation me-1"></i>${escapeHtml(itemName)}</td>
                                 <td class="text-center">${qty}</td>
                                 <td class="text-end">-</td>
                                 <td class="text-end text-danger small">Unknown</td>
@@ -1052,9 +1316,17 @@
                     const subtotal = item.price * item.qty;
                     currentTotal += subtotal;
 
+                    const ageBadgeHtml = (item.isAgeRestricted === true || item.isAgeRestricted === 1)
+                        ? `<span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">18+</span>`
+                        : ``;
+
                     htmlOutput += `
                         <tr>
-                            <td class="fw-medium text-truncate" style="max-width: 140px;">${item.name} <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;">Cart</span></td>
+                            <td class="fw-medium text-truncate" style="max-width: 140px;">
+                                ${escapeHtml(item.name)}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;">Cart</span>
+                                ${ageBadgeHtml}
+                            </td>
                             <td class="text-center fw-bold">${item.qty}</td>
                             <td class="text-end text-muted small">₱${item.price.toFixed(2)}</td>
                             <td class="text-end text-primary fw-bold small">₱${subtotal.toFixed(2)}</td>
@@ -1082,8 +1354,8 @@
                     htmlOutput = "<tr><td colspan='5' class='text-muted text-center py-4'>No products detected on checkout tray...</td></tr>";
                 }
 
-                list.innerHTML = htmlOutput;
-                totalDueDisplay.innerText = `₱ ${currentTotal.toFixed(2)}`;
+                if (list) list.innerHTML = htmlOutput;
+                if (totalDueDisplay) totalDueDisplay.innerText = `₱ ${currentTotal.toFixed(2)}`;
 
                 const broadcastItems = [];
                 let customerTotal = 0;
@@ -1095,96 +1367,57 @@
             };
 
             // ================= CART CONTROLS =================
-            document.getElementById("btnVoidCart").addEventListener("click", () => {
-                if (confirm("Are you sure you want to void all saved items?")) {
-                    manualItems = [];
-                    buildCartAndRender({}, false);
-                }
-            });
+            const btnVoid = document.getElementById("btnVoidCart");
+            if (btnVoid) {
+                btnVoid.addEventListener("click", () => {
+                    if (manualItems.length === 0) return;
 
-                    window.openOldTransactions = async function() {
-            const modalEl = document.getElementById('oldTransactionsModal');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
-
-            const container = document.getElementById('oldTransactionsList');
-            container.innerHTML = `
-                <div class="text-center py-4 text-muted small">
-                    <i class="fa-solid fa-spinner fa-spin text-primary me-2"></i>Loading recent receipts...
-                </div>
-            `;
-
-            try {
-                const response = await fetch('/Home/GetOldTransactions');
-                const data = await response.json();
-
-                if (data.success && data.transactions && data.transactions.length > 0) {
-                    let html = '';
-                    data.transactions.forEach(tx => {
-                        html += `
-                            <div class="card border rounded-3 p-3 bg-white shadow-sm transition-all hover-shadow">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                             style="width: 34px; height: 34px;">
-                                            <i class="fa-solid fa-receipt fs-6"></i>
-                                        </div>
-                                        <div class="text-start">
-                                            <span class="fw-bold font-monospace text-dark d-block text-truncate" style="font-size: 0.85rem; max-width: 170px;">
-                                                ${tx.receiptNumber}
-                                            </span>
-                                            <span class="text-muted d-block" style="font-size: 11px;">
-                                                <i class="fa-regular fa-calendar-check me-1"></i>${tx.date}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0 mb-1 fw-bold" style="font-size: 10px;">
-                                            Paid
-                                        </span>
-                                        <div class="fw-bold text-dark font-monospace lh-1" style="font-size: 0.95rem;">
-                                            ₱${parseFloat(tx.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                    Swal.fire({
+                        title: 'Void Entire Cart?',
+                        text: 'Are you sure you want to remove all saved items from the cart?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fa-solid fa-trash-can me-1"></i>Yes, void cart',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            manualItems = [];
+                            buildCartAndRender({}, false);
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Cart Cleared',
+                                text: 'All items have been removed.',
+                                timer: 1200,
+                                showConfirmButton: false
+                            });
+                        }
                     });
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = `
-                        <div class="text-center py-4 text-muted">
-                            <i class="fa-regular fa-folder-open fa-2x mb-2 opacity-50 d-block"></i>
-                            <span class="small fw-semibold">No recent transactions recorded today.</span>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                container.innerHTML = `
-                    <div class="text-center py-4 text-danger small">
-                        <i class="fa-solid fa-triangle-exclamation mb-2 fs-5 d-block"></i>
-                        Failed to load transaction history.
-                    </div>
-                `;
+                });
             }
-        };
 
-            window.lockYoloItem = function (formattedName, displayName, price, qty, maxStock) {
+            window.lockYoloItem = function (formattedName, displayName, price, qty, maxStock, isAgeRestricted = false) {
                 const existing = manualItems.find(i => i.name === displayName);
                 const currentQty = existing ? existing.qty : 0;
 
                 if (currentQty + qty > maxStock) {
-                    alert(`Inventory Limit: The store only has ${maxStock} ${displayName} left.`);
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Inventory Limit Reached',
+                        text: `The store only has ${maxStock} unit(s) of "${displayName}" left in stock.`,
+                        confirmButtonColor: '#1162a3'
+                    });
                     const allowedQty = maxStock - currentQty;
                     if (allowedQty > 0) {
                         if (existing) existing.qty += allowedQty;
-                        else manualItems.push({ name: displayName, price: price, qty: allowedQty, stock: maxStock });
+                        else manualItems.push({ name: displayName, price: price, qty: allowedQty, stock: maxStock, isAgeRestricted: isAgeRestricted });
                     }
                 } else {
                     if (existing) {
                         existing.qty += qty;
                     } else {
-                        manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock });
+                        manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock, isAgeRestricted: isAgeRestricted });
                     }
                 }
                 buildCartAndRender({}, false);
@@ -1192,6 +1425,8 @@
 
             window.editManualItem = function (index) {
                 const item = manualItems[index];
+                if (!item) return;
+
                 document.getElementById("editItemIndex").value = index;
                 document.getElementById("editProductName").value = item.name;
                 document.getElementById("editProductPrice").value = `PHP ${item.price.toFixed(2)}`;
@@ -1204,46 +1439,73 @@
                 adjustModal.show();
             };
 
-            document.getElementById("btnConfirmAdjust").addEventListener("click", function() {
-                const index = document.getElementById("editItemIndex").value;
-                const qtyInput = document.getElementById("editProductQuantity");
-                const newQty = parseInt(qtyInput.value);
-                const maxStock = manualItems[index].stock || 999;
+            const btnConfirmAdjust = document.getElementById("btnConfirmAdjust");
+            if (btnConfirmAdjust) {
+                btnConfirmAdjust.addEventListener("click", function () {
+                    const index = document.getElementById("editItemIndex").value;
+                    const qtyInput = document.getElementById("editProductQuantity");
+                    const newQty = parseInt(qtyInput.value);
+                    const maxStock = (manualItems[index] && manualItems[index].stock) ? manualItems[index].stock : 999;
 
-                if (isNaN(newQty) || newQty <= 0) {
-                    qtyInput.classList.add("is-invalid");
-                    return;
-                }
+                    if (isNaN(newQty) || newQty <= 0) {
+                        qtyInput.classList.add("is-invalid");
+                        return;
+                    }
 
-                if (newQty > maxStock) {
-                    alert(`Stock Limit Reached: You cannot enter a quantity higher than the available stock (${maxStock}).`);
-                    qtyInput.value = maxStock;
-                    return;
-                }
+                    if (newQty > maxStock) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Stock Limit Reached',
+                            text: `You cannot enter a quantity higher than the available stock (${maxStock}).`,
+                            confirmButtonColor: '#1162a3'
+                        });
+                        qtyInput.value = maxStock;
+                        return;
+                    }
 
-                qtyInput.classList.remove("is-invalid");
-                manualItems[index].qty = newQty;
+                    qtyInput.classList.remove("is-invalid");
+                    manualItems[index].qty = newQty;
 
-                const adjustModal = bootstrap.Modal.getInstance(document.getElementById("adjustQuantityModal"));
-                adjustModal.hide();
+                    const adjustModal = bootstrap.Modal.getInstance(document.getElementById("adjustQuantityModal"));
+                    if (adjustModal) adjustModal.hide();
 
-                buildCartAndRender({}, false);
-            });
+                    buildCartAndRender({}, false);
+                });
+            }
 
             window.removeManualItem = function (index) {
                 manualItems.splice(index, 1);
                 buildCartAndRender({}, false);
             };
 
-            document.getElementById("btnProceedToPayment").addEventListener("click", () => {
-                if (manualItems.length === 0) {
-                    alert("The cart is empty! Please add or lock items before proceeding.");
-                    return;
-                }
+            // ================= PROCEED TO PAYMENT (WITH AGE CHECK ROUTING) =================
+            const btnProceed = document.getElementById("btnProceedToPayment");
+            if (btnProceed) {
+                btnProceed.addEventListener("click", () => {
+                    if (manualItems.length === 0) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Cart is Empty',
+                            text: 'Please scan or add items to the cart before proceeding to payment.',
+                            confirmButtonColor: '#1162a3'
+                        });
+                        return;
+                    }
 
-                sessionStorage.setItem("smartScanCart", JSON.stringify(manualItems));
-                window.location.href = "/Home/CustomerVerification";
-            });
+                    sessionStorage.setItem("smartScanCart", JSON.stringify(manualItems));
+                    const has18PlusItem = manualItems.some(item => item.isAgeRestricted === true || item.isAgeRestricted === 1);
+
+                    if (has18PlusItem) {
+                        sessionStorage.setItem("verificationReason", "AgeGated");
+                        window.location.href = "/Home/CustomerVerification";
+                    } else {
+                        sessionStorage.removeItem("verificationReason");
+                        sessionStorage.removeItem("verifiedCustomerName");
+                        sessionStorage.removeItem("verifiedCustomerId");
+                        window.location.href = "/Home/Payment";
+                    }
+                });
+            }
 
             buildCartAndRender({}, false);
         });
@@ -1258,5 +1520,293 @@
                 ]).catch(err => console.warn("Background model fetch delayed.", err));
             }, 3000);
         });
+
+        // ================= RECENT TRANSACTIONS STATE & INTERACTIVE RECEIPT =================
+        let allTodayTransactions = [];
+
+        function getPaymentBadgeHtml(methodId, methodName) {
+            const safeName = escapeHtml(methodName || 'Cash');
+
+            // Method 4: Store Credit matching custom amber palette
+            if (methodId === 4) {
+                return `
+                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
+                          style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba;">
+                        <i class="fa-solid fa-coins me-1"></i>${safeName}
+                    </span>
+                `;
+            }
+            // Method 2: E-Wallet / GCash
+            if (methodId === 2) {
+                return `
+                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-success"
+                          style="font-size: 11px; background-color: #dcfce7; border: 1.5px solid #bbf7d0;">
+                        <i class="fa-solid fa-mobile-screen-button me-1"></i>${safeName}
+                    </span>
+                `;
+            }
+            // Method 3: Credit Card
+            if (methodId === 3) {
+                return `
+                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
+                          style="font-size: 11px; background-color: #f3e8ff; color: #6b21a8; border: 1.5px solid #e9d5ff;">
+                        <i class="fa-solid fa-credit-card me-1"></i>${safeName}
+                    </span>
+                `;
+            }
+            // Default / Method 1: Cash
+            return `
+                <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-primary"
+                      style="font-size: 11px; background-color: #e0f2fe; border: 1.5px solid #bae6fd;">
+                    <i class="fa-solid fa-money-bill-wave me-1"></i>${safeName}
+                </span>
+            `;
+        }
+
+        window.openOldTransactions = async function () {
+            const modalEl = document.getElementById('oldTransactionsModal');
+            if (!modalEl) return;
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            closeReceiptPreview();
+            const searchInput = document.getElementById('txSearchInput');
+            if (searchInput) searchInput.value = "";
+
+            const container = document.getElementById('oldTransactionsList');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted small">
+                        <i class="fa-solid fa-spinner fa-spin text-primary me-2"></i>Loading transactions...
+                    </div>
+                `;
+            }
+
+            try {
+                const response = await fetch('/Home/GetOldTransactions');
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.transactions) && data.transactions.length > 0) {
+                    allTodayTransactions = data.transactions;
+                    renderTransactionCards(allTodayTransactions);
+                } else {
+                    if (container) container.innerHTML = '<div class="text-center py-4 text-muted small">No transactions found for today.</div>';
+                }
+            } catch (err) {
+                console.error("Transaction fetch error:", err);
+                if (container) container.innerHTML = '<div class="text-center py-4 text-danger small">Failed to load transaction history.</div>';
+            }
+        };
+
+        function renderTransactionCards(transactions) {
+            const container = document.getElementById('oldTransactionsList');
+            if (!container) return;
+
+            if (!transactions || transactions.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-muted small">No matching transactions found.</div>';
+                return;
+            }
+
+            let html = '';
+            transactions.forEach(tx => {
+                const totalNum = typeof tx.total === 'number' ? tx.total : parseFloat(tx.total || 0);
+                const customerSnippet = tx.customerName ? `<span class="badge bg-light text-dark border me-1">${escapeHtml(tx.customerName)}</span>` : '';
+                const safeReceiptNum = escapeHtml(tx.receiptNumber || '');
+                const paymentBadgeHtml = getPaymentBadgeHtml(tx.paymentMethodId, tx.paymentMethod);
+
+                html += `
+                    <div class="card border rounded-3 p-3 bg-white shadow-sm cursor-pointer transition-all hover-shadow"
+                         style="cursor: pointer; user-select: none;"
+                         onclick="showReceiptByReceiptNumber('${safeReceiptNum}')">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="width: 38px; height: 38px;">
+                                    <i class="fa-solid fa-receipt fs-6"></i>
+                                </div>
+                                <div class="text-start">
+                                    <span class="fw-bold font-monospace text-dark d-block" style="font-size: 0.9rem;">
+                                        ${safeReceiptNum}
+                                    </span>
+                                    <div class="text-muted d-flex align-items-center gap-1" style="font-size: 11px;">
+                                        ${customerSnippet}
+                                        <span><i class="fa-regular fa-clock me-1"></i>${escapeHtml(tx.date || '')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="mb-1">
+                                    ${paymentBadgeHtml}
+                                </div>
+                                <div class="fw-bold text-dark font-monospace lh-1" style="font-size: 1rem;">
+                                    ₱${totalNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function filterTransactionsList() {
+            const input = document.getElementById('txSearchInput');
+            // Strip leading currency symbols or commas for number matching
+            const rawQuery = input ? input.value.trim().toLowerCase() : '';
+            const cleanQuery = rawQuery.replace(/[₱,\s]/g, '');
+
+            if (!rawQuery) {
+                renderTransactionCards(allTodayTransactions);
+                return;
+            }
+
+            const filtered = allTodayTransactions.filter(tx => {
+                const rNum = String(tx.receiptNumber || '').toLowerCase();
+                const cName = String(tx.customerName || '').toLowerCase();
+                const pMethod = String(tx.paymentMethod || '').toLowerCase();
+
+                // Total amount matching (both raw float and formatted 2-decimal string)
+                const totalNum = typeof tx.total === 'number' ? tx.total : parseFloat(tx.total || 0);
+                const totalFormatted = totalNum.toFixed(2); // e.g. "25.00"
+                const totalRaw = String(totalNum);          // e.g. "25"
+
+                const matchesText = rNum.includes(rawQuery) || cName.includes(rawQuery) || pMethod.includes(rawQuery);
+                const matchesAmount = cleanQuery !== '' && (totalFormatted.includes(cleanQuery) || totalRaw.includes(cleanQuery));
+
+                return matchesText || matchesAmount;
+            });
+
+            renderTransactionCards(filtered);
+        }
+
+        function showReceiptByReceiptNumber(receiptNum) {
+            const tx = allTodayTransactions.find(t => String(t.receiptNumber) === String(receiptNum));
+            if (!tx) return;
+
+            const listSection = document.getElementById('txListViewSection');
+            const receiptSection = document.getElementById('txReceiptViewSection');
+            const headerTitle = document.getElementById('txModalHeaderTitle');
+
+            if (!listSection || !receiptSection) return;
+
+            // Toggle Views
+            listSection.style.display = 'none';
+            receiptSection.style.display = 'block';
+            if (headerTitle) headerTitle.innerHTML = '<i class="fa-solid fa-receipt me-2"></i>Receipt Details';
+
+            // Map Status Indicator (StatusId 3 = Completed, StatusId 4 = Pending Settlement)
+            const statusBadge = document.getElementById('modalReceiptStatusBadge');
+            const numericStatusId = parseInt(tx.statusId, 10);
+            if (statusBadge) {
+                if (numericStatusId === 4) {
+                    statusBadge.className = "badge rounded-pill px-3 py-1 fw-bold shadow-sm";
+                    statusBadge.style.backgroundColor = "#fff3cd";
+                    statusBadge.style.color = "#856404";
+                    statusBadge.style.border = "1px solid #ffeeba";
+                    statusBadge.innerHTML = '<i class="fa-solid fa-clock me-1"></i>Pending Settlement';
+                } else {
+                    statusBadge.className = "badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-bold";
+                    statusBadge.style.backgroundColor = "";
+                    statusBadge.style.color = "";
+                    statusBadge.style.border = "";
+                    statusBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>Completed';
+                }
+            }
+
+            // Populate Header & Meta Information
+            document.getElementById('modalReceiptNumber').textContent = tx.receiptNumber || '#REC-000000';
+            document.getElementById('modalReceiptDate').textContent = tx.date || '';
+            document.getElementById('modalBarcodeNumber').textContent = `*${(tx.receiptNumber || '000000').replace(/[^0-9A-Z]/gi, '')}*`;
+
+            // Customer Row
+            const custRow = document.getElementById('modalCustomerRow');
+            if (tx.customerName && String(tx.customerName).trim() !== '') {
+                document.getElementById('modalReceiptCustomer').textContent = tx.customerName;
+                custRow.style.display = 'flex';
+            } else {
+                custRow.style.display = 'none';
+            }
+
+            // Due Date Row | STRICT check — ONLY show if Store Credit (ID === 4) AND valid date exists
+            const numericMethodId = parseInt(tx.paymentMethodId ?? tx.PaymentMethodId, 10);
+            const rawDueDate = tx.dueDate ?? tx.DueDate;
+
+            const dueDateRow = document.getElementById('modalDueDateRow');
+            const dueDateEl = document.getElementById('modalReceiptDueDate');
+
+            if (dueDateRow) {
+                const hasValidDate = rawDueDate &&
+                                     String(rawDueDate).trim() !== '' &&
+                                     String(rawDueDate).trim() !== '--' &&
+                                     String(rawDueDate).toLowerCase() !== 'null';
+
+                // Must be strictly payment method 4 (Store Credits) AND have an actual date value
+                if (numericMethodId === 4 && hasValidDate) {
+                    if (dueDateEl) dueDateEl.textContent = rawDueDate;
+                    dueDateRow.style.setProperty("display", "flex", "important");
+                } else {
+                    // Force hide for Cash (1), GCash (2), Credit Card (3), or empty/-- dates
+                    if (dueDateEl) dueDateEl.textContent = '';
+                    dueDateRow.style.setProperty("display", "none", "important");
+                }
+            }
+
+            // Populate Items Table
+            const itemsListContainer = document.getElementById('modalReceiptItemList');
+            if (itemsListContainer) {
+                itemsListContainer.innerHTML = '';
+                let totalQuantity = 0;
+
+                if (tx.items && Array.isArray(tx.items) && tx.items.length > 0) {
+                    tx.items.forEach(item => {
+                        const qty = parseInt(item.qty || 1, 10);
+                        totalQuantity += qty;
+                        const subtotal = parseFloat(item.subtotal || (item.price * qty) || 0);
+
+                        itemsListContainer.innerHTML += `
+                            <div class="d-flex justify-content-between align-items-center" style="font-size: 11px;">
+                                <div class="text-truncate pe-2">
+                                    <span class="fw-bold text-dark">${escapeHtml(item.name || 'Product')}</span>
+                                    <small class="text-muted d-block">${qty} x ₱${parseFloat(item.price || 0).toFixed(2)}</small>
+                                </div>
+                                <span class="font-monospace fw-semibold text-dark text-nowrap">₱${subtotal.toFixed(2)}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    itemsListContainer.innerHTML = '<div class="text-muted small text-center py-2">No individual items recorded.</div>';
+                }
+
+                const totalQtyEl = document.getElementById('modalReceiptTotalQty');
+                if (totalQtyEl) totalQtyEl.textContent = `${totalQuantity} units`;
+            }
+
+            // Totals & Tender Details
+            const totalNum = typeof tx.total === 'number' ? tx.total : parseFloat(tx.total || 0);
+            document.getElementById('modalReceiptSubtotal').textContent = `₱${totalNum.toFixed(2)}`;
+            document.getElementById('modalReceiptGrandTotal').textContent = `₱${totalNum.toFixed(2)}`;
+
+            const tenderBadge = document.getElementById('modalReceiptMethodBadge');
+            if (tenderBadge) {
+                tenderBadge.outerHTML = `<span id="modalReceiptMethodBadge">${getPaymentBadgeHtml(numericMethodId, tx.paymentMethod)}</span>`;
+            }
+        }
+
+        function closeReceiptPreview() {
+            const listSection = document.getElementById('txListViewSection');
+            const receiptSection = document.getElementById('txReceiptViewSection');
+            const headerTitle = document.getElementById('txModalHeaderTitle');
+
+            if (receiptSection) receiptSection.style.display = 'none';
+            if (listSection) listSection.style.display = 'block';
+            if (headerTitle) headerTitle.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2"></i>Today\'s Completed Transactions';
+        }
+
+        // ================= PAY DEBT BUTTON TRIGGER =================
+        function initiateDebtPayment() {
+            sessionStorage.setItem("verificationReason", "PayDebt");
+            sessionStorage.setItem("verificationRedirect", "DebtSettlement");
+            window.location.href = "/Home/CustomerVerification";
+        }
     </script>
 }

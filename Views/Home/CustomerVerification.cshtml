@@ -16,101 +16,214 @@
     <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
          style="background-color: #1162a3;">
         <div class="d-flex align-items-center gap-2">
-            <h5 class="mb-0 fw-bold">
+            <h5 class="mb-0 fw-bold" id="pageHeaderTitle">
                 <i class="fa-solid fa-user-shield me-2"></i>Customer Verification
             </h5>
         </div>
-        <a asp-action="Checkout" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
-           style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-            <i class="fa-solid fa-arrow-left me-1"></i>Return to Checkout
-        </a>
+        <!-- Dynamic Return Button -->
+        <button type="button" id="btnCancelVerification" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+                style="background-color: #dbeafe; border-color: #cfe2f3 !important;"
+                onclick="cancelVerification()">
+            <i class="fa-solid fa-arrow-left me-1"></i><span id="btnCancelText">Return to Checkout</span>
+        </button>
     </div>
 
     <!-- Interior Workspace Split -->
-    <div class="card-body p-3 p-lg-4 flex-grow-1 d-flex flex-column" style="min-height: 0;">
-        <div class="row g-3 flex-grow-1 m-0" style="min-height: 0;">
+    <div class="card-body p-3 p-lg-4 flex-grow-1 d-flex flex-column overflow-hidden" style="min-height: 0;">
+        <div class="row g-3 flex-grow-1 m-0 overflow-hidden" style="min-height: 0;">
 
-            <!-- ================= LEFT COLUMN | Controls & Forms ================= -->
-            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-3 pb-3" style="min-height: 0;">               
+            <!-- ================= LEFT COLUMN: WORKSPACE PANES ================= -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-3 pb-3 overflow-hidden" style="min-height: 0;">
 
-                <!-- Verification Tabs -->
-                <ul class="nav nav-pills mb-3 flex-shrink-0 gap-2" id="verificationTabs" role="tablist">
-					
-                    <p class="fw-medium text-secondary text-center" style="font-size: 16.5px;">
-                        <i class="fa-solid fa-info-circle me-2"></i>Select a Verification Method in order to proceed to the payment process.
-					</p>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active rounded-pill fw-semibold border shadow-sm px-4"
-                                style="width: 280px;"
-                                id="facial-tab" data-bs-toggle="pill" data-bs-target="#facial-pane" type="button" role="tab">
-                            <i class="fa-solid fa-camera-viewfinder me-2"></i>Face ID
+                <!-- TOP SWITCHER: Toggle between Verification / Pay Debt & Register Customer -->
+                <div id="verificationSwitcherGroup" class="mb-3 flex-shrink-0" style="display: none;">
+                    <div class="p-1 bg-light rounded-pill border d-flex gap-1 shadow-sm">
+                        <button type="button"
+                                id="btnSwitchPayDebt"
+                                class="btn btn-sm rounded-pill flex-fill fw-semibold py-2 transition-all"
+                                onclick="switchToPayDebtPane()">
+                            <i class="fa-solid fa-user-check me-1" id="iconSwitchPayDebt"></i>
+                            <span id="labelSwitchPayDebt">Pay Debt</span>
                         </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link rounded-pill fw-semibold border shadow-sm px-4"
-                                style="width: 280px;"
-                                id="nationalid-tab" data-bs-toggle="pill" data-bs-target="#nationalid-pane" type="button" role="tab">
-                            <i class="fa-solid fa-address-card me-2"></i>National ID
+                        <button type="button"
+                                id="btnSwitchRegister"
+                                class="btn btn-sm rounded-pill flex-fill fw-semibold py-2 transition-all"
+                                onclick="switchToRegistrationPane()">
+                            <i class="fa-solid fa-user-plus me-1"></i>Register Customer
                         </button>
-                    </li>
-                </ul>
+                    </div>
+                </div>
 
-                <!-- Tab Content Area -->
-                <div class="tab-content flex-grow-1 overflow-y-auto no-scrollbar pe-2">
+                <!-- PANE 1: FACIAL RECOGNITION (VERIFICATION / PAY DEBT) -->
+                <div id="facial-recognition-pane" class="h-100 flex-column justify-content-between overflow-hidden" style="display: none;">
+                    <div class="overflow-y-auto no-scrollbar pe-1">
 
-                    <!-- PANE 1: FACE VERIFICATION -->
-                    <div class="tab-pane fade show active h-100 flex-column" id="facial-pane" role="tabpanel">
-                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
-                            <div class="d-flex align-items-center gap-3 mb-3">
-                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3"
-                                     style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                                    <i class="fa-solid fa-user-check fs-4"></i>
+                        <!-- Header Info -->
+                        <div class="px-2 pt-2 pb-3 flex-shrink-0">
+                            <h4 class="mb-1 fw-bold" style="color: #1162a3;" id="faceRecognitionHeaderTitle">Live Face Recognition</h4>
+                            <p class="fw-medium text-secondary mb-0" id="faceRecognitionHeaderSub">Authenticate customer identity against the biometric registry.</p>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light mb-3">
+
+                            <!-- Mobile Contact Number (Manual Lookup) -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label class="control-label fw-semibold mb-1" style="color: #1162a3;">
+                                        Mobile Contact Number
+                                    </label>
+                                    <span class="text-muted" style="font-size: 11px;">Manual Lookup</span>
                                 </div>
-                                <div>
-                                    <h6 class="fw-bold mb-0 text-primary fs-5">Live Face Verification</h6>
-                                    <small class="text-muted fw-medium">Auto-scans continuously for registered customers.</small>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                                    <input type="tel"
+                                           id="manualLookupContact"
+                                           class="form-control border-0 bg-white shadow-none ps-3 font-monospace fw-medium"
+                                           maxlength="13"
+                                           inputmode="numeric"
+                                           value="09"
+                                           oninput="formatPhpPhone(this)"
+                                           onkeydown="handlePhoneBackspace(this, event); if(event.key === 'Enter') lookupCustomerByPhone();"
+                                           placeholder="09XX XXX XXXX" />
+                                    <button type="button"
+                                            class="btn btn-primary fw-semibold px-3 z-3 border-0"
+                                            style="background-color: #1162a3;"
+                                            onclick="lookupCustomerByPhone()">
+                                        <i class="fa-solid fa-magnifying-glass me-1"></i>Search
+                                    </button>
+                                </div>
+                                <div class="form-text small" style="font-size: 11px;">11-digit mobile number required to verify without facial scanning.</div>
+                            </div>
+                        </div>
+
+
+
+                        <!-- Recognition Status & Result Display Card -->
+                        <div class="card border rounded-4 p-3 bg-white shadow-sm mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div id="recognitionIconBox" class="rounded-circle bg-light text-secondary p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="fa-solid fa-user-clock fa-lg"></i>
+                                    </div>
+                                    <div class="text-start">
+                                        <span class="fw-bold text-dark d-block" id="recognitionCustomerDisplay" style="font-size: 14px;">Awaiting Verification...</span>
+                                        <small class="text-muted d-block" id="recognitionSubDisplay">Enable scanner or lookup by contact number.</small>
+                                    </div>
+                                </div>
+                                <div class="text-end" id="recognitionBadgeContainer" style="display: none;">
+                                    <span class="badge rounded-pill bg-success text-white px-3 py-1 fw-bold" id="recognitionStatusBadge">Matched</span>
                                 </div>
                             </div>
-                            <p class="text-muted small mb-0">
-                                <i class="fa-solid fa-shield-halved text-success me-1"></i>
-                                <strong>Privacy Secured:</strong> Facial features are converted to a mathematical vector; raw video frames are never saved.
-                            </p>
                         </div>
                     </div>
 
-                    <!-- PANE 2: NATIONAL ID VERIFICATION -->
-                    <div class="tab-pane fade h-100 flex-column" id="nationalid-pane" role="tabpanel">
-                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
-                            <div class="d-flex align-items-center gap-3 mb-3">
-                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3"
-                                     style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                                    <i class="fa-solid fa-id-card fs-4"></i>
+                    <div class="alert alert-light border small text-muted mb-0 py-2 text-center rounded-3 mt-auto">
+                        <i class="fa-solid fa-info-circle me-1 text-primary"></i> Click <strong>Enable Scanner</strong> below or enter mobile number.
+                    </div>
+                </div>
+
+                <!-- PANE 2: CUSTOMER REGISTRATION -->
+                <div id="register-left-pane" class="h-100 flex-column justify-content-between overflow-hidden" style="display: none;">
+                    <div class="overflow-y-auto no-scrollbar pe-1">
+
+                        <!-- Header Info -->
+                        <div class="px-2 pt-2 pb-1 flex-shrink-0">
+                            <h4 class="mb-1 fw-bold" style="color: #1162a3;" id="faceRecognitionHeaderTitle">Register Customer</h4>
+                            <p class="fw-medium text-secondary mb-0" id="faceRecognitionHeaderSub">Enroll customer profile for store credit verification.</p>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light mb-3">
+
+                            <!-- Full Name -->
+                            <div class="form-group mb-3">
+                                <label class="control-label fw-semibold mb-1" style="color: #1162a3;">Full Name</label>
+                                <input type="text" id="regFullName" class="form-control rounded-3" placeholder="e.g., Juan Dela Cruz" autocomplete="off" />
+                            </div>
+
+                            <!-- Mobile Contact -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label class="control-label fw-semibold mb-1" style="color: #1162a3;">Mobile Contact Number</label>
                                 </div>
-                                <div>
-                                    <h6 class="fw-bold mb-0 text-primary fs-5">PhilSys Age Verification</h6>
-                                    <small class="text-muted fw-medium">Scan QR in the viewer or enter PCN manually.</small>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                                    <input type="tel"
+                                           id="regContactNumber"
+                                           class="form-control rounded-3 border-0 font-monospace"
+                                           maxlength="13"
+                                           inputmode="numeric"
+                                           required
+                                           value="09"
+                                           oninput="formatPhpPhone(this)"
+                                           onkeydown="handlePhoneBackspace(this, event);"
+                                           placeholder="09XX XXX XXXX" />
+                                </div>
+                                <div class="form-text small" style="font-size: 11px;">11-digit mobile number for Store Credit SMS updates.</div>
+                            </div>
+
+                            <!-- Biometric Status Indicator -->
+                            <div class="card border rounded-3 p-3 bg-white shadow-sm mb-3">
+                                <span class="text-uppercase text-secondary fw-bold d-block mb-1" style="font-size: 11px;">Biometric Profile</span>
+                                <span id="regFaceStatusBadge" class="badge bg-secondary-subtle text-secondary border rounded-pill px-3 py-1">
+                                    <i class="fa-solid fa-user-xmark me-1"></i>Face Not Captured
+                                </span>
+                            </div>
+
+                            <input type="hidden" id="regFaceEmbeddingJson" />
+
+                            <button type="button" class="btn w-100 btn-primary fw-bold rounded-pill py-2 shadow-sm"
+                                    style="background-color: #1162a3; border-color: #1162a3;"
+                                    onclick="submitCustomerRegistration()">
+                                <i class="fa-solid fa-check-circle me-1"></i>Register & Proceed to Store Credit
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border small text-muted mb-0 py-2 text-center rounded-3 mt-auto">
+                        <i class="fa-solid fa-circle-info text-primary me-1"></i>
+                        Store credit limit is initialized to <strong>PHP 300.00</strong>.
+                    </div>
+                </div>
+
+                <!-- PANE 3: PHILSYS NATIONAL ID (AGE RESTRICTION) -->
+                <div id="nationalid-left-pane" class="h-100 flex-column justify-content-between overflow-hidden" style="display: none;">
+                    <div class="overflow-hidden d-flex flex-column h-100">
+
+                        <!-- Header Info -->
+                        <div class="px-2 pt-2 flex-shrink-0">
+                            <h4 class="mb-1 fw-bold" style="color: #1162a3;" id="faceRecognitionHeaderTitle">PhilSys Age Verification</h4>
+                            <p class="fw-medium text-secondary mb-0" id="faceRecognitionHeaderSub">Required for purchase of 18+ restricted merchandise.</p>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light mb-3 flex-shrink-0">
+
+                            <!-- Manual PCN & DOB Inputs -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label class="control-label fw-semibold mb-1" style="color: #1162a3;">16-Digit PCN</label>
+                                </div>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
+                                    <input type="text"
+                                           id="digitalIdInput"
+                                           class="form-control rounded-3 border-0 shadow-none ps-3 font-monospace fw-semibold"
+                                           placeholder="e.g. 1234567891234567" />
                                 </div>
                             </div>
 
-                            <!-- Manual Inputs -->
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold small text-secondary mb-1">16-Digit PCN</label>
-                                <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
-                                    <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-hashtag"></i></span>
-                                    <input type="text" id="digitalIdInput" class="form-control border-0 shadow-none fw-semibold font-monospace" placeholder="e.g. 1234567891234567" />
-                                </div>
-                            </div>
                             <div class="mb-4">
-                                <label class="form-label fw-semibold small text-secondary mb-1">Date of Birth</label>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label class="control-label fw-semibold mb-1" style="color: #1162a3;">Date of Birth</label>
+                                </div>
                                 <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
-                                    <span class="input-group-text bg-white border-0 text-muted"><i class="fa-regular fa-calendar"></i></span>
-                                    <input type="date" id="manualDobInput" class="form-control border-0 shadow-none fw-semibold" />
+                                    <input type="date"
+                                           id="manualDobInput"
+                                           class="form-control rounded-3 border-0 shadow-none ps-3 fw-semibold" />
                                 </div>
                             </div>
 
                             <!-- Action Buttons -->
                             <div class="d-flex flex-column gap-2">
-                                <button type="button" class="btn btn-primary rounded-pill fw-bold py-2 shadow-sm" style="background-color: #1162a3; border-color: #1162a3;" onclick="verifyGovernmentId()">
+                                <button type="button" class="btn btn-primary rounded-pill fw-bold py-2 shadow-sm"
+                                        style="background-color: #1162a3; border-color: #1162a3;"
+                                        onclick="verifyGovernmentId()">
                                     <i class="fa-solid fa-shield-check me-2"></i>Verify Age
                                 </button>
                                 <label class="btn btn-outline-secondary rounded-pill fw-semibold shadow-sm mb-0 cursor-pointer">
@@ -119,72 +232,116 @@
                                 </label>
                             </div>
                         </div>
+
+                        <!-- Result Card -->
+                        <div class="card border rounded-3 p-3 bg-white shadow-sm flex-shrink-0" id="idVerificationCard">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div id="idResultIcon" class="rounded-circle bg-light text-secondary p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="fa-solid fa-id-card fa-lg"></i>
+                                    </div>
+                                    <div class="text-start">
+                                        <span class="fw-bold text-dark d-block" id="idDisplayPayload" style="font-size: 14px;">Pending Verification</span>
+                                        <small class="text-muted d-block" id="idDisplaySub">Scan QR or enter PCN and DOB manually.</small>
+                                    </div>
+                                </div>
+                                <div class="text-end" id="ageResultContainer" style="display: none;">
+                                    <span class="badge rounded-pill px-3 py-1 fw-bold" id="ageClassificationBadge" style="font-size: 12px;">--</span>
+                                    <small class="text-muted d-block mt-1" id="dobDisplayText" style="font-size: 11px;"></small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
+                    <div class="alert alert-light border small text-muted mb-0 py-2 text-center rounded-3 mt-auto">
+                        <i class="fa-solid fa-id-card me-1 text-primary"></i> Present the PhilSys QR code directly in front of the scanner.
+                    </div>
                 </div>
             </div>
 
-            <!-- ================= RIGHT COLUMN | Camera Viewport ================= -->
-            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-3" style="min-height: 0;">
-
+            <!-- ================= RIGHT COLUMN: DEDICATED SEPARATE VIEWPORTS ================= -->
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-3 overflow-hidden" style="min-height: 0;">
                 <div class="card border-0 bg-dark text-white rounded-4 flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden shadow-sm"
-                     style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate;">
+                     style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate; height: 100%;">
 
-                    <!-- Camera Off Placeholder -->
+                    <!-- Idle / Placeholder (Default State on load) -->
                     <div id="cameraPlaceholder" class="text-center p-4 z-2">
                         <div class="border-2 rounded-circle bg-black bg-opacity-25 p-4 d-inline-flex mb-3 border border-secondary border-opacity-25">
-                            <i class="fa-solid fa-spinner fa-spin fa-3x text-secondary"></i>
+                            <i class="fa-solid fa-video-slash fa-3x text-secondary"></i>
                         </div>
-                        <h5 class="fw-bold text-secondary mb-1">Scanner Idle</h5>
-                        <p class="text-muted small mb-0">Press start to activate the lens.</p>
+                        <h5 class="fw-bold text-secondary mb-1">Webcam Disabled</h5>
+                        <p class="text-muted small mb-0" style="max-width: 320px;">
+                            Select your video source and enable the camera to authenticate customer verification.
+                        </p>
                     </div>
 
-                    <!-- Face Video Stream Container -->
-                    <div id="faceVideoContainer" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; z-index: 1;">
-                        <video id="videoFeed" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
-                        <canvas id="faceCanvas" class="position-absolute top-0 start-0 pointer-events-none"></canvas>
+                    <!-- Dedicated Face Registration Stream Container -->
+                    <div id="regVideoContainer" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; z-index: 1;">
+                        <video id="regVideoFeed" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
+                        <canvas id="regFaceCanvas" class="position-absolute top-0 start-0 pointer-events-none"></canvas>
+                        <div class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
+                             style="width: 220px; height: 280px; opacity: 0.5; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);">
+                        </div>
+                    </div>
+
+                    <!-- Dedicated Face Verification Stream Container -->
+                    <div id="verifyVideoContainer" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; z-index: 1;">
+                        <video id="verifyVideoFeed" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
+                        <canvas id="verifyFaceCanvas" class="position-absolute top-0 start-0 pointer-events-none"></canvas>
                         <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
                              style="width: 220px; height: 280px; opacity: 0.5; transition: border-color 0.3s; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);">
                         </div>
                     </div>
 
-                    <!-- QR Scanner Container (Html5-Qrcode) -->
+                    <!-- Dedicated QR Scanner Container -->
                     <div id="qrVideoContainer" class="position-absolute top-0 start-0 w-100 h-100 bg-white" style="display: none; z-index: 1;">
                         <div id="qrReader" class="w-100 h-100 border-0"></div>
                     </div>
 
-                    <!-- OVERLAY: Transparent Status Display (Bottom Left) -->
-                    <div class="position-absolute bottom-0 start-0 p-3 z-3 w-100 d-flex flex-column gap-1 bg-transparent"
-                         style="pointer-events: none; text-shadow: 1px 1px 4px rgba(0,0,0,0.9), -1px -1px 4px rgba(0,0,0,0.9);">
-
-                        <!-- Face Status -->
-                        <div class="d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-                            <i id="faceStatusIcon" class="fa-solid fa-user text-light" style="width: 20px; text-align: center;"></i>
-                            <span id="faceStatusText" class="fw-bold text-light">Face: Idle</span>
-                        </div>
-
-                        <!-- Age Status -->
-                        <div class="d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-                            <i id="ageStatusIcon" class="fa-solid fa-id-card text-light" style="width: 20px; text-align: center;"></i>
-                            <span id="ageStatusText" class="fw-bold text-light">Age: Unverified</span>
-                        </div>
+                    <!-- OVERLAY: Top-Left Floating Status Pill Badge -->
+                    <div class="position-absolute top-0 start-0 m-3 z-3" style="pointer-events: none;">
+                        <span class="badge bg-black bg-opacity-60 text-white border border-white border-opacity-25 rounded-pill px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2"
+                              style="backdrop-filter: blur(4px); font-size: 0.82rem; letter-spacing: 0.3px;">
+                            <i id="overlayStatusIcon" class="fa-solid fa-video-slash text-light" style="width: 16px; text-align: center;"></i>
+                            <span id="overlayStatusText">Webcam Disabled</span>
+                        </span>
                     </div>
 
-                    <!-- OVERLAY: Camera Activation Buttons (Bottom Center) -->
-                    <div class="position-absolute bottom-0 start-50 translate-middle-x pb-3 z-3">
+                    <!-- ================= ENABLE/DISABLE BUTTON & CAMERA SELECTOR (CHECKOUT DESIGN) ================= -->
+                    <div class="position-absolute start-50 translate-middle-x z-3 shadow-lg" style="bottom: 24px;">
+                        <div class="btn-group rounded-pill overflow-hidden border border-white border-opacity-25 shadow" role="group">
+                            <button id="startCamBtn"
+                                    type="button"
+                                    class="btn btn-sm text-white fw-semibold px-3 py-2 d-flex align-items-center gap-2 border-0"
+                                    style="background-color: #1162a3;">
+                                <i class="fa-solid fa-play small"></i>
+                                <span>Enable Scanner</span>
+                            </button>
 
-                        <!-- Face Cam Button -->
-                        <button type="button" id="btnToggleFaceCam" class="btn btn-primary rounded-pill fw-bold px-4 shadow-lg"
-                                style="background-color: #1162a3; border-color: #1162a3; font-size: 0.9rem;">
-                            <i class="fa-solid fa-video me-2"></i>Start Face Scanner
-                        </button>
+                            <button id="stopCamBtn"
+                                    type="button"
+                                    class="btn btn-sm btn-danger fw-semibold px-3 py-2 d-none d-flex align-items-center gap-2 border-0">
+                                <i class="fa-solid fa-stop small"></i>
+                                <span>Stop Feed</span>
+                            </button>
 
-                        <!-- QR Cam Button (Hidden by default) -->
-                        <button type="button" id="btnToggleQrCam" class="btn btn-primary rounded-pill fw-bold px-4 shadow-lg"
-                                style="display: none; background-color: #1162a3; border-color: #1162a3; font-size: 0.9rem;"
-                                onclick="toggleQrScanner()">
-                            <i class="fa-solid fa-qrcode me-2"></i>Scan QR
-                        </button>
+                            <div class="position-relative d-flex align-items-center border-start border-white border-opacity-25"
+                                 id="cameraDropdownWrapper"
+                                 style="background-color: #1162a3; transition: background-color 0.2s ease;">
+                                <button type="button"
+                                        tabindex="-1"
+                                        class="btn btn-sm text-white px-2 py-2 border-0 h-100 d-flex align-items-center justify-content-center"
+                                        style="pointer-events: none; width: 34px;">
+                                    <i class="fa-solid fa-chevron-down small"></i>
+                                </button>
+                                <select id="cameraSelect"
+                                        class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                        style="cursor: pointer;"
+                                        title="Choose camera device">
+                                    <option value="">Detecting cameras...</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -195,99 +352,320 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 
-    <script>
-        // ================= GLOBAL UI CONTROLS =================
+    <script type="text/javascript">
+        // ================= GLOBAL STATE & ROUTING =================
         const placeholder = document.getElementById('cameraPlaceholder');
-        const faceContainer = document.getElementById('faceVideoContainer');
+        const regVideoContainer = document.getElementById('regVideoContainer');
+        const verifyVideoContainer = document.getElementById('verifyVideoContainer');
         const qrContainer = document.getElementById('qrVideoContainer');
+        const scanGuide = document.getElementById('scanGuide');
+        const switchRegisterContainer = document.getElementById('switchRegisterContainer');
 
-        const btnToggleFaceCam = document.getElementById('btnToggleFaceCam');
-        const btnToggleQrCam = document.getElementById('btnToggleQrCam');
+        const switcherGroup = document.getElementById('verificationSwitcherGroup');
+        const btnSwitchPayDebt = document.getElementById('btnSwitchPayDebt');
+        const btnSwitchRegister = document.getElementById('btnSwitchRegister');
 
-        function updateFaceStatus(theme, iconClass, text) {
-            const icon = document.getElementById('faceStatusIcon');
-            const span = document.getElementById('faceStatusText');
-            icon.className = `fa-solid ${iconClass} text-${theme}`;
-            span.className = `fw-bold text-${theme}`;
-            span.textContent = text;
-        }
+        const startBtn = document.getElementById("startCamBtn");
+        const stopBtn = document.getElementById("stopCamBtn");
+        const cameraSelect = document.getElementById("cameraSelect");
+        const cameraDropdownWrapper = document.getElementById("cameraDropdownWrapper");
 
-        function updateAgeStatus(theme, iconClass, text) {
-            const icon = document.getElementById('ageStatusIcon');
-            const span = document.getElementById('ageStatusText');
-            icon.className = `fa-solid ${iconClass} text-${theme}`;
-            span.className = `fw-bold text-${theme}`;
-            span.textContent = text;
+        let verificationReason = sessionStorage.getItem("verificationReason"); // "AgeGated" | "PayDebt" | null
+        let verificationRedirect = sessionStorage.getItem("verificationRedirect"); // "StoreCredit" | null
+        let isPayDebt = verificationReason === "PayDebt";
+
+        let activeStream = null;
+        let isModelReady = false;
+        let isAuthenticating = false;
+        let isDetectionActive = false;
+        let scanSessionTimeout = null;
+
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
+        const AUTO_STOP_MS = 25000;
+
+        function updateOverlayStatus(iconClass, text, colorClass = "text-light") {
+            const icon = document.getElementById("overlayStatusIcon");
+            const span = document.getElementById("overlayStatusText");
+            if (icon) icon.className = `fa-solid ${iconClass} ${colorClass}`;
+            if (span) span.innerText = text;
         }
 
         function showPlaceholder() {
             placeholder.style.display = 'block';
-            faceContainer.style.display = 'none';
+            regVideoContainer.style.display = 'none';
+            verifyVideoContainer.style.display = 'none';
             qrContainer.style.display = 'none';
+
+            stopBtn.classList.add("d-none");
+            startBtn.classList.remove("d-none");
+            if (cameraDropdownWrapper) cameraDropdownWrapper.style.backgroundColor = "#1162a3";
         }
 
-        // Handle Tab Switching (Stop Active Cameras and Swap Buttons)
-        document.querySelectorAll('button[data-bs-toggle="pill"]').forEach(tab => {
-            tab.addEventListener('shown.bs.tab', event => {
-                stopFaceCamera();
-                stopQrScanner();
+        function updateSwitcherButtons(activeSection) {
+            if (activeSection === 'PayDebt') {
+                btnSwitchPayDebt.className = "btn btn-sm rounded-pill flex-fill fw-semibold py-2 shadow-sm text-white";
+                btnSwitchPayDebt.style.backgroundColor = "#1162a3";
+                btnSwitchPayDebt.style.borderColor = "#1162a3";
 
-                // Reset Indicators
-                updateFaceStatus('light', 'fa-user', 'Face: Idle');
-                updateAgeStatus('light', 'fa-id-card', 'Age: Unverified');
-                showPlaceholder();
+                btnSwitchRegister.className = "btn btn-sm rounded-pill flex-fill fw-semibold py-2 text-secondary border-0 bg-transparent";
+                btnSwitchRegister.style.backgroundColor = "";
+                btnSwitchRegister.style.borderColor = "";
+            } else {
+                btnSwitchRegister.className = "btn btn-sm rounded-pill flex-fill fw-semibold py-2 shadow-sm text-white";
+                btnSwitchRegister.style.backgroundColor = "#1162a3";
+                btnSwitchRegister.style.borderColor = "#1162a3";
 
-                // Swap bottom buttons based on active tab
-                if (event.target.id === 'facial-tab') {
-                    btnToggleFaceCam.style.display = 'block';
-                    btnToggleQrCam.style.display = 'none';
-                } else {
-                    btnToggleFaceCam.style.display = 'none';
-                    btnToggleQrCam.style.display = 'block';
+                btnSwitchPayDebt.className = "btn btn-sm rounded-pill flex-fill fw-semibold py-2 text-secondary border-0 bg-transparent";
+                btnSwitchPayDebt.style.backgroundColor = "";
+                btnSwitchPayDebt.style.borderColor = "";
+            }
+        }
+
+        // ================= LOAD CAMERAS =================
+        async function loadCameras() {
+            try {
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                tempStream.getTracks().forEach(t => t.stop());
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === "videoinput");
+
+                cameraSelect.innerHTML = "";
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement("option");
+                    option.value = device.deviceId;
+                    option.text = device.label || `Camera ${index + 1}`;
+                    const lowerLabel = (device.label || "").toLowerCase();
+                    if (lowerLabel.includes("user") || lowerLabel.includes("front") || lowerLabel.includes("integrated")) {
+                        option.selected = true;
+                    }
+                    cameraSelect.appendChild(option);
+                });
+
+                if (videoDevices.length === 0) {
+                    cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
                 }
-            });
+            } catch (err) {
+                cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
+            }
+        }
+
+        // ================= PAGE INITIALIZATION =================
+        document.addEventListener("DOMContentLoaded", function () {
+            loadCameras();
+
+            const isFromPayment = verificationRedirect === "StoreCredit";
+            const isFromCheckout = document.referrer.toLowerCase().includes("checkout")
+                                  || verificationReason === "AgeGated"
+                                  || isPayDebt;
+
+            // Contextual Toggle Button Labels & Visibility
+            const labelSwitchPayDebt = document.getElementById("labelSwitchPayDebt");
+            const iconSwitchPayDebt = document.getElementById("iconSwitchPayDebt");
+
+            if (isFromCheckout) {
+                if (switcherGroup) switcherGroup.style.display = "none";
+            } else {
+                if (switcherGroup) switcherGroup.style.display = "block";
+            }
+
+            if (labelSwitchPayDebt && iconSwitchPayDebt) {
+                if (isFromPayment) {
+                    labelSwitchPayDebt.innerText = "Verify Customer";
+                    iconSwitchPayDebt.className = "fa-solid fa-user-check me-1";
+                } else {
+                    labelSwitchPayDebt.innerText = "Pay Debt";
+                    iconSwitchPayDebt.className = "fa-solid fa-hand-holding-dollar me-1";
+                }
+            }
+
+            // Route Viewport Panes
+            if (verificationReason === "AgeGated") {
+                if (switcherGroup) switcherGroup.style.display = "none";
+
+                document.getElementById("nationalid-left-pane").style.display = "flex";
+                document.getElementById("register-left-pane").style.display = "none";
+                document.getElementById("facial-recognition-pane").style.display = "none";
+                document.getElementById("pageHeaderTitle").innerHTML = '<i class="fa-solid fa-user-shield me-2"></i>Customer Verification';
+
+                updateOverlayStatus("fa-qrcode", "PhilSys QR Scanner Ready");
+            } else if (isPayDebt) {
+                if (switcherGroup) switcherGroup.style.display = "none";
+
+                document.getElementById("facial-recognition-pane").style.display = "flex";
+                document.getElementById("register-left-pane").style.display = "none";
+                document.getElementById("nationalid-left-pane").style.display = "none";
+                document.getElementById("pageHeaderTitle").innerHTML = '<i class="fa-solid fa-user-shield me-2"></i>Customer Verification';
+
+                const faceTitle = document.getElementById("faceRecognitionHeaderTitle");
+                const faceSub = document.getElementById("faceRecognitionHeaderSub");
+                if (faceTitle) faceTitle.innerText = "Pay Debt Face Authentication";
+                if (faceSub) faceSub.innerText = "Scan customer face to automatically fetch pending credit debt.";
+
+                if (switchRegisterContainer) switchRegisterContainer.style.display = "none";
+                loadFaceApiModels();
+            } else if (isFromPayment) {
+                if (switcherGroup) switcherGroup.style.display = "block";
+                updateSwitcherButtons('PayDebt');
+
+                document.getElementById("facial-recognition-pane").style.display = "flex";
+                document.getElementById("register-left-pane").style.display = "none";
+                document.getElementById("nationalid-left-pane").style.display = "none";
+                document.getElementById("pageHeaderTitle").innerHTML = '<i class="fa-solid fa-user-shield me-2"></i>Customer Verification';
+
+                const faceTitle = document.getElementById("faceRecognitionHeaderTitle");
+                const faceSub = document.getElementById("faceRecognitionHeaderSub");
+                if (faceTitle) faceTitle.innerText = "Customer Verification";
+                if (faceSub) faceSub.innerText = "Scan customer face to authenticate identity for Store Credit charge.";
+
+                if (switchRegisterContainer) switchRegisterContainer.style.display = "block";
+                loadFaceApiModels();
+            } else {
+                if (switcherGroup) switcherGroup.style.display = "block";
+                updateSwitcherButtons('Register');
+
+                document.getElementById("register-left-pane").style.display = "flex";
+                document.getElementById("facial-recognition-pane").style.display = "none";
+                document.getElementById("nationalid-left-pane").style.display = "none";
+                document.getElementById("pageHeaderTitle").innerHTML = '<i class="fa-solid fa-user-plus me-2"></i>Customer Store Registration';
+
+                loadFaceApiModels();
+            }
+
+            const cancelBtnText = document.getElementById("btnCancelText");
+            if (isFromPayment) {
+                if (cancelBtnText) cancelBtnText.textContent = "Cancel & Return to Payment";
+            } else {
+                if (cancelBtnText) cancelBtnText.textContent = "Cancel & Return to Checkout";
+            }
+
+            showPlaceholder();
+            updateOverlayStatus('fa-video-slash', 'Webcam Disabled', 'text-light');
         });
 
-        // ================= RESTRICT ACCESS =================
-        // Instantly check if the cart has items. If empty, kick them back to Checkout.
-        (function checkCartStatus() {
-            const savedCart = localStorage.getItem("smartScanCustomerDisplay");
-            let isEmpty = true;
+        // ================= PANE SWITCHING HANDLERS =================
+        function switchToPayDebtPane() {
+            stopActiveCamera();
+            stopRightQrScanner();
+            const isFromPayment = sessionStorage.getItem("verificationRedirect") === "StoreCredit";
 
-            if (savedCart) {
+            document.getElementById("register-left-pane").style.display = "none";
+            document.getElementById("nationalid-left-pane").style.display = "none";
+            document.getElementById("facial-recognition-pane").style.display = "flex";
+
+            document.getElementById("pageHeaderTitle").innerHTML = '<i class="fa-solid fa-user-shield me-2"></i>Customer Verification';
+
+            const faceTitle = document.getElementById("faceRecognitionHeaderTitle");
+            const faceSub = document.getElementById("faceRecognitionHeaderSub");
+
+            if (isFromPayment) {
+                if (faceTitle) faceTitle.innerText = "Customer Verification";
+                if (faceSub) faceSub.innerText = "Scan customer face to authenticate identity for Store Credit charge.";
+                if (switchRegisterContainer) switchRegisterContainer.style.display = "block";
+            } else {
+                sessionStorage.setItem("verificationReason", "PayDebt");
+                verificationReason = "PayDebt";
+                isPayDebt = true;
+
+                if (faceTitle) faceTitle.innerText = "Pay Debt Face Authentication";
+                if (faceSub) faceSub.innerText = "Scan customer face to automatically fetch pending credit debt.";
+                if (switchRegisterContainer) switchRegisterContainer.style.display = "none";
+            }
+
+            updateSwitcherButtons('PayDebt');
+            showPlaceholder();
+        }
+
+        function switchToRegistrationPane() {
+            stopActiveCamera();
+            stopRightQrScanner();
+
+            sessionStorage.removeItem("verificationReason");
+            verificationReason = null;
+            isPayDebt = false;
+
+            document.getElementById("facial-recognition-pane").style.display = "none";
+            document.getElementById("nationalid-left-pane").style.display = "none";
+            document.getElementById("register-left-pane").style.display = "flex";
+
+            document.getElementById("pageHeaderTitle").innerHTML = '<i class="fa-solid fa-user-plus me-2"></i>Customer Store Registration';
+
+            updateSwitcherButtons('Register');
+            showPlaceholder();
+        }
+
+        // ================= START / STOP BUTTON EVENT LISTENERS =================
+        startBtn.addEventListener("click", async function () {
+            try {
+                if (document.getElementById("nationalid-left-pane").style.display === "flex") {
+                    startRightQrScanner();
+                } else if (document.getElementById("register-left-pane").style.display === "flex") {
+                    await startRegistrationCamera();
+                } else {
+                    await startVerificationCamera();
+                }
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Camera Error',
+                    text: 'Failed to access camera: ' + err.message,
+                    confirmButtonColor: '#1162a3'
+                });
+            }
+        });
+
+        stopBtn.addEventListener("click", async function () {
+            stopActiveCamera();
+            await stopRightQrScanner();
+            showPlaceholder();
+            updateOverlayStatus('fa-video-slash', 'Webcam Disabled', 'text-light');
+        });
+
+        cameraSelect.addEventListener("change", async function () {
+            if (activeStream || html5QrScanner) {
                 try {
-                    const cartData = JSON.parse(savedCart);
-                    if (cartData.items && cartData.items.length > 0) {
-                        isEmpty = false;
+                    if (document.getElementById("nationalid-left-pane").style.display === "flex") {
+                        await stopRightQrScanner();
+                        startRightQrScanner();
+                    } else if (document.getElementById("register-left-pane").style.display === "flex") {
+                        await startRegistrationCamera();
+                    } else {
+                        await startVerificationCamera();
                     }
-                } catch (e) { }
+                } catch (err) {
+                    console.error("Camera switch error:", err);
+                }
             }
+        });
 
-            if (isEmpty) {
-                alert("Cannot proceed: The shopping cart is empty. Please scan items first.");
-                window.location.replace('/Home/Checkout'); // Redirect immediately
+        function cancelVerification() {
+            stopActiveCamera();
+            stopRightQrScanner();
+            const redirectState = sessionStorage.getItem("verificationRedirect");
+
+            sessionStorage.removeItem("verifiedCustomerId");
+            sessionStorage.removeItem("verifiedCustomerName");
+            sessionStorage.removeItem("activeDebtTransactionId");
+            sessionStorage.removeItem("activeDebtTransactionIds");
+            sessionStorage.removeItem("verificationReason");
+            sessionStorage.removeItem("verificationRedirect");
+            sessionStorage.removeItem("activeDebtPenalty");
+            sessionStorage.removeItem("activeDebtDueDate");
+
+            if (redirectState === "StoreCredit") {
+                window.location.href = "/Home/Payment";
+            } else {
+                window.location.href = "/Home/Checkout";
             }
-        })();
+        }
 
-        // ================= FACE API LOGIC =================
-        const video = document.getElementById('videoFeed');
-        const canvas = document.getElementById('faceCanvas');
-        const scanGuide = document.getElementById('scanGuide');
-
-        let faceStream = null;
-        let isModelReady = false;
-        let isFaceScanning = false;
-        let isAuthenticating = false;
-        let scanSessionTimeout = null;
-
-        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/';
-        const AUTO_STOP_MS = 15000;
-
-        async function loadModels() {
-            updateFaceStatus('info', 'fa-spinner fa-spin', 'Face: Loading Models...');
+        // ================= LOAD MODELS =================
+        async function loadFaceApiModels() {
+            updateOverlayStatus('fa-spinner fa-spin', 'Face: Loading Models...', 'text-light');
             try {
                 await Promise.all([
                     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
@@ -295,101 +673,130 @@
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
                 isModelReady = true;
-                updateFaceStatus('light', 'fa-user-check', 'Face: Ready');
+                updateOverlayStatus('fa-check-circle', 'Engine Ready (Camera Standby)', 'text-success');
             } catch (err) {
-                updateFaceStatus('danger', 'fa-triangle-exclamation', 'Face: Engine Error');
+                console.error("Face model load failure:", err);
+                updateOverlayStatus('fa-triangle-exclamation', 'Face: Engine Error', 'text-danger');
             }
         }
-        loadModels();
 
-        function stopFaceCamera() {
-            isFaceScanning = false;
+        function stopActiveCamera() {
+            isDetectionActive = false;
             isAuthenticating = false;
-            if (scanSessionTimeout) clearTimeout(scanSessionTimeout);
-
-            if (faceStream) {
-                faceStream.getTracks().forEach(track => track.stop());
-                faceStream = null;
-            }
-            video.srcObject = null;
-
-            if(canvas.width > 0) {
-                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            if (scanSessionTimeout) {
+                clearTimeout(scanSessionTimeout);
+                scanSessionTimeout = null;
             }
 
-            btnToggleFaceCam.className = 'btn btn-primary rounded-pill fw-bold px-4 shadow-lg';
-            btnToggleFaceCam.innerHTML = '<i class="fa-solid fa-video me-2"></i>Start Face Scanner';
-            btnToggleFaceCam.style.backgroundColor = '#1162a3';
-            btnToggleFaceCam.style.borderColor = '#1162a3';
-            scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
+            if (activeStream) {
+                activeStream.getTracks().forEach(t => t.stop());
+                activeStream = null;
+            }
+
+            const regVid = document.getElementById('regVideoFeed');
+            const verifyVid = document.getElementById('verifyVideoFeed');
+            if (regVid) regVid.srcObject = null;
+            if (verifyVid) verifyVid.srcObject = null;
+
+            const regCv = document.getElementById('regFaceCanvas');
+            const verifyCv = document.getElementById('verifyFaceCanvas');
+            if (regCv && regCv.width > 0) regCv.getContext('2d').clearRect(0, 0, regCv.width, regCv.height);
+            if (verifyCv && verifyCv.width > 0) verifyCv.getContext('2d').clearRect(0, 0, verifyCv.width, verifyCv.height);
+
+            if (scanGuide) {
+                scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
+            }
+
+            stopBtn.classList.add("d-none");
+            startBtn.classList.remove("d-none");
+            if (cameraDropdownWrapper) cameraDropdownWrapper.style.backgroundColor = "#1162a3";
         }
 
-        btnToggleFaceCam.addEventListener('click', async () => {
-            if (faceStream) {
-                stopFaceCamera();
-                showPlaceholder();
-                updateFaceStatus('light', 'fa-video-slash', 'Face: Idle');
+        // ================= RECOGNITION / VERIFICATION PIPELINE =================
+        async function startVerificationCamera() {
+            if (!isModelReady) {
+                Swal.fire({ icon: 'info', title: 'Loading Models', text: 'Facial models are still initializing. Please wait a moment.' });
                 return;
             }
-            if (!isModelReady) return;
+            stopActiveCamera();
+            await stopRightQrScanner();
+
+            placeholder.style.display = 'none';
+            regVideoContainer.style.display = 'none';
+            if (qrContainer) qrContainer.style.display = 'none';
+            verifyVideoContainer.style.display = 'block';
+
+            const video = document.getElementById('verifyVideoFeed');
+            const canvas = document.getElementById('verifyFaceCanvas');
+            const selectedDeviceId = cameraSelect.value;
 
             try {
-                faceStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } });
-                video.srcObject = faceStream;
+                const constraints = {
+                    video: {
+                        deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+                        facingMode: selectedDeviceId ? undefined : "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                };
 
-                placeholder.style.display = 'none';
-                faceContainer.style.display = 'block';
+                activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = activeStream;
 
-                btnToggleFaceCam.className = 'btn btn-danger rounded-pill fw-bold px-4 shadow-lg';
-                btnToggleFaceCam.innerHTML = '<i class="fa-solid fa-video-slash me-2"></i>Stop Scanner';
-                btnToggleFaceCam.style.backgroundColor = '';
-                btnToggleFaceCam.style.borderColor = '';
-
-                isFaceScanning = true;
+                isDetectionActive = true;
                 isAuthenticating = false;
 
-                video.onplay = () => {
-                    updateFaceStatus('info', 'fa-eye fa-fade', 'Face: Scanning...');
+                startBtn.classList.add("d-none");
+                stopBtn.classList.remove("d-none");
+                if (cameraDropdownWrapper) cameraDropdownWrapper.style.backgroundColor = "#dc3545";
 
+                video.onplay = () => {
+                    updateOverlayStatus('fa-eye fa-fade', 'Face: Scanning...', 'text-info');
+
+                    if (scanSessionTimeout) clearTimeout(scanSessionTimeout);
                     scanSessionTimeout = setTimeout(() => {
-                        if (isFaceScanning) {
-                            stopFaceCamera();
+                        if (isDetectionActive && !isAuthenticating) {
+                            stopActiveCamera();
                             showPlaceholder();
-                            updateFaceStatus('warning', 'fa-clock', 'Face: Timeout');
+                            updateOverlayStatus('fa-clock', 'Face: Timeout', 'text-warning');
                         }
                     }, AUTO_STOP_MS);
 
-                    runDetectionLoop();
+                    runFastVerificationLoop(video, canvas);
                 };
             } catch (err) {
-                updateFaceStatus('danger', 'fa-camera', 'Face: Hardware Denied');
+                console.error("Camera access error:", err);
+                updateOverlayStatus('fa-camera', 'Face: Hardware Denied', 'text-danger');
+                showPlaceholder();
             }
-        });
+        }
 
-        async function runDetectionLoop() {
-            while (isFaceScanning) {
-                if (video.readyState >= 3 && !isAuthenticating) {
+        async function runFastVerificationLoop(videoEl, canvasEl) {
+            while (isDetectionActive) {
+                if (videoEl.readyState >= 3 && !isAuthenticating) {
                     try {
-                        const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                        const detection = await faceapi.detectSingleFace(videoEl)
+                            .withFaceLandmarks()
+                            .withFaceDescriptor();
 
-                        const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
-                        faceapi.matchDimensions(canvas, displaySize);
-
-                        const ctx = canvas.getContext('2d');
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        if (videoEl.offsetWidth > 0 && videoEl.offsetHeight > 0) {
+                            const displaySize = { width: videoEl.offsetWidth, height: videoEl.offsetHeight };
+                            faceapi.matchDimensions(canvasEl, displaySize);
+                            canvasEl.getContext('2d').clearRect(0, 0, canvasEl.width, canvasEl.height);
+                        }
 
                         if (detection) {
                             await verifyFaceWithServer(detection.descriptor);
                         }
-                    } catch (err) {}
+                    } catch (err) { }
                 }
-                await new Promise(r => setTimeout(r, 100));
+                await new Promise(r => setTimeout(r, 90));
             }
         }
 
         async function verifyFaceWithServer(descriptorArray) {
             isAuthenticating = true;
-            updateFaceStatus('info', 'fa-microchip fa-spin', 'Face: Verifying...');
+            updateOverlayStatus('fa-microchip fa-spin', 'Face: Verifying...', 'text-primary');
 
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
             const capturedVectorJson = JSON.stringify(Array.from(descriptorArray));
@@ -397,92 +804,371 @@
             try {
                 const response = await fetch('/Home/AuthenticateFace', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
                     body: JSON.stringify({ capturedEmbeddingJson: capturedVectorJson })
                 });
 
                 const result = await response.json();
 
-                if (result.success) {
-                    isFaceScanning = false;
-                    clearTimeout(scanSessionTimeout);
-                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-3 border-success rounded-circle';
-
-                    updateFaceStatus('success', 'fa-user-check', `User: ${result.customerName}`);
-
-                    if(result.hasAge){
-                        const ageMsg = result.isUnderage ? `Age: ${result.age} (Underage)` : `Age: ${result.age} (Adult)`;
-                        const ageTheme = result.isUnderage ? 'warning' : 'success';
-                        const ageIcon = result.isUnderage ? 'fa-triangle-exclamation' : 'fa-id-card-clip';
-
-                        updateAgeStatus(ageTheme, ageIcon, ageMsg);
-                    } else {
-                        updateAgeStatus('secondary', 'fa-circle-question', 'Age: Unknown in DB');
-                    }
-
-                    setTimeout(() => { window.location.href = result.redirectUrl; }, 1500);
+                if (result.success && result.customerId) {
+                    await handleSuccessfulVerification(result.customerId, result.customerName, result.redirectUrl);
                 } else {
-                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-danger rounded-circle';
-                    updateFaceStatus('danger', 'fa-user-xmark', 'Face: Unregistered');
+                    if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-danger rounded-circle';
+                    updateOverlayStatus('fa-user-xmark', 'Face: Unregistered', 'text-danger');
+
                     setTimeout(() => {
                         isAuthenticating = false;
-                        updateFaceStatus('info', 'fa-eye fa-fade', 'Face: Scanning...');
-                        scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
+                        updateOverlayStatus('fa-eye fa-fade', 'Face: Scanning...', 'text-info');
+                        if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
                     }, 1200);
                 }
             } catch (err) {
+                console.error("Auth server error:", err);
                 setTimeout(() => { isAuthenticating = false; }, 1000);
             }
         }
 
+        // ================= MANUAL PHONE NUMBER LOOKUP =================
+        async function lookupCustomerByPhone() {
+            const phoneInput = document.getElementById("manualLookupContact");
+            // Strip spaces before sending to backend
+            const phone = phoneInput ? phoneInput.value.replace(/\D/g, '') : "";
 
-        // ================= NATIONAL ID / QR SCANNER LOGIC =================
-        let html5QrScanner = null;
-
-        async function toggleQrScanner() {
-            if (html5QrScanner) {
-                await stopQrScanner();
-                showPlaceholder();
-                updateAgeStatus('light', 'fa-qrcode', 'Age: Unverified');
+            if (!phone || phone.length !== 11 || !phone.startsWith("09")) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Invalid Contact Number',
+                    text: 'Please input a complete 11-digit mobile number (e.g., 0912 345 6789).',
+                    confirmButtonColor: '#1162a3'
+                });
                 return;
             }
 
+            updateOverlayStatus("fa-spinner fa-spin", "Searching customer database...", "text-light");
+
+            try {
+                const response = await fetch(`/Home/GetCustomerByContact?contactNumber=${encodeURIComponent(phone)}`);
+                const result = await response.json();
+
+                if (result.success && result.customerId) {
+                    const customerDisplay = document.getElementById("recognitionCustomerDisplay");
+                    const subDisplay = document.getElementById("recognitionSubDisplay");
+                    const iconBox = document.getElementById("recognitionIconBox");
+                    const badgeContainer = document.getElementById("recognitionBadgeContainer");
+
+                    if (customerDisplay) customerDisplay.textContent = result.customerName;
+                    if (subDisplay) subDisplay.textContent = `Mobile: ${result.contactNumber} | Debt: ₱${parseFloat(result.currentDebt || 0).toFixed(2)}`;
+                    if (iconBox) {
+                        iconBox.className = "rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center";
+                        iconBox.innerHTML = '<i class="fa-solid fa-user-check fa-lg"></i>';
+                    }
+                    if (badgeContainer) badgeContainer.style.display = "block";
+
+                    await handleSuccessfulVerification(result.customerId, result.customerName, result.redirectUrl);
+                } else {
+                    updateOverlayStatus("fa-circle-xmark", "Customer Not Found", "text-danger");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Customer Not Found',
+                        text: result.message || 'No registered account found with that mobile number.',
+                        confirmButtonColor: '#1162a3'
+                    });
+                }
+            } catch (err) {
+                console.error("Lookup error:", err);
+                updateOverlayStatus("fa-triangle-exclamation", "Lookup Error", "text-danger");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lookup Error',
+                    text: 'Unable to reach the server to verify customer records.',
+                    confirmButtonColor: '#1162a3'
+                });
+            }
+        }
+
+        // Shared handler for successful match (Face or Phone)
+        async function handleSuccessfulVerification(customerId, customerName, defaultRedirect) {
+            isDetectionActive = false;
+            if (scanSessionTimeout) clearTimeout(scanSessionTimeout);
+            if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-3 border-success rounded-circle';
+            updateOverlayStatus('fa-user-check', `User: ${customerName}`, 'text-success');
+
+            stopActiveCamera();
+            await stopRightQrScanner();
+
+            const redirectMode = sessionStorage.getItem("verificationRedirect");
+            const reasonMode = sessionStorage.getItem("verificationReason");
+
+            // STORE CREDIT FLOW (From Payment Page)
+            if (redirectMode === "StoreCredit") {
+                sessionStorage.setItem("verifiedCustomerId", customerId);
+                sessionStorage.setItem("verifiedCustomerName", customerName);
+                sessionStorage.removeItem("verificationRedirect");
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Customer Verified',
+                    text: `Verified ${customerName}. Returning to payment...`,
+                    timer: 1200,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.replace(`/Home/Payment?search=${encodeURIComponent(customerName)}&openStoreCredit=true`);
+                });
+                return;
+            }
+
+            // PAY DEBT FLOW (From Checkout Page)
+            if (reasonMode === "PayDebt") {
+                const debtRes = await fetch(`/Home/GetCustomerDebtTransaction?customerId=${customerId}`);
+                const debtData = await debtRes.json();
+
+                if (debtData.success) {
+                    sessionStorage.removeItem("verificationReason");
+                    sessionStorage.setItem("verifiedCustomerId", customerId);
+                    sessionStorage.setItem("verifiedCustomerName", customerName);
+                    sessionStorage.setItem("smartScanCart", JSON.stringify(debtData.items));
+                    sessionStorage.setItem("activeDebtTransactionIds", JSON.stringify(debtData.transactionIds));
+                    sessionStorage.setItem("activeDebtPenalty", debtData.penaltyAmount || 0);
+                    sessionStorage.setItem("activeDebtDueDate", debtData.dueDate || "");
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Customer Verified',
+                        text: `Loaded unpaid debt for ${customerName}. Proceeding to settlement...`,
+                        timer: 1200,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.replace(`/Home/Payment?search=${encodeURIComponent(customerName)}`);
+                    });
+                } else {
+                    sessionStorage.removeItem("verifiedCustomerId");
+                    sessionStorage.removeItem("verifiedCustomerName");
+                    sessionStorage.removeItem("activeDebtTransactionIds");
+                    sessionStorage.removeItem("activeDebtTransactionId");
+                    sessionStorage.removeItem("activeDebtPenalty");
+                    sessionStorage.removeItem("activeDebtDueDate");
+
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'No Pending Debt',
+                        html: `<strong>${customerName}</strong> has no active unpaid credit transactions on record.`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#1162a3',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fa-solid fa-arrow-left me-1"></i>Return to Checkout',
+                        cancelButtonText: '<i class="fa-solid fa-rotate-right me-1"></i>Search Another Customer',
+                        allowOutsideClick: false
+                    }).then((swalResult) => {
+                        if (swalResult.isConfirmed) {
+                            sessionStorage.removeItem("verificationReason");
+                            sessionStorage.removeItem("verificationRedirect");
+                            window.location.href = "/Home/Checkout";
+                        } else {
+                            showPlaceholder();
+                        }
+                    });
+                }
+                return;
+            }
+
+            // DEFAULT FALLBACK REDIRECT
+            sessionStorage.setItem("verifiedCustomerId", customerId);
+            sessionStorage.setItem("verifiedCustomerName", customerName);
+
+            setTimeout(() => {
+                const targetUrl = defaultRedirect || `/Home/Payment?search=${encodeURIComponent(customerName)}`;
+                window.location.replace(targetUrl);
+            }, 1000);
+        }
+
+        // ================= REGISTRATION PIPELINE =================
+        async function startRegistrationCamera() {
+            if (!isModelReady) return;
+            stopActiveCamera();
+            await stopRightQrScanner();
+
             placeholder.style.display = 'none';
-            faceContainer.style.display = 'none';
-            qrContainer.style.display = 'block';
+            verifyVideoContainer.style.display = 'none';
+            if (qrContainer) qrContainer.style.display = 'none';
+            regVideoContainer.style.display = 'block';
 
-            btnToggleQrCam.className = 'btn btn-danger rounded-pill fw-bold px-4 shadow-lg';
-            btnToggleQrCam.innerHTML = '<i class="fa-solid fa-camera-slash me-2"></i>Stop Camera';
+            const video = document.getElementById('regVideoFeed');
+            const canvas = document.getElementById('regFaceCanvas');
+            const selectedDeviceId = cameraSelect.value;
 
-            updateAgeStatus('info', 'fa-qrcode fa-fade', 'Age: Scanning QR...');
+            try {
+                const constraints = {
+                    video: {
+                        deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+                        facingMode: selectedDeviceId ? undefined : "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                };
+
+                activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = activeStream;
+
+                isDetectionActive = true;
+                isAuthenticating = false;
+
+                startBtn.classList.add("d-none");
+                stopBtn.classList.remove("d-none");
+                if (cameraDropdownWrapper) cameraDropdownWrapper.style.backgroundColor = "#dc3545";
+
+                video.onplay = () => {
+                    updateOverlayStatus('fa-camera', 'Center face to capture descriptor', 'text-info');
+                    runRegistrationDetectionLoop(video, canvas);
+                };
+            } catch (err) {
+                console.error("Camera access error:", err);
+                updateOverlayStatus('fa-camera', 'Face: Hardware Denied', 'text-danger');
+                showPlaceholder();
+            }
+        }
+
+        async function runRegistrationDetectionLoop(videoEl, canvasEl) {
+            while (isDetectionActive) {
+                if (videoEl.readyState >= 3 && !isAuthenticating) {
+                    try {
+                        const detection = await faceapi.detectSingleFace(videoEl)
+                            .withFaceLandmarks()
+                            .withFaceDescriptor();
+
+                        if (videoEl.offsetWidth > 0 && videoEl.offsetHeight > 0) {
+                            const displaySize = { width: videoEl.offsetWidth, height: videoEl.offsetHeight };
+                            faceapi.matchDimensions(canvasEl, displaySize);
+                            canvasEl.getContext('2d').clearRect(0, 0, canvasEl.width, canvasEl.height);
+                        }
+
+                        if (detection) {
+                            isDetectionActive = false;
+                            updateOverlayStatus('fa-check', 'Face Captured Successfully', 'text-success');
+
+                            const rawVector = Array.from(detection.descriptor);
+                            document.getElementById("regFaceEmbeddingJson").value = JSON.stringify(rawVector);
+
+                            const badge = document.getElementById("regFaceStatusBadge");
+                            if (badge) {
+                                badge.className = "badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1";
+                                badge.innerHTML = '<i class="fa-solid fa-user-check me-1"></i>Face Captured';
+                            }
+                            setTimeout(() => stopActiveCamera(), 800);
+                        }
+                    } catch (err) { }
+                }
+                await new Promise(r => setTimeout(r, 120));
+            }
+        }
+
+        async function submitCustomerRegistration() {
+            const fullName = document.getElementById("regFullName").value.trim();
+            const contactInput = document.getElementById("regContactNumber");
+            // Strip spaces before sending to backend
+            const contactNumber = contactInput ? contactInput.value.replace(/\D/g, '') : "";
+            const faceEmbeddingJson = document.getElementById("regFaceEmbeddingJson").value;
+
+            if (!fullName) {
+                Swal.fire({ icon: 'warning', title: 'Name Required', text: 'Please input the customer full name.', confirmButtonColor: '#1162a3' });
+                return;
+            }
+
+            if (!contactNumber || contactNumber.length !== 11 || !contactNumber.startsWith("09")) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Valid Contact Number Required',
+                    text: 'Please provide a valid 11-digit mobile number starting with 09.',
+                    confirmButtonColor: '#1162a3'
+                });
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            try {
+                const response = await fetch('/Home/RegisterCustomerVerification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                    body: JSON.stringify({ fullName, contactNumber, faceEmbeddingJson })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    sessionStorage.setItem("verifiedCustomerId", result.customerId);
+                    sessionStorage.setItem("verifiedCustomerName", result.customerName);
+                    sessionStorage.removeItem("verificationRedirect");
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Customer Enrolled',
+                        text: `Customer ${result.customerName} registered successfully! Returning to payment...`,
+                        timer: 1400,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.replace(`/Home/Payment?search=${encodeURIComponent(result.customerName)}&openStoreCredit=true`);
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Registration Error', text: result.message || 'Failed to register customer.', confirmButtonColor: '#1162a3' });
+                }
+            } catch (err) {
+                console.error("Enrollment error:", err);
+            }
+        }
+
+        // ================= PHILSYS NATIONAL ID / QR SCANNER =================
+        let html5QrScanner = null;
+        let isProcessingScan = false;
+
+        function startRightQrScanner() {
+            showPlaceholder();
+            placeholder.style.display = "none";
+            regVideoContainer.style.display = "none";
+            verifyVideoContainer.style.display = "none";
+            qrContainer.style.display = "block";
+
+            startBtn.classList.add("d-none");
+            stopBtn.classList.remove("d-none");
+            if (cameraDropdownWrapper) cameraDropdownWrapper.style.backgroundColor = "#dc3545";
+
+            const selectedDeviceId = cameraSelect.value;
+            const cameraConfig = selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : { facingMode: "environment" };
 
             html5QrScanner = new Html5Qrcode("qrReader");
             html5QrScanner.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                async (decodedText) => { await processScannedQrData(decodedText); },
-                (err) => { /* ignore */ }
-            ).catch(err => {
+                cameraConfig,
+                { fps: 15, qrbox: { width: 260, height: 260 } },
+                async (decodedText) => { await processPhilSysLiveScan(decodedText); },
+                () => { }
+            ).then(() => {
+                updateOverlayStatus("fa-camera", "Hold PhilSys QR in view", "text-success");
+            }).catch(err => {
+                updateOverlayStatus("fa-triangle-exclamation", "Camera Error: " + err, "text-danger");
                 showPlaceholder();
-                updateAgeStatus('danger', 'fa-triangle-exclamation', 'Age: Camera Error');
             });
         }
 
-        async function stopQrScanner() {
+        async function stopRightQrScanner() {
+            isProcessingScan = false;
             if (html5QrScanner) {
-                await html5QrScanner.stop();
-                html5QrScanner.clear();
+                try {
+                    await html5QrScanner.stop();
+                    html5QrScanner.clear();
+                } catch (e) { }
                 html5QrScanner = null;
             }
-            btnToggleQrCam.className = 'btn btn-primary rounded-pill fw-bold px-4 shadow-lg';
-            btnToggleQrCam.innerHTML = '<i class="fa-solid fa-qrcode me-2"></i>Scan QR';
-            btnToggleQrCam.style.backgroundColor = '#1162a3';
-            btnToggleQrCam.style.borderColor = '#1162a3';
         }
 
-        async function processScannedQrData(decodedText) {
+        async function processPhilSysLiveScan(decodedText) {
+            if (isProcessingScan) return;
+            isProcessingScan = true;
+
+            let jsonString = decodedText;
+
             try {
-                let jsonString = decodedText;
                 if (decodedText.split('.').length === 3 && !decodedText.startsWith("{")) {
                     const base64Url = decodedText.split('.')[1];
                     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -495,50 +1181,57 @@
                 const rawPcn = subject.pcn || subject.PCN || "";
                 const rawDob = subject.bd || subject.DOB || subject.dob || subject.DateOfBirth || subject.birthDate || "";
 
-                document.getElementById('digitalIdInput').value = rawPcn.replace(/[^0-9]/g, '');
-
+                const normalizedPcn = rawPcn.replace(/[^0-9]/g, '');
+                let normalizedDob = rawDob;
                 if (rawDob) {
                     const dateObj = new Date(rawDob);
-                    if (!isNaN(dateObj)) document.getElementById('manualDobInput').value = dateObj.toISOString().split('T')[0];
+                    if (!isNaN(dateObj)) normalizedDob = dateObj.toISOString().split('T')[0];
                 }
 
-                if (html5QrScanner) await toggleQrScanner();
+                document.getElementById('digitalIdInput').value = normalizedPcn;
+                document.getElementById('manualDobInput').value = normalizedDob;
+
+                await stopRightQrScanner();
                 await verifyGovernmentId();
 
             } catch (error) {
-                updateAgeStatus('danger', 'fa-qrcode', 'Age: Invalid QR');
-                if (html5QrScanner) await toggleQrScanner();
-                showPlaceholder();
+                console.error("Failed to parse QR:", error);
+                updateOverlayStatus("fa-qrcode", "Invalid PhilSys QR payload", "text-warning");
+                isProcessingScan = false;
             }
         }
 
-        // Image Upload fallback
-        document.getElementById('qrImageUpload').addEventListener('change', async function(e) {
-            if (e.target.files.length === 0) return;
-            const file = e.target.files[0];
-            const tempQrCode = new Html5Qrcode("qrReader"); // Uses div invisibly
-            try {
-                updateAgeStatus('info', 'fa-image', 'Age: Parsing Image...');
-                const decodedText = await tempQrCode.scanFile(file, true);
-                await processScannedQrData(decodedText);
-            } catch (err) {
-                updateAgeStatus('danger', 'fa-image', 'Age: No QR Found');
-            }
-            e.target.value = '';
-        });
+        const qrImageUpload = document.getElementById("qrImageUpload");
+        if (qrImageUpload) {
+            qrImageUpload.addEventListener("change", async (e) => {
+                if (e.target.files.length === 0) return;
+                updateOverlayStatus("fa-image", "Parsing uploaded image...", "text-info");
 
-        // PhilSys Verification Backend Call
+                const file = e.target.files[0];
+                const tempScanner = new Html5Qrcode("qrReader");
+                try {
+                    const decodedText = await tempScanner.scanFile(file, true);
+                    await processPhilSysLiveScan(decodedText);
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Scan Error', text: 'Could not detect a clear PhilSys QR code in this image.', confirmButtonColor: '#1162a3' });
+                    updateOverlayStatus("fa-image", "No QR found in image", "text-danger");
+                }
+                e.target.value = '';
+            });
+        }
+
         async function verifyGovernmentId() {
             const pcnValue = document.getElementById('digitalIdInput').value.trim();
             const dobValue = document.getElementById('manualDobInput').value;
 
             if (!pcnValue || !dobValue) {
-                updateAgeStatus('warning', 'fa-circle-exclamation', 'Age: Missing Info');
+                Swal.fire({ icon: 'warning', title: 'Incomplete Details', text: 'Please ensure both the 16-digit PCN and Date of Birth are provided.', confirmButtonColor: '#1162a3' });
+                isProcessingScan = false;
                 return;
             }
 
-            updateAgeStatus('info', 'fa-spinner fa-spin', 'Age: Verifying...');
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            updateOverlayStatus("fa-spinner fa-spin", "Validating record...", "text-light");
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
 
             try {
                 const response = await fetch('/Home/NationalIDVerification', {
@@ -549,23 +1242,114 @@
 
                 const res = await response.json();
 
-                if (res.isValid) {
-                    const statusMsg = res.isUnderage ? `Age: ${res.age} (Underage)` : `Age: ${res.age} (Adult)`;
-                    const theme = res.isUnderage ? 'warning' : 'success';
-                    const icon = res.isUnderage ? 'fa-triangle-exclamation' : 'fa-id-card-clip';
+                const iconBox = document.getElementById('idResultIcon');
+                const displayTitle = document.getElementById('idDisplayPayload');
+                const displaySub = document.getElementById('idDisplaySub');
+                const ageContainer = document.getElementById('ageResultContainer');
+                const ageBadge = document.getElementById('ageClassificationBadge');
+                const dobText = document.getElementById('dobDisplayText');
 
-                    updateAgeStatus(theme, icon, statusMsg);
+                if (res.isValid) {
+                    if (res.isUnderage) {
+                        iconBox.className = 'rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center';
+                        iconBox.innerHTML = '<i class="fa-solid fa-ban fa-lg"></i>';
+
+                        displayTitle.textContent = 'Sale Prohibited: Minor';
+                        displaySub.textContent = `Calculated Age: ${res.age} yrs. Restricted items cannot be sold.`;
+
+                        ageContainer.style.display = 'block';
+                        ageBadge.className = 'badge rounded-pill bg-danger text-white px-3 py-1';
+                        ageBadge.innerText = 'Underage (<18)';
+                        dobText.textContent = `Age: ${res.age} yrs`;
+
+                        updateOverlayStatus("fa-ban", "Age check failed: Customer is a minor", "text-danger");
+
+                        Swal.fire({ icon: 'error', title: 'Age Verification Failed', text: 'Customer is under 18 years old. Restricted merchandise cannot be purchased.', confirmButtonColor: '#dc3545' });
+                        isProcessingScan = false;
+                        return;
+                    }
+
+                    iconBox.className = 'rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center';
+                    iconBox.innerHTML = '<i class="fa-solid fa-shield-halved fa-lg"></i>';
+
+                    const maskedPcn = res.idNumber.length === 16 ? `****-****-****-${res.idNumber.slice(-4)}` : res.idNumber;
+                    displayTitle.textContent = `PhilSys PCN: ${maskedPcn}`;
+                    displaySub.textContent = "Legal age confirmed. Proceeding to payment...";
+
+                    ageContainer.style.display = 'block';
+                    dobText.textContent = `Age: ${res.age} yrs old`;
+                    ageBadge.className = 'badge rounded-pill bg-success text-white px-3 py-1';
+                    ageBadge.innerText = 'Adult (18+)';
+
+                    updateOverlayStatus("fa-check", `Adult Confirmed (${res.age} yrs)`, "text-success");
+
+                    sessionStorage.removeItem("verificationReason");
+                    sessionStorage.setItem("customerAgeVerified", "true");
+
+                    stopActiveCamera();
+                    await stopRightQrScanner();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Age Verified',
+                        text: `Customer is ${res.age} years old. Redirecting to payment...`,
+                        timer: 1200,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.replace('/Home/Payment');
+                    });
                 } else {
-                    updateAgeStatus('danger', 'fa-circle-xmark', 'Age: Failed');
+                    displayTitle.textContent = 'Verification Failed';
+                    displaySub.textContent = res.message;
+                    updateOverlayStatus("fa-xmark", "Invalid PhilSys credentials", "text-danger");
+
+                    Swal.fire({ icon: 'error', title: 'Verification Failed', text: res.message || 'Invalid PhilSys record details.', confirmButtonColor: '#1162a3' });
+                    isProcessingScan = false;
                 }
             } catch (err) {
-                updateAgeStatus('danger', 'fa-server', 'Age: API Error');
+                console.error("Age check error:", err);
+                updateOverlayStatus("fa-server", "API Error", "text-danger");
+                isProcessingScan = false;
             }
         }
 
         window.addEventListener('beforeunload', () => {
-            stopFaceCamera();
-            if(html5QrScanner) html5QrScanner.stop();
+            stopActiveCamera();
+            stopRightQrScanner();
         });
+
+        // ================= PHONE FORMATTER (09XX XXX XXXX) =================
+        function formatPhpPhone(input) {
+            // Strip everything except digits
+            let digits = input.value.replace(/\D/g, '');
+
+            // Enforce starting with "09"
+            if (!digits.startsWith('09')) {
+                digits = '09' + digits.replace(/^0+/, '');
+            }
+
+            // Truncate to maximum 11 digits
+            digits = digits.slice(0, 11);
+
+            // Format into 4 - 3 - 4 pattern (09XX XXX XXXX)
+            let formatted = '';
+            if (digits.length <= 4) {
+                formatted = digits;
+            } else if (digits.length <= 7) {
+                formatted = digits.slice(0, 4) + ' ' + digits.slice(4);
+            } else {
+                formatted = digits.slice(0, 4) + ' ' + digits.slice(4, 7) + ' ' + digits.slice(7, 11);
+            }
+
+            input.value = formatted;
+        }
+
+        // Prevent backspace from removing the "09" prefix
+        function handlePhoneBackspace(input, event) {
+            if (event.key === 'Backspace' && input.value.replace(/\D/g, '').length <= 2) {
+                event.preventDefault();
+                input.value = '09';
+            }
+        }
     </script>
 }

@@ -4,7 +4,6 @@
     ViewData["Title"] = "Edit Customer";
     ViewData["HeaderTitle"] = "Retail Management";
     bool hasFace = !string.IsNullOrEmpty(Model.FaceEmbedding);
-    bool hasId = Model.IsIdVerified;
 }
 
 <!-- Viewport-Locked Outer Card -->
@@ -25,11 +24,8 @@
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="CustomerId" />
 
-            <!-- Hidden Fields for Biometric & Age-Gating Payload -->
+            <!-- Hidden Field for Biometric Vector Payload -->
             <input type="hidden" name="faceEmbeddingJson" id="faceEmbeddingJson" value="@Model.FaceEmbedding" />
-            <input type="hidden" name="idType" id="idTypeHidden" value="@(hasId ? "PhilSys National ID" : "")" />
-            <input type="hidden" name="verifiedAge" id="verifiedAgeHidden" value="@Model.Age" />
-            <input type="hidden" name="isIdVerified" id="isIdVerifiedHidden" value="@(hasId ? "true" : "false")" />
 
             <div class="row g-4 h-100">
                 <!-- ================= LEFT COLUMN: CUSTOMER FORM ================= -->
@@ -42,7 +38,7 @@
                         <div class="form-group mb-3">
                             <label asp-for="FullName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Full Name</label>
                             <div class="position-relative">
-								<input asp-for="FullName" id="FullName" class="form-control rounded-3 pe-5" placeholder="e.g., Juan Dela Cruz" required />
+                                <input asp-for="FullName" id="FullName" class="form-control rounded-3 pe-5" placeholder="e.g., Juan Dela Cruz" required />
 
                                 <!-- Inner Clear Button -->
                                 <button type="button"
@@ -60,7 +56,6 @@
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center">
                                 <label asp-for="ContactNumber" class="control-label fw-semibold mb-1" style="color: #1162a3;">Mobile Contact Number</label>
-                                <span class="text-muted" style="font-size: 11px;">Optional</span>
                             </div>
                             <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white position-relative">
                                 <input asp-for="ContactNumber"
@@ -69,10 +64,10 @@
                                        class="form-control rounded-3 border-0 shadow-none ps-3 fw-semibold pe-5"
                                        maxlength="11"
                                        inputmode="numeric"
+                                       required
                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
                                        placeholder="e.g., 09123456789" />
 
-                                <!-- Inner Clear Button -->
                                 <button type="button"
                                         class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
                                         onclick="document.getElementById('ContactNumber').value = ''; document.getElementById('ContactNumber').focus();"
@@ -85,15 +80,39 @@
                             <div class="form-text small" style="font-size: 11px;">11-digit Philippine mobile phone number.</div>
                         </div>
 
+                        <!-- Locked Retail Store Display -->
+                        <div class="form-group mb-3">
+                            <label asp-for="RetailId" class="control-label fw-semibold mb-1" style="color: #1162a3;">Registered Retail Store</label>
+
+                            <!-- Hidden input ensures the original RetailId is preserved -->
+                            <input type="hidden" asp-for="RetailId" id="hiddenRetailId" value="@Model.RetailId" />
+
+                            <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-light">
+                                <span class="input-group-text bg-light border-0 pe-2 text-muted">
+                                    <i class="fa-solid fa-shop"></i>
+                                </span>
+                                <input type="text"
+                                       id="retailSearchInput"
+                                       class="form-control border-0 bg-light shadow-none ps-0 fw-medium text-dark"
+                                       value="@(Model.Retail?.RetailName ?? "Store #" + Model.RetailId)"
+                                       readonly
+                                       disabled
+                                       style="cursor: not-allowed;" />
+                                <span class="input-group-text bg-light border-0 text-muted pe-3" title="Store assignment is locked">
+                                    <i class="fa-solid fa-lock text-secondary small"></i>
+                                </span>
+                            </div>
+                            <div class="form-text small" style="font-size: 11px;">
+                                <i class="fa-solid fa-circle-info me-1"></i>A customer's store registration is permanent and cannot be modified.
+                            </div>
+                        </div>
+
                         <!-- Current Verification Status Indicators -->
                         <div class="card border rounded-3 p-3 bg-light shadow-sm mb-3">
                             <span class="text-uppercase text-secondary fw-bold d-block mb-2" style="font-size: 11px; letter-spacing: 0.5px;">Current Verification State</span>
                             <div class="d-flex flex-wrap gap-2">
                                 <span id="badgeFaceStatus" class="badge @(hasFace ? "bg-success-subtle text-success border-success-subtle" : "bg-secondary-subtle text-secondary border-secondary-subtle") border rounded-pill px-3 py-1">
                                     <i class="fa-solid @(hasFace ? "fa-user-check" : "fa-user-xmark") me-1"></i>@(hasFace ? "Face Enrolled" : "Face Unregistered")
-                                </span>
-                                <span id="badgeIdStatus" class="badge @(hasId ? "bg-success-subtle text-success border-success-subtle" : "bg-secondary-subtle text-secondary border-secondary-subtle") border rounded-pill px-3 py-1">
-                                    <i class="fa-solid fa-id-card me-1"></i>@(hasId ? $"Age Verified ({Model.Age} yrs)" : "National ID Unverified")
                                 </span>
                             </div>
                         </div>
@@ -103,8 +122,8 @@
                             <div class="d-flex align-items-start gap-2">
                                 <i class="fa-solid fa-circle-info text-primary fs-5 mt-1"></i>
                                 <div>
-                                    <strong class="text-primary">Admin Override Notice:</strong><br />
-                                    Scanning a new PhilSys ID will recalculate the customer's age and update their classification between <strong>Legal Age (18+)</strong> and <strong>Underage (&lt;18)</strong>. Re-scanning biometrics overwrites the previous facial vector.
+                                    <strong class="text-primary">Biometric Registration Policy:</strong><br />
+                                    Re-scanning facial biometrics will overwrite the customer's previous embedding vector. Facial enrollment enables customer authentication when charging to Store Credit.
                                 </div>
                             </div>
                         </div>
@@ -121,205 +140,59 @@
                     </div>
                 </div>
 
-                <!-- ================= RIGHT COLUMN: RE-VERIFICATION TABS ================= -->
-                <div class="col-lg-7 d-flex flex-column">
-                    <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Update Verification & Biometrics</h6>
-
-                    <!-- Pill Tab Switcher -->
-                    <ul class="nav nav-pills mb-3 flex-shrink-0" id="verificationTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link verification-tab-btn active py-1 px-3 rounded-pill border shadow-sm me-2"
-                                    id="nationalid-tab"
-                                    data-bs-toggle="pill"
-                                    data-bs-target="#digitalid-pane"
-                                    type="button"
-                                    role="tab"
-                                    style="font-size: 13px;">
-                                <i class="fa-solid fa-address-card me-1"></i>Philippine National ID
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link verification-tab-btn py-1 px-3 rounded-pill border shadow-sm"
-                                    id="facial-tab"
-                                    data-bs-toggle="pill"
-                                    data-bs-target="#facial-pane"
-                                    type="button"
-                                    role="tab"
-                                    style="font-size: 13px;">
-                                <i class="fa-solid fa-camera me-1"></i>Facial Biometrics
-                            </button>
-                        </li>
-                    </ul>
-
-                    <!-- Tab Content Area -->
-                    <div class="tab-content flex-grow-1 d-flex flex-column">
-
-                        <!-- PANE 1: PHILIPPINE NATIONAL ID -->
-                        <div class="tab-pane fade show active h-100 flex-column" id="digitalid-pane" role="tabpanel">
-                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-light h-100 d-flex flex-column justify-content-between">
-                                <div>
-                                    <div class="d-flex align-items-center justify-content-between mb-3">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2">
-                                                <i class="fa-solid fa-address-card fs-5"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="fw-bold mb-0 text-primary">PhilSys Age Verification</h6>
-                                                <small class="text-muted">QR Scan or Manual PCN + DOB fallback</small>
-                                            </div>
-                                        </div>
-                                        <span id="idVerifyBadge" class="badge @(hasId ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border") rounded-pill px-3 py-1" style="font-size: 11px;">
-                                            @(hasId ? "Verified" : "Unverified")
-                                        </span>
+                <!-- ================= RIGHT COLUMN: FACIAL BIOMETRIC ENROLLMENT ================= -->
+                <div class="col-lg-7 d-flex flex-column justify-content-between">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-light h-100 d-flex flex-column justify-content-between">
+                        <!-- Top Header & Status -->
+                        <div class="flex-shrink-0">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2">
+                                        <i class="fa-solid fa-camera fs-5"></i>
                                     </div>
-
-                                    <!-- Manual Fallback Inputs -->
-                                    <div class="row g-2 mb-3">
-                                        <label class="form-label fw-semibold small text-secondary mb-0">16-Digit PCN & Date of Birth</label>
-                                        <div class="col-md-7">
-                                            <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
-                                                <span class="input-group-text bg-white border-0 ps-3 pe-1 text-muted">
-                                                    <i class="fa-solid fa-hashtag"></i>
-                                                </span>
-                                                <input type="text"
-                                                       id="digitalIdInput"
-                                                       class="form-control border-0 bg-white shadow-none ps-1 fw-semibold font-monospace"
-                                                       style="font-size: 13px;"
-                                                       placeholder="PCN (e.g., 1234567891234567)" />
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-5">
-                                            <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
-                                                <span class="input-group-text bg-white border-0 ps-3 pe-1 text-muted">
-                                                    <i class="fa-regular fa-calendar"></i>
-                                                </span>
-                                                <input type="date"
-                                                       id="manualDobInput"
-                                                       class="form-control border-0 bg-white shadow-none ps-1 fw-semibold"
-                                                       style="font-size: 13px;" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Action Bar (Single Row) -->
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <button type="button"
-                                                class="btn btn-primary rounded-pill fw-semibold px-3 shadow-sm flex-grow-1 text-nowrap"
-                                                style="background-color: #1162a3; border-color: #1162a3; font-size: 13px;"
-                                                onclick="verifyGovernmentId()">
-                                            <i class="fa-solid fa-shield-check me-1"></i>Verify Age
-                                        </button>
-
-                                        <button type="button"
-                                                id="btnToggleQrCam"
-                                                class="btn btn-outline-secondary rounded-pill fw-semibold px-3 shadow-sm text-nowrap"
-                                                style="font-size: 13px;"
-                                                onclick="toggleQrScanner()">
-                                            <i class="fa-solid fa-camera me-1"></i>Scan QR
-                                        </button>
-
-                                        <label class="btn btn-outline-secondary rounded-pill fw-semibold px-3 shadow-sm mb-0 text-nowrap"
-                                               style="font-size: 13px; cursor: pointer;">
-                                            <i class="fa-solid fa-image me-1"></i>Upload QR
-                                            <input type="file" id="qrImageUpload" class="d-none" accept="image/*">
-                                        </label>
-                                    </div>
-
-                                    <!-- Collapsible Live Webcam QR Reader -->
-                                    <div id="qrReaderWrapper" class="d-none my-2 text-center">
-                                        <div id="qrReader" class="rounded-4 overflow-hidden border mx-auto shadow-sm" style="max-width: 340px;"></div>
-                                        <small class="text-muted d-block mt-1">Point the back of the National ID (QR Code) at your webcam</small>
-                                    </div>
-
-                                    <div class="alert alert-light border small text-muted mt-2 mb-0 py-2">
-                                        <i class="fa-solid fa-user-shield text-primary me-1"></i>
-                                        <strong>Data Privacy:</strong> PCN and Birthdate are processed in-memory to calculate age and are <strong>never saved</strong> to the database.
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-primary">Facial Biometrics Enrollment</h6>
+                                        <small class="text-muted">Automated liveness & descriptor capture</small>
                                     </div>
                                 </div>
+                                <span id="facePaneBadge" class="badge @(hasFace ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border") rounded-pill px-3 py-1" style="font-size: 11px;">
+                                    @(hasFace ? "Enrolled" : "Not Enrolled")
+                                </span>
+                            </div>
 
-                                <!-- Verification Result & Age Gate Card -->
-                                <div class="card border rounded-3 p-3 bg-white shadow-sm mb-1" id="idVerificationCard">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div id="idResultIcon" class="rounded-circle @(hasId ? "bg-success bg-opacity-10 text-success" : "bg-light text-secondary") p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                <i class="fa-solid @(hasId ? "fa-shield-halved" : "fa-id-card") fa-lg"></i>
-                                            </div>
-                                            <div class="text-start">
-                                                <span class="fw-bold text-dark d-block" id="idDisplayPayload" style="font-size: 14px;">
-                                                    @(hasId ? $"Current Status: {Model.Age} years old" : "Pending Verification")
-                                                </span>
-                                                <small class="text-muted d-block" id="idDisplaySub">
-                                                    @(hasId ? "Age verified. Raw PCN discarded from memory." : "Scan QR or enter PCN and DOB manually.")
-                                                </small>
-                                            </div>
-                                        </div>
-                                        <div class="text-end" id="ageResultContainer" style="display: @(hasId ? "block" : "none");">
-                                            <span class="badge rounded-pill px-3 py-1 fw-bold @(Model.StatusId == 3 ? "bg-warning-subtle text-warning-emphasis border border-warning" : "bg-success-subtle text-success border border-success-subtle")" id="ageClassificationBadge" style="font-size: 12px;">
-                                                @(Model.StatusId == 3 ? "Status 3: Underage (<18)" : "Status 1: Adult (18+)")
-                                            </span>
-                                            <small class="text-muted d-block mt-1" id="dobDisplayText" style="font-size: 11px;">
-                                                Age: @Model.Age yrs old
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div id="enrollmentStatus" class="small fw-semibold alert alert-secondary py-2 border-0 w-100 mb-0 shadow-sm text-center">
+                                <i class="fa-solid fa-spinner fa-spin me-1"></i> Initializing biometric engine...
                             </div>
                         </div>
 
-                        <!-- PANE 2: FACIAL BIOMETRIC ENROLLMENT -->
-                        <div class="tab-pane fade h-100 flex-column" id="facial-pane" role="tabpanel">
-                            <div class="card border-0 shadow-sm rounded-4 p-4 bg-light h-100 d-flex flex-column justify-content-between">
-                                <div class="flex-shrink-0">
-                                    <div class="d-flex align-items-center justify-content-between mb-3">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2">
-                                                <i class="fa-solid fa-camera fs-5"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="fw-bold mb-0 text-primary">Facial Biometrics Enrollment</h6>
-                                                <small class="text-muted">Automated liveness & descriptor capture</small>
-                                            </div>
-                                        </div>
-                                        <span id="facePaneBadge" class="badge @(hasFace ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border") rounded-pill px-3 py-1" style="font-size: 11px;">
-                                            @(hasFace ? "Enrolled" : "Not Enrolled")
-                                        </span>
-                                    </div>
-
-                                    <div id="enrollmentStatus" class="small fw-semibold alert alert-secondary py-2 border-0 w-100 mb-0 shadow-sm text-center">
-                                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Initializing biometric engine...
-                                    </div>
+                        <!-- Center Camera Viewport -->
+                        <div class="my-auto py-2 d-flex flex-column align-items-center justify-content-center">
+                            <div class="position-relative bg-dark rounded-4 overflow-hidden shadow-sm mx-auto"
+                                 style="width: 100%; max-width: 420px; height: 260px;">
+                                <video id="videoFeed" autoplay playsinline muted
+                                       style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
+                                <canvas id="faceCanvas"
+                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;"></canvas>
+                                <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
+                                     style="width: 160px; height: 200px; pointer-events: none; opacity: 0.6; z-index: 5;">
                                 </div>
+                            </div>
 
-                                <div class="my-auto py-2 d-flex flex-column align-items-center justify-content-center">
-                                    <div class="position-relative bg-dark rounded-4 overflow-hidden shadow-sm mx-auto"
-                                         style="width: 100%; max-width: 420px; height: 260px;">
-                                        <video id="videoFeed" autoplay playsinline muted
-                                               style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
-                                        <canvas id="faceCanvas"
-                                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;"></canvas>
-                                        <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
-                                             style="width: 160px; height: 200px; pointer-events: none; opacity: 0.6; z-index: 5;">
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-3">
-                                        <button type="button"
-                                                id="btnStartCamera"
-                                                class="btn btn-outline-secondary rounded-pill fw-semibold px-4 shadow-sm"
-                                                style="font-size: 13px;">
-                                            <i class="fa-solid fa-video me-1"></i>@(hasFace ? "Re-enroll Face" : "Start Auto-Scan")
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="alert alert-light border small text-muted mb-0 py-2 flex-shrink-0">
-                                    <i class="fa-solid fa-user-shield text-primary me-1"></i>
-                                    <strong>Privacy Protection:</strong> Facial features are converted to a mathematical vector array; raw video frames are discarded immediately.
-                                </div>
+                            <div class="mt-3">
+                                <button type="button"
+                                        id="btnStartCamera"
+                                        class="btn btn-outline-secondary rounded-pill fw-semibold px-4 shadow-sm"
+                                        style="font-size: 13px;">
+                                    <i class="fa-solid fa-video me-1"></i>@(hasFace ? "Re-enroll Face" : "Start Auto-Scan")
+                                </button>
                             </div>
                         </div>
 
+                        <!-- Privacy Notice -->
+                        <div class="alert alert-light border small text-muted mb-0 py-2 flex-shrink-0">
+                            <i class="fa-solid fa-user-shield text-primary me-1"></i>
+                            <strong>Privacy Protection:</strong> Facial features are converted to a mathematical vector array; raw video frames are discarded immediately.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -330,201 +203,18 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script>
-        // ================= NATIONAL ID VERIFICATION =================
-        let html5QrScanner = null;
+        // ================= PRE-FILL LOCKED RETAIL STORE =================
+        const hiddenRetailId = document.getElementById("hiddenRetailId");
+        const retailSearchInput = document.getElementById("retailSearchInput");
+        const retailItems = @Html.Raw(Json.Serialize(ViewBag.Retails ?? new List<object>()));
 
-        async function processScannedQrData(decodedText) {
-            try {
-                let jsonString = decodedText;
-
-                if (decodedText.split('.').length === 3 && !decodedText.startsWith("{")) {
-                    const base64Url = decodedText.split('.')[1];
-                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                    jsonString = decodeURIComponent(atob(base64).split('').map(function(c) {
-                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                    }).join(''));
-                }
-
-                const qrData = JSON.parse(jsonString);
-                const subject = qrData.subject || qrData;
-
-                const rawPcn = subject.pcn || subject.PCN || "";
-                const rawDob = subject.bd || subject.DOB || subject.dob || subject.DateOfBirth || subject.birthDate || "";
-                const rawFName = subject.n_f || subject.fName || subject.fname || "";
-                const rawLName = subject.n_l || subject.lName || subject.lname || "";
-
-                const normalizedPcn = rawPcn.replace(/[^0-9]/g, '');
-
-                let normalizedDob = rawDob;
-                if (rawDob) {
-                    const dateObj = new Date(rawDob);
-                    if (!isNaN(dateObj)) {
-                        normalizedDob = dateObj.toISOString().split('T')[0];
-                    }
-                }
-
-                document.getElementById('digitalIdInput').value = normalizedPcn;
-                document.getElementById('manualDobInput').value = normalizedDob;
-
-                const fullNameInput = document.getElementById('FullName');
-                if (fullNameInput && !fullNameInput.value.trim() && (rawFName || rawLName)) {
-                    fullNameInput.value = `${rawFName} ${rawLName}`.trim();
-                }
-
-                if (html5QrScanner) {
-                    await toggleQrScanner();
-                }
-
-                await verifyGovernmentId();
-
-            } catch (error) {
-                console.error("Failed to parse QR payload:", error);
-                alert("Scanned QR code could not be decoded. Check the browser console for the raw output.");
-                if (html5QrScanner) await toggleQrScanner();
-            }
-        }
-
-        const uploadElement = document.getElementById('qrImageUpload');
-        if (uploadElement) {
-            uploadElement.addEventListener('change', async function(e) {
-                if (e.target.files.length === 0) return;
-
-                const file = e.target.files[0];
-                const html5QrCode = new Html5Qrcode("qrReader");
-
-                try {
-                    const decodedText = await html5QrCode.scanFile(file, true);
-                    await processScannedQrData(decodedText);
-                } catch (err) {
-                    console.error("Image scan error:", err);
-                    alert("Could not detect a clear QR code in this image. Please ensure the QR is sharp and well-lit.");
-                }
-
-                e.target.value = '';
-            });
-        }
-
-        async function toggleQrScanner() {
-            const wrapper = document.getElementById('qrReaderWrapper');
-            const btn = document.getElementById('btnToggleQrCam');
-
-            if (html5QrScanner) {
-                await html5QrScanner.stop();
-                html5QrScanner.clear();
-                html5QrScanner = null;
-                wrapper.classList.add('d-none');
-                btn.innerHTML = '<i class="fa-solid fa-camera me-1"></i>Scan QR';
-                btn.className = 'btn btn-outline-secondary rounded-pill fw-semibold px-3 shadow-sm text-nowrap';
-                return;
-            }
-
-            wrapper.classList.remove('d-none');
-            btn.innerHTML = '<i class="fa-solid fa-xmark me-1"></i>Close Cam';
-            btn.className = 'btn btn-danger rounded-pill fw-semibold px-3 shadow-sm text-nowrap';
-
-            html5QrScanner = new Html5Qrcode("qrReader");
-            html5QrScanner.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 220, height: 220 } },
-                async (decodedText) => {
-                    await processScannedQrData(decodedText);
-                },
-                (errorMessage) => { }
-            ).catch(err => {
-                alert("Could not start QR camera: " + err);
-                wrapper.classList.add('d-none');
-            });
-        }
-
-        async function verifyGovernmentId() {
-            const pcnValue = document.getElementById('digitalIdInput').value.trim();
-            const dobValue = document.getElementById('manualDobInput').value;
-
-            if (!pcnValue || !dobValue) {
-                alert("Please ensure both the 16-digit PCN and Date of Birth are provided.");
-                return;
-            }
-
-            const verifyBadge = document.getElementById('idVerifyBadge');
-            const displayTitle = document.getElementById('idDisplayPayload');
-            const displaySub = document.getElementById('idDisplaySub');
-            const iconBox = document.getElementById('idResultIcon');
-            const ageContainer = document.getElementById('ageResultContainer');
-            const ageBadge = document.getElementById('ageClassificationBadge');
-            const dobText = document.getElementById('dobDisplayText');
-            const leftStatusBadge = document.getElementById('badgeIdStatus');
-
-            verifyBadge.className = 'badge bg-info-subtle text-info border rounded-pill px-3 py-1';
-            verifyBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Calculating...';
-
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-
-            try {
-                const response = await fetch('/Customers/VerifyGovernmentId', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': token
-                    },
-                    body: JSON.stringify({
-                        rawPayload: pcnValue,
-                        manualDob: dobValue
-                    })
-                });
-
-                const res = await response.json();
-
-                if (res.isValid) {
-                    document.getElementById('idTypeHidden').value = "PhilSys National ID";
-                    document.getElementById('verifiedAgeHidden').value = res.age;
-                    document.getElementById('isIdVerifiedHidden').value = "true";
-
-                    verifyBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1';
-                    verifyBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>Verified';
-
-                    iconBox.className = 'rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center';
-                    iconBox.innerHTML = '<i class="fa-solid fa-shield-halved fa-lg"></i>';
-
-                    const maskedPcn = res.idNumber.length === 16
-                        ? `****-****-****-${res.idNumber.slice(-4)}`
-                        : res.idNumber;
-
-                    displayTitle.textContent = `PhilSys PCN: ${maskedPcn}`;
-                    displaySub.textContent = "Age verified. Raw PCN discarded from memory.";
-
-                    ageContainer.style.display = 'block';
-                    dobText.textContent = `Age: ${res.age} yrs old`;
-
-                    if (res.isUnderage) {
-                        ageBadge.className = 'badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning px-3 py-1';
-                        ageBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Status 3: Underage (<18)';
-                    } else {
-                        ageBadge.className = 'badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1';
-                        ageBadge.innerHTML = '<i class="fa-solid fa-check me-1"></i>Status 1: Adult (18+)';
-                    }
-
-                    leftStatusBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1';
-                    leftStatusBadge.innerHTML = `<i class="fa-solid fa-id-card me-1"></i>Age Verified (${res.age} yrs)`;
-                } else {
-                    document.getElementById('isIdVerifiedHidden').value = "false";
-                    ageContainer.style.display = 'none';
-
-                    verifyBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1';
-                    verifyBadge.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i>Action Needed';
-
-                    iconBox.className = 'rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center';
-                    iconBox.innerHTML = '<i class="fa-solid fa-circle-exclamation fa-lg"></i>';
-
-                    displayTitle.textContent = 'Verification Failed';
-                    displaySub.textContent = res.message;
-                }
-            } catch (err) {
-                verifyBadge.className = 'badge bg-danger-subtle text-danger border rounded-pill px-3 py-1';
-                verifyBadge.textContent = 'API Error';
-                displaySub.textContent = 'Error communicating with verification service.';
+        // Resolve store name from ViewBag if input is empty
+        if (retailItems && hiddenRetailId && hiddenRetailId.value && retailSearchInput && !retailSearchInput.value) {
+            const currentStore = retailItems.find(item => (item.id || item.value) == hiddenRetailId.value);
+            if (currentStore) {
+                retailSearchInput.value = currentStore.name || currentStore.text;
             }
         }
 

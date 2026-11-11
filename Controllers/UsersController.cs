@@ -33,11 +33,14 @@ namespace SmartScan.Controllers
             // Get the current logged-in user's ID
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Only stores owned by or assigned to the current user
+            // Only stores owned by or assigned to the current user (owner or co-owner/staff)
             var userStoresQuery = _context.Retails.Where(r =>
                 r.AdminOwner == currentUserId ||
                 _context.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId)
             );
+
+            // List of store IDs accessible to the current user
+            var userRetailIds = await userStoresQuery.Select(r => r.RetailId).ToListAsync();
 
             // Calculate KPIs for Store Outlets (unaffected by search)
             vm.TotalRetailCount = await userStoresQuery.CountAsync();
@@ -71,27 +74,35 @@ namespace SmartScan.Controllers
                 .GroupBy(up => up.UserId)
                 .ToDictionaryAsync(g => g.Key, g => g.First().ProfilePicture, StringComparer.OrdinalIgnoreCase);
 
+            // ===== SCOPED CUSTOMER KPIS (RESTRICTED ONLY TO CURRENT USER'S / CO-OWNED STORES) =====
+            var scopedCustomers = _context.Customers
+                .Where(c => userRetailIds.Contains(c.RetailId));
 
-            // --- Remaining KPIs (Customers, Sales, Overdue) ---
-            vm.TotalCustomers = await _context.Customers.CountAsync();
-            vm.VerifiedCustomersCount = await _context.Customers.CountAsync(c => c.IsIdVerified);
-            vm.UnderageCustomersCount = await _context.Customers.CountAsync(c => c.StatusId == 3);
-            vm.TotalOutstandingDebt = await _context.Customers.SumAsync(c => c.CurrentDebt);
+            // Total Customers registered in user's stores
+            vm.TotalCustomers = await scopedCustomers.CountAsync();
+
+            // Verified Shoppers KPI: Enrolled face descriptor vector and active status in user's stores
+            vm.VerifiedCustomersCount = await scopedCustomers
+                .CountAsync(c => !string.IsNullOrEmpty(c.FaceEmbedding) && c.StatusId == 1);
+
+            // Receivables KPI: Sum of outstanding debt strictly across user's store registrations
+            vm.TotalOutstandingDebt = await scopedCustomers
+                .SumAsync(c => (decimal?)c.CurrentDebt) ?? 0.00m;
 
             // Establish date baselines
             var todayDateOnly = DateOnly.FromDateTime(DateTime.Today);
-            var todayStartUtc = DateTime.UtcNow.Date; // Matches UTC CreatedAt stamp
+            var todayStartUtc = DateTime.UtcNow.Date;
 
-            // Today's Sales (DateTime comparison)
+            // Today's Sales scoped to user's retail stores
             vm.TodaysSales = await _context.Transactions
-                .Where(t => t.CreatedAt >= todayStartUtc)
+                .Where(t => userRetailIds.Contains(t.RetailId) && t.CreatedAt >= todayStartUtc)
                 .SumAsync(t => (decimal?)t.TotalAmount) ?? 0.00m;
 
-            // Section 2 Critical Attention: Overdue Debts
-            vm.OverdueAccounts = await _context.Customers
+            // Overdue Debt Watchlist scoped to user's stores
+            vm.OverdueAccounts = await scopedCustomers
                 .AsNoTracking()
                 .Where(c => c.CurrentDebt > 0 &&
-                            c.Transactions.Any(t => t.DueDate.HasValue && t.DueDate.Value < todayDateOnly))
+                            c.Transactions.Any(t => userRetailIds.Contains(t.RetailId) && t.DueDate.HasValue && t.DueDate.Value < todayDateOnly))
                 .Select(c => new OverdueDebtItem
                 {
                     CustomerId = c.CustomerId,
@@ -99,28 +110,27 @@ namespace SmartScan.Controllers
                     ContactNumber = c.ContactNumber,
                     AmountDue = c.CurrentDebt,
                     DueDate = c.Transactions
-                        .Where(t => t.DueDate.HasValue && t.DueDate.Value < todayDateOnly)
+                        .Where(t => userRetailIds.Contains(t.RetailId) && t.DueDate.HasValue && t.DueDate.Value < todayDateOnly)
                         .Min(t => t.DueDate)!.Value
                 })
                 .OrderBy(c => c.DueDate)
                 .Take(4)
                 .ToListAsync();
 
-            vm.OverdueDebtAmount = await _context.Customers
+            vm.OverdueDebtAmount = await scopedCustomers
                 .Where(c => c.CurrentDebt > 0 &&
-                            c.Transactions.Any(t => t.DueDate.HasValue && t.DueDate.Value < todayDateOnly))
+                            c.Transactions.Any(t => userRetailIds.Contains(t.RetailId) && t.DueDate.HasValue && t.DueDate.Value < todayDateOnly))
                 .SumAsync(c => c.CurrentDebt);
 
-            // Section 2 Critical Attention: Recent Age-Gating & Verifications
-            vm.RecentVerifications = await _context.Customers
+            // Newly Registered Customer Feed (Replaced PhilSys Verification Log)
+            vm.RecentVerifications = await scopedCustomers
                 .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAt)
                 .Take(4)
                 .Select(c => new ComplianceNoticeItem
                 {
                     CustomerMaskedName = c.FullName,
-                    Age = c.Age ?? 0,
-                    IsUnderage = c.StatusId == 3,
+                    IsUnderage = false,
                     RegisteredAt = c.CreatedAt
                 })
                 .ToListAsync();

@@ -123,43 +123,33 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
                 var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-                
+
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
 
-                    // Redirect to the pages based on the role of the user logging in. <--
                     var user = await _userManager.FindByEmailAsync(Input.Email);
-                   
-                    if(user != null)
+
+                    if (user != null)
                     {
-                        // ----[ HANDLES MULTIPLE LOGINS WITH THE SAME ACCOUNT ]----
+                        // ----[ 1. FORCE LOGOUT EXISTING SESSIONS ]----
+                        await _hubContext.Clients.User(user.Id).SendAsync(
+                            "ForceLogout",
+                            "Your account was logged in from another device."
+                        );
 
-                            // --> Notify any currently connected active sessions to disconnect
-                            await _hubContext.Clients.User(user.Id).SendAsync(
-                                "ForceLogout",
-                                "Your account was logged in from another device."
-                            );
+                        await _userManager.UpdateSecurityStampAsync(user);
+                        await _signInManager.SignOutAsync(); // Clean stale cookie header
+                        await _signInManager.SignInAsync(user, isPersistent: Input.RememberMe); // Issue fresh cookie with new stamp
 
-                            // --> Invalidate old authentication cookies in the database
-                            await _userManager.UpdateSecurityStampAsync(user);
-
-                            // --> Give THIS device a fresh cookie with the updated stamp
-                            await _signInManager.SignInAsync(user, isPersistent: Input.RememberMe);
-
-                        // ----[ LOGIN LOGIC ]----
-                        // If user was intentionally redirected here from an internal page, honor that URL first
-                        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
-                        {
-                            return LocalRedirect(returnUrl);
-                        }
-
-                        // Role-based routing
+                        // ----[ 2. ROLE & ASSIGNMENT-AWARE ROUTING ]----
                         if (await _userManager.IsInRoleAsync(user, "Admin"))
                         {
+                            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
+                            {
+                                return LocalRedirect(returnUrl);
+                            }
                             return RedirectToAction("Index", "Users", new { area = "" });
                         }
 
@@ -169,11 +159,16 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
                             if (isAssigned)
                             {
+                                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
+                                {
+                                    return LocalRedirect(returnUrl);
+                                }
                                 return RedirectToAction("Checkout", "Home", new { area = "" });
                             }
                             else
                             {
-                                return RedirectToAction("Index", "Home", new { area = "" });
+                                // Direct unassigned cashiers to Unassigned waiting room
+                                return RedirectToAction("Unassigned", "Home", new { area = "" });
                             }
                         }
                     }
@@ -197,7 +192,6 @@ namespace SmartScan.Areas.Identity.Pages.Account
                 }
             }
 
-            // If we got this far, something failed, redisplay form
             return Page();
         }
     }

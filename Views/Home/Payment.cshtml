@@ -36,6 +36,9 @@
     <div class="card-body p-3 px-lg-4 pb-lg-4 pt-3 flex-grow-1 d-flex flex-column bg-light bg-opacity-50 overflow-hidden" style="min-height: 0;">
         <div class="row gx-4 gy-3 flex-grow-1 h-100">
 
+            <!-- Hidden field tracking currently bound customer -->
+            <input type="hidden" id="savedCustomerId" name="savedCustomerId" value="" />
+
             <!-- ================= LEFT COLUMN | Transaction Summary ================= -->
             <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-2 pb-3">
                 <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden flex-grow-1 d-flex flex-column h-100">
@@ -68,6 +71,18 @@
 
                     <!-- Grand Total Footer -->
                     <div class="card-footer bg-white border-top p-4 flex-shrink-0">
+
+                        <!-- Penalty Indicator -->
+                        <div id="penaltyNoticeRow" class="alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex justify-content-between align-items-center" style="display: none !important;">
+                            <div>
+                                <i class="fa-solid fa-clock-rotate-left me-1 text-danger"></i>
+                                <span class="fw-bold">Includes 5% Overdue Penalty:</span>
+                                <span id="penaltyDueDateInfo" class="text-muted ms-1"></span>
+                            </div>
+                            <span id="penaltyAmountDisplay" class="fw-bold font-monospace text-danger">+₱0.00</span>
+                        </div>
+
+                        <!-- Total Amount -->
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 13px; letter-spacing: 1px;">Amount Due</span>
@@ -90,7 +105,7 @@
                     <h5 class="fw-bold text-dark mb-4 text-center">How would you like to pay?</h5>
 
                     <div class="pay-btn-grid mb-auto">
-                        <!-- Cash -->
+                        <!-- Cash In Hand -->
                         <button class="pay-btn-modern btn-cash" onclick="openModal('cashModal')">
                             <i class="fa-solid fa-money-bill-wave"></i>
                             <span>Cash in Hand</span>
@@ -135,15 +150,12 @@
                 <h3 class="modal-title-custom">Cash Payment</h3>
                 <p class="modal-subtitle fw-medium mb-4">Enter the amount received from the customer.</p>
 
-                <!-- Total Due (Disabled) -->
                 <div class="text-start mb-3">
                     <label class="custom-input-label text-secondary">Total Due</label>
                     <input type="text" class="form-control custom-input fs-5 text-primary fw-bold text-end font-monospace" id="cashTotalDue" readonly>
                 </div>
 
-                <!-- 2-Column Row for Amount Received & Exact Change -->
                 <div class="row g-2 mb-4">
-                    <!-- Amount Received -->
                     <div class="col-6 text-start">
                         <label class="custom-input-label">Amount Received</label>
                         <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white cash-focus-group">
@@ -159,7 +171,6 @@
                         </div>
                     </div>
 
-                    <!-- Exact Change (Disabled) -->
                     <div class="col-6 text-start">
                         <label class="custom-input-label text-secondary">Exact Change</label>
                         <input type="text"
@@ -202,7 +213,7 @@
             <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             <div class="modal-body text-center p-4">
                 <h3 class="modal-title-custom">Store Credits</h3>
-                <p class="modal-subtitle mb-4 fw-medium">Pay using accumulated customer loyalty points.</p>
+                <p class="modal-subtitle mb-4 fw-medium">Charge to authenticated customer account credit.</p>
 
                 <!-- Store Balance -->
                 <div class="text-start mb-3 p-3 bg-light rounded-3 border">
@@ -212,23 +223,25 @@
                     </div>
                     <h4 class="mb-0 fw-bold text-dark font-monospace" id="storeBalance">₱0.00</h4>
 
-                    <!-- Next Due Date Info -->
-                    <div class="mt-2 pt-2 border-top text-muted small fw-medium">
-                        <i class="fa-regular fa-calendar me-1"></i> Next Due: <span id="storeDueDate" class="fw-bold text-dark">N/A</span>
+                    <!-- Due Date & Overdue Indicator -->
+                    <div class="mt-2 pt-2 border-top text-muted small fw-medium d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fa-regular fa-calendar me-1"></i> Next Due:
+                            <span id="storeDueDate" class="fw-bold text-dark">N/A</span>
+                        </div>
+                        <span id="storeOverdueBadge" class="badge bg-danger rounded-pill px-2 py-1" style="display: none;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>OVERDUE
+                        </span>
                     </div>
                 </div>
 
-                <!-- Total Due -->
                 <div class="text-start mb-4">
                     <label class="custom-input-label text-secondary">Total Due</label>
                     <input type="text" class="form-control custom-input fs-5 text-primary text-end font-monospace" id="storeTotalDue" readonly>
                 </div>
 
-                <!-- Error Display -->
                 <div id="storeCreditError" class="alert alert-danger py-2 px-3 text-start mb-4 shadow-sm" style="display: none; font-size: 0.85rem; font-weight: bold; border-left: 4px solid #dc3545;">
                     <i class="fa-solid fa-circle-exclamation me-1"></i> <span id="storeCreditErrorText"></span>
-
-                    <!-- Hidden button for limit extension -->
                     <div class="mt-3 text-end">
                         <button type="button" id="btnExtendCredit" class="btn btn-sm btn-outline-danger fw-bold rounded-pill" style="display: none;" onclick="extendCustomerCredit()">
                             <i class="fa-solid fa-plus me-1"></i> Add ₱300 Limit
@@ -261,7 +274,7 @@
     </div>
 </div>
 
-<!-- Xendit Simulation Waiting Modal (Shared for GCash & Credit Card) -->
+<!-- Xendit Simulation Waiting Modal -->
 <div class="modal fade" id="gcashQRModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content gcash-modal-content position-relative border-0 shadow-lg p-4 text-center">
@@ -277,6 +290,7 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         let liveStoreCreditLimit = 0;
         let liveAvailableBalance = 0;
@@ -296,8 +310,14 @@
             }
 
             if (isEmpty) {
-                alert("Cannot proceed to payment: The shopping cart is empty.");
-                window.location.replace('/Home/Checkout');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Empty Cart',
+                    text: 'Cannot proceed to payment: The shopping cart is empty.',
+                    confirmButtonColor: '#1162a3'
+                }).then(() => {
+                    window.location.replace('/Home/Checkout');
+                });
             }
         })();
 
@@ -306,7 +326,8 @@
         let cashModalInstance, creditModalInstance, storeCreditModalInstance, ewalletModalInstance, gcashQRModalInstance;
 
         const urlParams = new URLSearchParams(window.location.search);
-        const verifiedCustomerName = urlParams.get('search');
+        const verifiedCustomerName = urlParams.get('search') || sessionStorage.getItem("verifiedCustomerName") || "";
+        const sessionCustomerId = parseInt(sessionStorage.getItem("verifiedCustomerId") || "0");
 
         document.addEventListener("DOMContentLoaded", function () {
             cashModalInstance = new bootstrap.Modal(document.getElementById('cashModal'));
@@ -314,6 +335,18 @@
             storeCreditModalInstance = new bootstrap.Modal(document.getElementById('storeCreditModal'));
             ewalletModalInstance = new bootstrap.Modal(document.getElementById('ewalletModal'));
             gcashQRModalInstance = new bootstrap.Modal(document.getElementById('gcashQRModal'));
+
+            // DISABLE STORE CREDIT IF SETTLING DEBT
+            const activeDebtIds = sessionStorage.getItem("activeDebtTransactionIds");
+            if (activeDebtIds) {
+                const storeBtn = document.querySelector('.btn-store');
+                if (storeBtn) {
+                    storeBtn.disabled = true;
+                    storeBtn.style.opacity = "0.5";
+                    storeBtn.innerHTML = '<i class="fa-solid fa-ban"></i><span class="mt-1">Debt Settlement</span>';
+                    storeBtn.onclick = null;
+                }
+            }
 
             const summaryList = document.getElementById("summaryList");
             const cartData = sessionStorage.getItem("smartScanCart");
@@ -323,7 +356,9 @@
             try {
                 cart = JSON.parse(cartData);
                 let html = "";
+                total = 0;
 
+                // Calculate and render cart products
                 cart.forEach(item => {
                     const price = Number(item.price);
                     const qty = Number(item.qty);
@@ -341,13 +376,28 @@
                         </tr>`;
                 });
 
+                // Add Late Fee / Penalty if present
+                const debtPenalty = parseFloat(sessionStorage.getItem("activeDebtPenalty") || "0");
+                const debtDueDate = sessionStorage.getItem("activeDebtDueDate");
+
+                if (debtPenalty > 0) {
+                    total += debtPenalty;
+                    const penaltyBox = document.getElementById("penaltyNoticeRow");
+                    const penaltyAmt = document.getElementById("penaltyAmountDisplay");
+                    const dateInfo = document.getElementById("penaltyDueDateInfo");
+
+                    if (penaltyBox) penaltyBox.style.setProperty("display", "flex", "important");
+                    if (penaltyAmt) penaltyAmt.textContent = `+₱${debtPenalty.toFixed(2)}`;
+                    if (dateInfo && debtDueDate) dateInfo.textContent = `(Overdue from ${debtDueDate})`;
+                }
+
                 if (html) {
                     summaryList.innerHTML = html;
                 }
 
+                // Update all grand total displays once cleanly
                 const formattedTotal = `₱${total.toFixed(2)}`;
                 document.getElementById("grandTotalDisplay").textContent = formattedTotal;
-
                 document.getElementById("cashTotalDue").value = formattedTotal;
                 document.getElementById("storeTotalDue").value = formattedTotal;
 
@@ -355,7 +405,14 @@
                 console.error("Cart error", error);
             }
 
-            // --- FETCH LIVE CREDIT DATA WHEN PAGE LOADS ---
+            // Bind hidden Customer ID input if available
+            const hiddenCustInput = document.getElementById("savedCustomerId");
+            if (sessionCustomerId > 0) {
+                liveCustomerId = sessionCustomerId;
+                if (hiddenCustInput) hiddenCustInput.value = sessionCustomerId;
+            }
+
+            // ======== FETCH LIVE CREDIT DATA WITH OVERDUE CHECK ========
             if (verifiedCustomerName) {
                 fetch(`/Home/GetCustomerCredit?customerName=${encodeURIComponent(verifiedCustomerName)}`)
                     .then(res => res.json())
@@ -364,10 +421,37 @@
                             liveStoreCreditLimit = data.creditLimit;
                             liveAvailableBalance = data.availableBalance;
                             liveCustomerId = data.customerId;
+                            if (hiddenCustInput) hiddenCustInput.value = data.customerId;
 
                             document.getElementById("storeCreditBadge").innerText = `Max ₱${liveStoreCreditLimit.toFixed(2)}`;
                             document.getElementById("storeBalance").innerText = `₱${liveAvailableBalance.toFixed(2)}`;
-                            document.getElementById("storeDueDate").innerText = data.nextDueDate; // Ensure Due Date is updated
+
+                            const dueDateEl = document.getElementById("storeDueDate");
+                            const overdueBadge = document.getElementById("storeOverdueBadge");
+
+                            if (dueDateEl) {
+                                dueDateEl.innerText = data.nextDueDate;
+
+                                if (data.nextDueDate && data.nextDueDate !== "No pending dues" && data.nextDueDate !== "N/A") {
+                                    const parsedDate = new Date(data.nextDueDate);
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+
+                                    if (parsedDate < today) {
+                                        dueDateEl.classList.remove("text-dark");
+                                        dueDateEl.classList.add("text-danger");
+                                        if (overdueBadge) overdueBadge.style.display = "inline-block";
+                                    } else {
+                                        dueDateEl.classList.remove("text-danger");
+                                        dueDateEl.classList.add("text-dark");
+                                        if (overdueBadge) overdueBadge.style.display = "none";
+                                    }
+                                } else {
+                                    dueDateEl.classList.remove("text-danger");
+                                    dueDateEl.classList.add("text-dark");
+                                    if (overdueBadge) overdueBadge.style.display = "none";
+                                }
+                            }
                         } else {
                             document.getElementById("storeCreditBadge").innerText = "Unregistered";
                             document.getElementById("storeBalance").innerText = "₱0.00";
@@ -375,6 +459,10 @@
                         }
                     })
                     .catch(err => console.error("Could not load credit balance."));
+            }
+
+            if (urlParams.get('openStoreCredit') === 'true' && liveCustomerId > 0) {
+                openModal('storeCreditModal');
             }
         });
 
@@ -386,30 +474,77 @@
 
         function openModal(modalId) {
             if (cart.length === 0 || total <= 0) {
-                alert("Your cart is empty. Please return to Checkout.");
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Empty Cart',
+                    text: 'Your cart is empty. Please return to Checkout.',
+                    confirmButtonColor: '#1162a3'
+                });
                 return;
             }
-            if (modalId === 'cashModal') cashModalInstance.show();
+
+            if (modalId === 'storeCreditModal') {
+                // Require both verified name AND a resolved customer ID > 0
+                if (!verifiedCustomerName || verifiedCustomerName.trim() === '' || liveCustomerId <= 0) {
+                    Swal.fire({
+                        title: 'Customer Verification Required',
+                        text: 'Store Credits require customer identity and facial verification before charging.',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonColor: '#1162a3',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fa-solid fa-id-card me-1"></i>Verify Identity',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            sessionStorage.setItem("verificationRedirect", "StoreCredit");
+                            window.location.href = "/Home/CustomerVerification";
+                        }
+                    });
+                    return;
+                }
+            }
+
+            if (modalId === 'cashModal') {
+                const cashDue = Math.round(total);
+                document.getElementById("cashTotalDue").value = `₱${cashDue.toFixed(2)}`;
+                cashModalInstance.show();
+            }
             else if (modalId === 'creditModal') creditModalInstance.show();
             else if (modalId === 'storeCreditModal') storeCreditModalInstance.show();
             else if (modalId === 'ewalletModal') ewalletModalInstance.show();
         }
 
         function proceedCashPayment() {
+            const rawDue = document.getElementById("cashTotalDue").value.replace(/[^0-9.-]+/g, "");
+            const cashTotalDue = parseFloat(rawDue) || Math.round(total);
             const amountInput = document.getElementById("cashAmountReceived").value;
 
             if (!amountInput || amountInput.trim() === "") {
-                alert("Error: Please enter the amount received from the customer.");
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Missing Amount',
+                    text: 'Please enter the amount received from the customer.',
+                    confirmButtonColor: '#1162a3'
+                });
                 return;
             }
 
             const amountReceived = parseFloat(amountInput);
-            if (isNaN(amountReceived) || amountReceived < total) {
-                alert(`Insufficient amount. The total due is ₱${total.toFixed(2)}.`);
+            if (isNaN(amountReceived) || amountReceived < cashTotalDue) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Insufficient Amount',
+                    text: `The total due is ₱${cashTotalDue.toFixed(2)}. Customer provided ₱${amountReceived.toFixed(2)}.`,
+                    confirmButtonColor: '#1162a3'
+                });
                 return;
             }
 
-            const changeAmount = amountReceived - total;
+            const changeAmount = amountReceived - cashTotalDue;
+
+            // Pass cashTotalDue as the recorded total for this cash transaction
+            total = cashTotalDue;
             finalizeTransaction("Cash In Hand", amountReceived, changeAmount);
         }
 
@@ -428,7 +563,7 @@
             if (total > liveAvailableBalance) {
                 errorText.textContent = `Insufficient balance. Total Due (₱${total.toFixed(2)}) exceeds your available credit of ₱${liveAvailableBalance.toFixed(2)}.`;
                 errorBox.style.display = "block";
-                extendBtn.style.display = "inline-block"; // SHOW the override button
+                extendBtn.style.display = "inline-block";
                 return;
             }
 
@@ -438,7 +573,17 @@
         }
 
         async function extendCustomerCredit() {
-            if (!confirm("Are you sure you want to increase this customer's credit limit by ₱300.00 and extend their due date by 3 days?")) return;
+            const confirmResult = await Swal.fire({
+                title: 'Increase Credit Limit?',
+                text: "Increase this customer's credit limit by ₱300.00 and extend their due date by 3 days?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1162a3',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Increase'
+            });
+
+            if (!confirmResult.isConfirmed) return;
 
             const btn = document.getElementById("btnExtendCredit");
             const originalText = btn.innerHTML;
@@ -463,21 +608,29 @@
                     btn.innerHTML = originalText;
                     btn.disabled = false;
 
-                    // Re-run checkout to see if the new balance covers the cart
                     proceedStoreCredit();
                 } else {
-                    alert("Failed to increase limit: " + result.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed',
+                        text: result.message || 'Failed to increase limit.',
+                        confirmButtonColor: '#1162a3'
+                    });
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
             } catch (err) {
-                alert("Network error while trying to increase limit.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Network Error',
+                    text: 'Network error while trying to increase limit.',
+                    confirmButtonColor: '#1162a3'
+                });
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
 
-        // --- NEW ONLINE CREDIT CARD LINK GENERATOR ---
         async function proceedCreditCard() {
             creditModalInstance.hide();
 
@@ -504,12 +657,10 @@
                 if (result.success) {
                     window.open(result.checkoutUrl, '_blank');
 
-                    // Update waiting modal UI for Credit Card
                     document.getElementById('waitingModalIcon').style.display = 'none';
                     document.getElementById('waitingModalTitle').innerText = "Awaiting Credit Card";
-                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit Credit Card simulation. Please complete the test payment there.";
+                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit Credit Card simulation. Complete payment there.";
 
-                    // Assign transaction finalizer
                     document.getElementById('waitingModalConfirmBtn').onclick = function() {
                         gcashQRModalInstance.hide();
                         finalizeTransaction("Credit Card", total, 0);
@@ -519,18 +670,27 @@
                     btn.disabled = false;
                     gcashQRModalInstance.show();
                 } else {
-                    alert("Failed to connect to Xendit API: " + result.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Xendit Error',
+                        text: result.message || 'Failed to connect to payment gateway.',
+                        confirmButtonColor: '#1162a3'
+                    });
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
             } catch (error) {
-                alert("Network Error generating Credit Card link.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Network Error',
+                    text: 'Could not connect to payment service.',
+                    confirmButtonColor: '#1162a3'
+                });
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
 
-        // --- UPDATED XENDIT GCASH LINK GENERATOR ---
         async function openGCashQR() {
             ewalletModalInstance.hide();
 
@@ -557,12 +717,10 @@
                 if (result.success) {
                     window.open(result.checkoutUrl, '_blank');
 
-                    // Update waiting modal UI back for GCash
                     document.getElementById('waitingModalIcon').style.display = 'block';
                     document.getElementById('waitingModalTitle').innerText = "Awaiting Payment";
-                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit GCash simulation. Please complete the test payment there.";
+                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit GCash simulation. Complete payment there.";
 
-                    // Assign transaction finalizer
                     document.getElementById('waitingModalConfirmBtn').onclick = function() {
                         gcashQRModalInstance.hide();
                         finalizeTransaction("GCash API", total, 0);
@@ -572,35 +730,60 @@
                     btn.disabled = false;
                     gcashQRModalInstance.show();
                 } else {
-                    alert("Failed to connect to Xendit API: " + result.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Xendit Error',
+                        text: result.message || 'Failed to connect to payment gateway.',
+                        confirmButtonColor: '#1162a3'
+                    });
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
             } catch (error) {
-                alert("Network Error generating GCash link.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Network Error',
+                    text: 'Could not generate GCash checkout link.',
+                    confirmButtonColor: '#1162a3'
+                });
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
 
         async function finalizeTransaction(method, amountPaid, changeAmount) {
+            const resolvedCustomerId = liveCustomerId > 0 ? liveCustomerId : 0;
+            const activeDebtIds = sessionStorage.getItem("activeDebtTransactionIds");
+            const debtPenalty = parseFloat(sessionStorage.getItem("activeDebtPenalty") || "0");
+
+            // Build items list
+            const finalItems = cart.map(i => ({
+                name: i.name,
+                qty: parseInt(i.qty),
+                price: parseFloat(i.price)
+            }));
+
+            // If there's an overdue penalty on debt settlement, append as a receipt line item
+            if (debtPenalty > 0) {
+                finalItems.push({
+                    name: "Overdue Late Fee (5%)",
+                    qty: 1,
+                    price: debtPenalty
+                });
+            }
 
             const payload = {
-                items: cart.map(i => ({
-                    name: i.name,
-                    qty: parseInt(i.qty),
-                    price: parseFloat(i.price)
-                })),
+                items: finalItems,
                 total: parseFloat(total),
                 paymentMethod: method,
                 customerName: verifiedCustomerName || "Guest",
-                customerId: liveCustomerId > 0 ? liveCustomerId : 2
+                customerId: resolvedCustomerId,
+                debtTransactionIds: activeDebtIds ? JSON.parse(activeDebtIds) : null
             };
 
             const activeModal = document.querySelector('.modal.show');
             const btn = activeModal ? activeModal.querySelector('.btn-proceed') : null;
-            if(btn) {
-                const originalText = btn.innerHTML;
+            if (btn) {
                 btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
                 btn.disabled = true;
             }
@@ -620,37 +803,93 @@
                     payload.receiptNumber = result.receiptNumber;
                     payload.amountPaid = amountPaid;
                     payload.change = changeAmount;
+                    payload.dueDate = result.dueDate || null;
 
-                    sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
+                    // Reset In-Memory Variables
+                    liveCustomerId = 0;
+                    liveStoreCreditLimit = 0;
+                    liveAvailableBalance = 0;
+
+                    // Clear Hidden Input
+                    const hiddenCustInput = document.getElementById("savedCustomerId");
+                    if (hiddenCustInput) hiddenCustInput.value = "";
+
+                    // Clear Storage Keys
                     sessionStorage.removeItem("smartScanCart");
+                    sessionStorage.removeItem("activeDebtTransactionIds");
+                    sessionStorage.removeItem("activeDebtPenalty");
+                    sessionStorage.removeItem("activeDebtDueDate");
+                    sessionStorage.removeItem("verifiedCustomerId");
+                    sessionStorage.removeItem("verifiedCustomerName");
+                    sessionStorage.removeItem("verificationRedirect");
+                    sessionStorage.removeItem("verificationReason");
+                    sessionStorage.removeItem("customerAgeVerified");
 
+                    // Force Reset Customer Facing Display to Empty State
+                    localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({
+                        customerName: "",
+                        items: [],
+                        total: 0
+                    }));
                     localStorage.removeItem("smartScanCustomerDisplay");
 
-                    window.location.href = "/Home/GenerateReceipt";
+                    // Check if we were settling a debt
+                    if (activeDebtIds) {
+                        const customerDisplayName = verifiedCustomerName && verifiedCustomerName.trim() !== ""
+                            ? `${verifiedCustomerName}'s`
+                            : "the customer's";
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Debt Settled',
+                            text: `Debt has been successfully payed and ${customerDisplayName} current debt has been reset.`,
+                            confirmButtonColor: '#1162a3',
+                            allowOutsideClick: false
+                        }).then(() => {
+                            // Redirect using replace to prevent back-navigation to the paid session
+                            window.location.replace("/Home/Checkout");
+                        });
+                    } else {
+                        sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
+                        window.location.href = "/Home/GenerateReceipt";
+                    }
                 } else {
-                    alert("Transaction Failed: " + result.message);
-                    if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Transaction Failed',
+                        text: result.message || 'Could not complete transaction.',
+                        confirmButtonColor: '#1162a3'
+                    });
+                    if (btn) { btn.innerHTML = "Proceed"; btn.disabled = false; }
                 }
             } catch (error) {
-                alert("Network Error: Could not connect to the database.");
-                if(btn) { btn.innerHTML = "Proceed"; btn.disabled = false; }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Network Error',
+                    text: 'Could not connect to the database.',
+                    confirmButtonColor: '#1162a3'
+                });
+                if (btn) { btn.innerHTML = "Proceed"; btn.disabled = false; }
             }
         }
 
         function cancelAndReturn() {
+            sessionStorage.removeItem("verifiedCustomerId");
+            sessionStorage.removeItem("verifiedCustomerName");
+            sessionStorage.removeItem("verificationRedirect");
+            sessionStorage.removeItem("verificationReason");
+            sessionStorage.removeItem("activeDebtTransactionIds");
+            sessionStorage.removeItem("activeDebtPenalty");
+            sessionStorage.removeItem("activeDebtDueDate");
+            sessionStorage.removeItem("customerAgeVerified");
             window.location.href = "/Home/Checkout";
         }
 
-        // Automatically calculates change as the cashier types
         function calculateChange() {
-            // Strip out '₱' or commas from the Total Due text to get a clean number
             const rawDue = document.getElementById('cashTotalDue').value.replace(/[^0-9.-]+/g, "");
-            const totalDue = parseFloat(rawDue) || 0;
-
+            const totalDue = parseFloat(rawDue) || Math.round(total);
             const amountReceived = parseFloat(document.getElementById('cashAmountReceived').value) || 0;
             const change = amountReceived - totalDue;
-
-            // Prevent showing negative change if the amount received is less than total due
             const displayChange = change > 0 ? change : 0;
             document.getElementById('cashChange').value = "₱ " + displayChange.toFixed(2);
         }

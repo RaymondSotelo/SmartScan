@@ -23,6 +23,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddTransient<IEmailSender, EmailSender>();
+builder.Services.AddHttpClient();
 
 // Service Configuration
 builder.Services.Configure<SecurityStampValidatorOptions>(options =>
@@ -54,6 +55,7 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHub<UserSessionHub>("/hubs/userSession");

@@ -23,18 +23,22 @@ public partial class Customer
     [Column(TypeName = "decimal(10, 2)")]
     public decimal CurrentDebt { get; set; }
 
-    [Phone]
-    [StringLength(11, MinimumLength = 11, ErrorMessage = "Contact number must be 11 digits.")]
+    [Required(ErrorMessage = "Mobile contact number is required.")]
+    [RegularExpression(@"^09\d{9}$", ErrorMessage = "Please enter a valid 11-digit mobile number starting with 09.")]
+    [StringLength(11)]
     public string? ContactNumber { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    public int? Age { get; set; }
+    [Required]
+    public int RetailId { get; set; }
 
-    public bool IsIdVerified { get; set; }
+    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
 
     [ValidateNever]
     public virtual Status Status { get; set; } = null!;
 
-    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+    [ValidateNever]
+    public virtual Retail? Retail { get; set; }
+
 }

@@ -4,6 +4,7 @@
     ViewData["Title"] = "Customers";
     ViewData["HeaderTitle"] = "Retail Management";
     string currentFilter = ViewData["CurrentFilter"]?.ToString()?.Trim() ?? "";
+    var today = DateOnly.FromDateTime(DateTime.Today);
 }
 
 <!-- Outer Card pinned to Viewport Height -->
@@ -46,13 +47,13 @@
 
         <div class="flex-grow-1 pb-3">
             <table class="table table-hover align-middle mb-0 w-100"
-                   style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
+                   style="min-width: 950px; border-collapse: separate; border-spacing: 0;">
 
                 <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
 
                     <!-- Sticky Action Bar Row -->
                     <tr class="bg-white">
-                        <th colspan="5" class="p-0 border-0 border-bottom">
+                        <th colspan="6" class="p-0 border-0 border-bottom">
                             <div class="px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
 
                                 <!-- Add Button -->
@@ -102,6 +103,7 @@
                     <!-- Sticky Column Headers Row -->
                     <tr class="table-light">
                         <th class="ps-4 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Customer</th>
+                        <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Retail Store</th>
                         <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Contact</th>
                         <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Credit Limit</th>
                         <th class="py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Current Debt</th>
@@ -113,7 +115,7 @@
                     @if (!Model.Any())
                     {
                         <tr>
-                            <td colspan="5" class="p-0 border-0 bg-white">
+                            <td colspan="6" class="p-0 border-0 bg-white">
                                 @if (!string.IsNullOrEmpty(currentFilter))
                                 {
                                     <div class="alert alert-warning text-center mx-4 my-4 fw-semibold shadow-sm border-0 rounded-4" role="alert">
@@ -139,6 +141,15 @@
                         {
                             bool hasDebt = item.CurrentDebt > 0;
 
+                            // Resolve earliest pending repayment deadline from the Customer's Transactions
+                            var earliestDueTx = item.Transactions?
+                            .Where(t => t.PaymentMethodId == 4 && t.StatusId == 1 && t.DueDate.HasValue)
+                            .OrderBy(t => t.DueDate)
+                            .FirstOrDefault();
+
+                            DateOnly? dueDate = earliestDueTx?.DueDate;
+                            bool isOverdue = dueDate.HasValue && dueDate.Value < today;
+
                             <tr>
                                 <!-- 1. Customer Name -->
                                 <td class="ps-4">
@@ -149,7 +160,14 @@
                                     </div>
                                 </td>
 
-                                <!-- 2. Contact Number -->
+                                <!-- 2. Retail Store -->
+                                <td class="text-primary fw-bold" style="font-size: 13.5px;">
+
+                                    @(item.Retail?.RetailName ?? $"Store #{item.RetailId}")
+
+                                </td>
+
+                                <!-- 3. Contact Number -->
                                 <td>
                                     @if (!string.IsNullOrWhiteSpace(item.ContactNumber))
                                     {
@@ -164,27 +182,54 @@
                                     }
                                 </td>
 
-                                <!-- 3. Credit Limit -->
+                                <!-- 4. Credit Limit -->
                                 <td>
                                     <span class="fw-semibold text-secondary" style="font-size: 13px;">
                                         ₱@item.CreditLimit.ToString("N2")
                                     </span>
                                 </td>
 
-                                <!-- 4. Current Debt -->
+                                <!-- 5. Current Debt with Dynamic DueDate Badge -->
                                 <td>
-                                    <span class="fw-bold @(hasDebt ? "text-danger" : "text-success")" style="font-size: 13px;">
-                                        ₱@item.CurrentDebt.ToString("N2")
-                                    </span>
-                                    @if (hasDebt)
-                                    {
-                                        <small class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle ms-1" style="font-size: 10px;">
-                                            Balance Due
-                                        </small>
-                                    }
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="fw-bold @(hasDebt ? "text-danger" : "text-success")" style="font-size: 13px;">
+                                            ₱@item.CurrentDebt.ToString("N2")
+                                        </span>
+
+                                        @if (hasDebt && dueDate.HasValue)
+                                        {
+                                            if (isOverdue)
+                                            {
+                                                <!-- Overdue Style Matching Your Design Token -->
+                                                <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm d-inline-flex align-items-center gap-1"
+                                                      style="font-size: 11px; background-color: #fee2e2; color: #991b1b; border: 1.5px solid #fecaca; border-color: #991b1b;"
+                                                      title="Payment is past due!">
+                                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                                    <span>Overdue: @dueDate.Value.ToString("MMM dd")</span>
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <!-- Standard Pending Due Date (Exact Match to Your Specified Badge) -->
+                                                <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm d-inline-flex align-items-center gap-1"
+                                                      style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba; border-color: #856404;"
+                                                      title="Repayment deadline">
+                                                    <i class="fa-regular fa-clock"></i>
+                                                    <span>Due: @dueDate.Value.ToString("MMM dd")</span>
+                                                </span>
+                                            }
+                                        }
+                                        else if (hasDebt)
+                                        {
+                                            <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
+                                                  style="font-size: 11px; background-color: #f8f9fa; color: #6c757d; border: 1.5px solid #dee2e6; border-color: #6c757d;">
+                                                Pending Due
+                                            </span>
+                                        }
+                                    </div>
                                 </td>
 
-                                <!-- 5. Actions -->
+                                <!-- 6. Actions -->
                                 <td class="pe-4 text-end">
                                     <div class="d-inline-flex align-items-center gap-1">
 

@@ -39,7 +39,7 @@
             <!-- ========================================== -->
             <div class="row g-3 mb-4">
 
-                <!-- Recievables -->
+                <!-- Receivables (Scoped to User's Stores) -->
                 <div class="col-12 col-sm-6 col-xl-3">
                     <div class="card kpi-card shadow-sm rounded-4 h-100 p-3"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
@@ -78,7 +78,7 @@
                     </div>
                 </div>
 
-                <!-- Verified Shoppers -->
+                <!-- Verified Shoppers (Scoped to User's Stores) -->
                 <div class="col-12 col-sm-6 col-xl-3">
                     <div class="card kpi-card shadow-sm rounded-4 h-100 p-3"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
@@ -112,11 +112,11 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- SECTION 2: CRITICAL ATTENTION FEED         -->
+            <!-- SECTION 2: CRITICAL ATTENTION FEED          -->
             <!-- ========================================== -->
             <div class="row g-3 mb-4">
 
-                <!-- Overdue Debts (Now Full Width) -->
+                <!-- Overdue Debts (Full Width) -->
                 <div class="col-12">
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
                         <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
@@ -143,7 +143,7 @@
                                     <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
                                          style="background-color: #fee2e2; border-color: #fecaca !important;">
 
-                                        <!-- Left: Customer Name, Phone & Due Date (No Profile Picture) -->
+                                        <!-- Left: Customer Name, Phone & Due Date -->
                                         <div class="d-flex flex-column lh-1">
                                             <span class="fw-semibold text-dark text-truncate" style="max-width: 240px;">
                                                 @debt.FullName
@@ -181,14 +181,14 @@
                     </div>
                 </div>
 
-                <!-- Age-Gating Audit -->
+                <!-- Newly Registered Customer (Replaces PhilSys Verification Log) -->
                 <div class="col-12">
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
                         <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="px-1 pb-1">
-                                    <h4 class="mb-0 fw-bold" style="color: #1162a3;">PhilSys Verification Log</h4>
-                                    <p class="fw-medium pt-1 text-secondary mb-0">Real-time audit trail for statutory age-gating, verified customer identity checks, and Zero-PII compliance.</p>
+                                    <h4 class="mb-0 fw-bold" style="color: #1162a3;">Newly Registered Customer</h4>
+                                    <p class="fw-medium pt-1 text-secondary mb-0">Recent customer accounts created within your store locations.</p>
                                 </div>
                             </div>
                         </div>
@@ -205,7 +205,7 @@
                                     <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
                                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
 
-                                        <!-- Left: Customer Name & Timestamp (No Profile Picture) -->
+                                        <!-- Left: Customer Name & Timestamp -->
                                         <div class="d-flex flex-column lh-1">
                                             <span class="fw-semibold text-primary text-truncate" style="max-width: 240px;">
                                                 @audit.CustomerMaskedName
@@ -217,20 +217,10 @@
 
                                         <!-- Right: Status Badge -->
                                         <div class="d-flex align-items-center gap-2">
-                                            @if (audit.IsUnderage)
-                                            {
-                                                <span class="badge rounded-pill bg-white text-warning border border-warning-subtle fw-semibold px-2 py-1 shadow-sm"
-                                                      style="font-size: 11px;">
-                                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Minor (Age: @audit.Age)
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm"
-                                                      style="font-size: 11px;">
-                                                    <i class="fa-solid fa-circle-check me-1"></i>Adult Verified (Age: @audit.Age)
-                                                </span>
-                                            }
+                                            <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm"
+                                                  style="font-size: 11px;">
+                                                <i class="fa-solid fa-circle-check me-1"></i>Enrolled Profile
+                                            </span>
                                         </div>
 
                                     </div>
@@ -246,7 +236,6 @@
         <!-- ========================================== -->
         <!-- SECTION 3: RETAIL OVERVIEW                 -->
         <!-- ========================================== -->
-        <!-- Compact Unified Action & Search Bar -->
         <div class="d-flex justify-content-between align-items-center gap-3 mb-3 pb-3 pt-2 border-bottom flex-shrink-0" id="retail-overview-section">
 
             <!-- Header Info -->
@@ -278,7 +267,7 @@
             </form>
         </div>
 
-        <!-- Your Scrolling Grid Core -->
+        <!-- Scrolling Grid Core -->
         <div class="flex-grow-1 pe-1">
             @if (!Model.Retails.Any())
             {
@@ -338,7 +327,6 @@
                                 <!-- Card Body -->
                                 <div class="card-body d-flex flex-column p-3">
                                     <h5 class="card-title fw-bold mb-1 text-truncate" style="color: #1162a3;" title="@item.RetailName">
-                                        <!-- Stretched link triggers navigation to store details/view -->
                                         <a asp-controller="Retails" asp-action="View" asp-route-retailid="@item.RetailId" class="stretched-link text-decoration-none text-reset">
                                             @item.RetailName
                                         </a>
@@ -359,8 +347,6 @@
 
                                     <!-- Footer Info -->
                                     <div class="mt-auto d-flex align-items-center small text-muted pt-2">
-
-                                        <!-- Owner Section -->
                                         <div class="d-flex align-items-center text-truncate me-2 position-relative" style="z-index: 2;" title="Store Owner">
                                             <img src="@avatarPath"
                                                  onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
@@ -391,7 +377,6 @@
         document.addEventListener("DOMContentLoaded", function () {
             const retailSection = document.getElementById("retail-overview-section");
             if (retailSection) {
-                // Smoothly scroll down to Section 3
                 retailSection.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         });

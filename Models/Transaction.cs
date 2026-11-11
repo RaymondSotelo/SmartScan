@@ -12,7 +12,7 @@ public partial class Transaction
 
     public int RetailStaffId { get; set; }
 
-    public int CustomerId { get; set; }
+    public int? CustomerId { get; set; }
 
     public int RetailId { get; set; }
 
@@ -31,8 +31,7 @@ public partial class Transaction
     [DataType(DataType.Date)]
     public DateOnly? DueDate { get; set; }
 
-    [ValidateNever]
-    public virtual Customer Customer { get; set; } = null!;
+    public virtual Customer? Customer { get; set; }
 
     [ValidateNever]
     public virtual PaymentMethod? PaymentMethod { get; set; }

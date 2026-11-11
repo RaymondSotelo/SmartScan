@@ -35,8 +35,7 @@ public class TransactionsController : Controller
             .Include(t => t.Status)
             .Include(t => t.TransactionItems)
             .AsNoTracking()
-            // Filter: Show transactions ONLY for retails where the current user 
-            // is the primary Owner (AdminOwner) OR registered as active staff
+
             .Where(t => t.Retail != null && (
                 t.Retail.AdminOwner == currentUserId ||
                 t.Retail.RetailStaffs.Any(rs =>
@@ -69,6 +68,8 @@ public class TransactionsController : Controller
                 transactionQuery = transactionQuery.Where(t =>
                     t.ReceiptNumber.Contains(search) ||
                     (t.Retail != null && t.Retail.RetailName.Contains(search)) ||
+                    (t.PaymentMethod != null && t.PaymentMethod.PaymentMethodName.Contains(search)) ||
+                    (t.Customer != null && t.Customer.FullName.Contains(search)) ||
                     (isNumeric && t.TotalAmount == parsedPrice) ||
                     (t.CreatedAt >= startOfDay && t.CreatedAt < endOfDay));
             }
@@ -77,6 +78,8 @@ public class TransactionsController : Controller
                 transactionQuery = transactionQuery.Where(t =>
                     t.ReceiptNumber.Contains(search) ||
                     (t.Retail != null && t.Retail.RetailName.Contains(search)) ||
+                    (t.PaymentMethod != null && t.PaymentMethod.PaymentMethodName.Contains(search)) ||
+                    (t.Customer != null && t.Customer.FullName.Contains(search)) ||
                     (t.RetailStaff != null && t.RetailStaff.Staff != null && t.RetailStaff.Staff.UserName.Contains(search)) ||
                     (isNumeric && t.TotalAmount == parsedPrice));
             }
@@ -85,7 +88,7 @@ public class TransactionsController : Controller
         // Filter dropdowns to only the user's accessible stores
         var accessibleRetails = await _context.Retails
             .Where(r => r.AdminOwner == currentUserId ||
-                        r.RetailStaffs.Any(rs => rs.StaffId == currentUserId && rs.Status.StatusName == "Active"))
+                        r.RetailStaffs.Any(rs => rs.StaffId == currentUserId && rs.Status != null && rs.Status.StatusName == "Active"))
             .Select(r => new { r.RetailId, r.RetailName })
             .ToListAsync();
 
