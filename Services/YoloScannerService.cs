@@ -55,6 +55,7 @@ namespace SmartScan.Services
             }
             catch { }
 
+            // Restored: Forcefully correct the YOLO label to include "Twinpack"
             for (int i = 0; i < _classes.Length; i++)
             {
                 if (_classes[i].IndexOf("brown", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -142,10 +143,11 @@ namespace SmartScan.Services
                 if (maxScore >= CONFIDENCE_THRESHOLD)
                 {
                     string rawName = _classes[bestClass];
-                    string dbName = rawName.ToLower().Replace(" ", "_").Replace("'", "''").Trim();
 
+                    // Fixed Validation: Safely checks the exact string without replacing spaces with underscores
                     bool isAllowedInStore = storeInventory != null && storeInventory.Any(inv =>
-                        inv.Trim().Equals(dbName, StringComparison.OrdinalIgnoreCase));
+                        inv.Trim().Equals(rawName.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                        inv.Trim().Replace("_", " ").Equals(rawName.Trim().Replace("_", " "), StringComparison.OrdinalIgnoreCase));
 
                     if (isAllowedInStore)
                     {
@@ -174,7 +176,7 @@ namespace SmartScan.Services
                 }
             }
 
-            // 🔴 NON-MAXIMUM SUPPRESSION (NMS): Keeps duplicates if they are physically separate
+            // NON-MAXIMUM SUPPRESSION (NMS): Keeps duplicates if they are physically separate
             var sortedCandidates = candidates.OrderByDescending(c => c.Confidence).ToList();
             var finalCandidates = new List<DetectionCandidate>();
 
@@ -184,7 +186,7 @@ namespace SmartScan.Services
                 foreach (var kept in finalCandidates.Where(k => k.Name == candidate.Name))
                 {
                     float iou = ComputeIoU(candidate.Box, kept.Box);
-                    if (iou > 0.40f) // If boxes overlap > 40%, it's the same item. Otherwise, it's a new item.
+                    if (iou > 0.40f)
                     {
                         keep = false;
                         break;
@@ -205,7 +207,6 @@ namespace SmartScan.Services
             return finalDetections;
         }
 
-        // Calculates Intersection over Union to tell boxes apart
         private float ComputeIoU(int[] box1, int[] box2)
         {
             int x1 = Math.Max(box1[0], box2[0]);

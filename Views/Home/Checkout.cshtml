@@ -491,6 +491,49 @@
             let manualItems = [];
             let shouldResumeYoloAfterBarcode = false;
 
+            // ================= LIVE AUTO-ADD LOGIC =================
+            let scanCooldowns = {};
+            const COOLDOWN_MS = 4000;
+
+            async function processLiveAutoAdd(yoloCounts) {
+                const now = Date.now();
+
+                for (const [itemName, quantityInFrame] of Object.entries(yoloCounts)) {
+                    if (scanCooldowns[itemName] && (now - scanCooldowns[itemName] < COOLDOWN_MS)) {
+                        continue;
+                    }
+
+                    try {
+                        const response = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(itemName)}`);
+                        if (response.ok) {
+                            const data = await response.json();
+
+                            if (data.success && data.price !== undefined) {
+                                const savedItem = manualItems.find(i => i.name === data.name);
+                                const savedQty = savedItem ? savedItem.qty : 0;
+                                const newQtyToAdd = quantityInFrame - savedQty;
+
+                                if (newQtyToAdd > 0) {
+                                    scanCooldowns[itemName] = now;
+                                    playBeepSound();
+
+                                    const safeName = itemName.replace(/'/g, "\\'");
+                                    const safeDbName = data.name.replace(/'/g, "\\'");
+
+                                    lockYoloItem(safeName, safeDbName, data.price, newQtyToAdd, data.stock, data.isAgeRestricted === true || data.isAgeRestricted === 1);
+
+                                    // Append auto badge flag temporarily to show in cart
+                                    const newlyAdded = manualItems.find(i => i.name === data.name);
+                                    if(newlyAdded) newlyAdded.isAutoScanned = true;
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Auto-add fetch error:", err);
+                    }
+                }
+            }
+
             // ================= BARCODE PREPROCESSING =================
             const barcodeCanvas = document.createElement("canvas");
             const barcodeCtx = barcodeCanvas.getContext("2d", { willReadFrequently: true });
@@ -578,7 +621,8 @@
                         price: product.price,
                         qty: 1,
                         stock: product.stock,
-                        isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1
+                        isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
+                        isAutoScanned: false
                     });
 
                     playBeepSound();
@@ -752,7 +796,8 @@
                                 price: product.price,
                                 qty: 1,
                                 stock: product.stock,
-                                isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1
+                                isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
+                                isAutoScanned: false
                             });
 
                             playBeepSound();
@@ -942,13 +987,15 @@
                             } else {
                                 if (existing) {
                                     existing.qty++;
+                                    existing.isAutoScanned = false; // Reset to manual badge if typed
                                 } else {
                                     manualItems.push({
                                         name: product.name,
                                         price: product.price,
                                         qty: 1,
                                         stock: product.stock,
-                                        isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1
+                                        isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
+                                        isAutoScanned: false
                                     });
                                 }
                             }
@@ -1219,6 +1266,7 @@
                         }
                     }
 
+                    await processLiveAutoAdd(yoloCounts);
                     await buildCartAndRender(yoloCounts, hasLowConfidence);
 
                 } catch (error) {
@@ -1256,15 +1304,14 @@
                         const availableStock = (product.stock || 0) - savedQty;
                         let newQtyToLock = qty - savedQty;
 
-                        if (newQtyToLock > 0) {
+                        // Only show pending UI if item isn't in cart yet
+                        if (newQtyToLock > 0 && !savedItem) {
                             if (newQtyToLock > availableStock) {
                                 newQtyToLock = availableStock;
                             }
 
                             if (newQtyToLock > 0) {
                                 const subtotal = product.price * newQtyToLock;
-                                currentTotal += subtotal;
-
                                 const safeName = itemName.replace(/'/g, "\\'");
                                 const safeDbName = product.name.replace(/'/g, "\\'");
 
@@ -1275,18 +1322,18 @@
 
                                 htmlOutput += `
                                     <tr>
-                                        <td class="fw-medium text-truncate" style="max-width: 140px;">
+                                        <td class="fw-medium text-truncate text-muted" style="max-width: 140px;">
                                             ${escapeHtml(product.name)}
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;">Auto</span>
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill ms-1" style="font-size: 9px;">Processing...</span>
                                             ${stockBadge}
                                         </td>
-                                        <td class="text-center fw-bold">${newQtyToLock}</td>
+                                        <td class="text-center fw-bold text-muted">${newQtyToLock}</td>
                                         <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
-                                        <td class="text-end text-dark fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
+                                        <td class="text-end text-muted fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
                                         <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-success rounded-circle p-1" style="width: 24px; height: 24px; display: inline-grid; place-items: center;" onclick="lockYoloItem('${safeName}', '${safeDbName}', ${product.price}, ${newQtyToLock}, ${product.stock}, ${product.isAgeRestricted ? 'true' : 'false'})" title="Lock Item in Cart">
-                                                <i class="fa-solid fa-check" style="font-size: 14px;"></i>
-                                            </button>
+                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
                                         </td>
                                     </tr>`;
                             } else {
@@ -1320,11 +1367,15 @@
                         ? `<span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">18+</span>`
                         : ``;
 
+                    const sourceBadgeHtml = item.isAutoScanned
+                        ? `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-robot"></i> Auto</span>`
+                        : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-user-pen"></i> Manual</span>`;
+
                     htmlOutput += `
                         <tr>
                             <td class="fw-medium text-truncate" style="max-width: 140px;">
                                 ${escapeHtml(item.name)}
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;">Cart</span>
+                                ${sourceBadgeHtml}
                                 ${ageBadgeHtml}
                             </td>
                             <td class="text-center fw-bold">${item.qty}</td>
@@ -1410,14 +1461,18 @@
                     });
                     const allowedQty = maxStock - currentQty;
                     if (allowedQty > 0) {
-                        if (existing) existing.qty += allowedQty;
-                        else manualItems.push({ name: displayName, price: price, qty: allowedQty, stock: maxStock, isAgeRestricted: isAgeRestricted });
+                        if (existing) {
+                            existing.qty += allowedQty;
+                            existing.isAutoScanned = true;
+                        }
+                        else manualItems.push({ name: displayName, price: price, qty: allowedQty, stock: maxStock, isAgeRestricted: isAgeRestricted, isAutoScanned: true });
                     }
                 } else {
                     if (existing) {
                         existing.qty += qty;
+                        existing.isAutoScanned = true;
                     } else {
-                        manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock, isAgeRestricted: isAgeRestricted });
+                        manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock, isAgeRestricted: isAgeRestricted, isAutoScanned: true });
                     }
                 }
                 buildCartAndRender({}, false);
@@ -1506,8 +1561,6 @@
                     }
                 });
             }
-
-            buildCartAndRender({}, false);
         });
 
         window.addEventListener('load', () => {
@@ -1527,7 +1580,6 @@
         function getPaymentBadgeHtml(methodId, methodName) {
             const safeName = escapeHtml(methodName || 'Cash');
 
-            // Method 4: Store Credit matching custom amber palette
             if (methodId === 4) {
                 return `
                     <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
@@ -1536,7 +1588,6 @@
                     </span>
                 `;
             }
-            // Method 2: E-Wallet / GCash
             if (methodId === 2) {
                 return `
                     <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-success"
@@ -1545,7 +1596,6 @@
                     </span>
                 `;
             }
-            // Method 3: Credit Card
             if (methodId === 3) {
                 return `
                     <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
@@ -1554,7 +1604,6 @@
                     </span>
                 `;
             }
-            // Default / Method 1: Cash
             return `
                 <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-primary"
                       style="font-size: 11px; background-color: #e0f2fe; border: 1.5px solid #bae6fd;">
@@ -1651,7 +1700,6 @@
 
         function filterTransactionsList() {
             const input = document.getElementById('txSearchInput');
-            // Strip leading currency symbols or commas for number matching
             const rawQuery = input ? input.value.trim().toLowerCase() : '';
             const cleanQuery = rawQuery.replace(/[₱,\s]/g, '');
 
@@ -1665,10 +1713,9 @@
                 const cName = String(tx.customerName || '').toLowerCase();
                 const pMethod = String(tx.paymentMethod || '').toLowerCase();
 
-                // Total amount matching (both raw float and formatted 2-decimal string)
                 const totalNum = typeof tx.total === 'number' ? tx.total : parseFloat(tx.total || 0);
-                const totalFormatted = totalNum.toFixed(2); // e.g. "25.00"
-                const totalRaw = String(totalNum);          // e.g. "25"
+                const totalFormatted = totalNum.toFixed(2);
+                const totalRaw = String(totalNum);
 
                 const matchesText = rNum.includes(rawQuery) || cName.includes(rawQuery) || pMethod.includes(rawQuery);
                 const matchesAmount = cleanQuery !== '' && (totalFormatted.includes(cleanQuery) || totalRaw.includes(cleanQuery));
@@ -1689,12 +1736,10 @@
 
             if (!listSection || !receiptSection) return;
 
-            // Toggle Views
             listSection.style.display = 'none';
             receiptSection.style.display = 'block';
             if (headerTitle) headerTitle.innerHTML = '<i class="fa-solid fa-receipt me-2"></i>Receipt Details';
 
-            // Map Status Indicator (StatusId 3 = Completed, StatusId 4 = Pending Settlement)
             const statusBadge = document.getElementById('modalReceiptStatusBadge');
             const numericStatusId = parseInt(tx.statusId, 10);
             if (statusBadge) {
@@ -1713,12 +1758,10 @@
                 }
             }
 
-            // Populate Header & Meta Information
             document.getElementById('modalReceiptNumber').textContent = tx.receiptNumber || '#REC-000000';
             document.getElementById('modalReceiptDate').textContent = tx.date || '';
             document.getElementById('modalBarcodeNumber').textContent = `*${(tx.receiptNumber || '000000').replace(/[^0-9A-Z]/gi, '')}*`;
 
-            // Customer Row
             const custRow = document.getElementById('modalCustomerRow');
             if (tx.customerName && String(tx.customerName).trim() !== '') {
                 document.getElementById('modalReceiptCustomer').textContent = tx.customerName;
@@ -1727,7 +1770,6 @@
                 custRow.style.display = 'none';
             }
 
-            // Due Date Row | STRICT check — ONLY show if Store Credit (ID === 4) AND valid date exists
             const numericMethodId = parseInt(tx.paymentMethodId ?? tx.PaymentMethodId, 10);
             const rawDueDate = tx.dueDate ?? tx.DueDate;
 
@@ -1740,18 +1782,15 @@
                                      String(rawDueDate).trim() !== '--' &&
                                      String(rawDueDate).toLowerCase() !== 'null';
 
-                // Must be strictly payment method 4 (Store Credits) AND have an actual date value
                 if (numericMethodId === 4 && hasValidDate) {
                     if (dueDateEl) dueDateEl.textContent = rawDueDate;
                     dueDateRow.style.setProperty("display", "flex", "important");
                 } else {
-                    // Force hide for Cash (1), GCash (2), Credit Card (3), or empty/-- dates
                     if (dueDateEl) dueDateEl.textContent = '';
                     dueDateRow.style.setProperty("display", "none", "important");
                 }
             }
 
-            // Populate Items Table
             const itemsListContainer = document.getElementById('modalReceiptItemList');
             if (itemsListContainer) {
                 itemsListContainer.innerHTML = '';
@@ -1781,7 +1820,6 @@
                 if (totalQtyEl) totalQtyEl.textContent = `${totalQuantity} units`;
             }
 
-            // Totals & Tender Details
             const totalNum = typeof tx.total === 'number' ? tx.total : parseFloat(tx.total || 0);
             document.getElementById('modalReceiptSubtotal').textContent = `₱${totalNum.toFixed(2)}`;
             document.getElementById('modalReceiptGrandTotal').textContent = `₱${totalNum.toFixed(2)}`;
