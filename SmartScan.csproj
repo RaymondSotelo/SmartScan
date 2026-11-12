@@ -29,4 +29,10 @@
     <Folder Include="PythonScanner\my_model_v2\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="PythonScanner\my_model_v2\my_model.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
