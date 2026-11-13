@@ -29,7 +29,7 @@
                     <div class="form-group mb-3">
                         <label asp-for="RetailName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Retail Name</label>
                         <div class="position-relative">
-                            <input asp-for="RetailName" id="RetailName" class="form-control rounded-3 pe-5" placeholder="Enter store name" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+                            <input asp-for="RetailName" id="RetailName" class="form-control rounded-3 pe-5" placeholder="Enter store name" oninput="this.value = this.value.replace(/[^a-zA-Z0-9\s]/g, '')" />
 
                             <!-- Inner Clear Button -->
                             <button type="button"

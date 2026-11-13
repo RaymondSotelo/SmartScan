@@ -23,7 +23,6 @@ namespace SmartScan.Controllers
         {
             ViewData["CurrentFilter"] = search;
 
-            // Scope query to stores owned or managed by the user
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userStoresQuery = _context.Retails.Where(r =>
                 r.AdminOwner == currentUserId ||
@@ -43,12 +42,14 @@ namespace SmartScan.Controllers
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim();
+                // Also support searching when user types formatted spaces (e.g., "0912 345")
+                string cleanSearch = new string(search.Where(char.IsDigit).ToArray());
+
                 customerQuery = customerQuery.Where(c =>
                     c.FullName.Contains(search) ||
-                    (c.ContactNumber != null && c.ContactNumber.Contains(search)));
+                    (c.ContactNumber != null && (c.ContactNumber.Contains(search) || (!string.IsNullOrEmpty(cleanSearch) && c.ContactNumber.Contains(cleanSearch)))));
             }
 
-            // Sort by CurrentDebt descending (highest to lowest), then by CreatedAt as tiebreaker
             var sortedCustomers = await customerQuery
                 .OrderByDescending(c => c.CurrentDebt)
                 .ThenByDescending(c => c.CreatedAt)
@@ -71,7 +72,6 @@ namespace SmartScan.Controllers
             [Bind("FullName,ContactNumber,RetailId")] Customer customer,
             string? faceEmbeddingJson)
         {
-            // Clear navigation properties from ModelState validation
             ModelState.Remove(nameof(customer.Status));
             ModelState.Remove(nameof(customer.Retail));
 
@@ -88,10 +88,28 @@ namespace SmartScan.Controllers
                 ModelState.AddModelError(nameof(customer.RetailId), "You do not have access to register customers for this retail store.");
             }
 
-            // Status default: 1 = Active
-            customer.StatusId = 1;
+            // Normalize and validate ContactNumber (Required, 11 digits, starts with 09)
+            string cleanContact = new string((customer.ContactNumber ?? string.Empty).Where(char.IsDigit).ToArray());
+            customer.ContactNumber = cleanContact;
+            ModelState.Remove(nameof(customer.ContactNumber));
 
-            // Process Facial Biometrics Vector
+            if (string.IsNullOrWhiteSpace(cleanContact) || cleanContact.Length != 11 || !cleanContact.StartsWith("09"))
+            {
+                ModelState.AddModelError(nameof(customer.ContactNumber), "A valid 11-digit contact number starting with 09 is required.");
+            }
+            else if (isPermittedStore)
+            {
+                // Restrict duplicate contact number within the same retail store
+                bool isDuplicate = await _context.Customers
+                    .AnyAsync(c => c.RetailId == customer.RetailId && c.ContactNumber == cleanContact);
+
+                if (isDuplicate)
+                {
+                    ModelState.AddModelError(nameof(customer.ContactNumber), $"The contact number '{cleanContact}' is already registered to another customer.");
+                }
+            }
+
+            customer.StatusId = 1;
             customer.FaceEmbedding = !string.IsNullOrWhiteSpace(faceEmbeddingJson)
                 ? faceEmbeddingJson.Trim()
                 : null;
@@ -103,7 +121,7 @@ namespace SmartScan.Controllers
             if (ModelState.IsValid)
             {
                 customer.FullName = customer.FullName.Trim();
-                customer.ContactNumber = customer.ContactNumber?.Trim();
+                customer.ContactNumber = cleanContact;
 
                 _context.Add(customer);
                 await _context.SaveChangesAsync();
@@ -112,7 +130,6 @@ namespace SmartScan.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Repopulate combobox on validation failure
             await PopulateUserRetailsAsync();
             return View(customer);
         }
@@ -122,7 +139,6 @@ namespace SmartScan.Controllers
         {
             if (customerid == null) return NotFound();
 
-            // Eagerly include the associated Retail store entity
             var customer = await _context.Customers
                 .Include(c => c.Retail)
                 .FirstOrDefaultAsync(c => c.CustomerId == customerid);
@@ -138,27 +154,50 @@ namespace SmartScan.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             int? customerid,
-            [Bind("CustomerId,FullName,ContactNumber")] Customer customer, // <-- RetailId excluded from binding
+            [Bind("CustomerId,FullName,ContactNumber")] Customer customer,
             string? faceEmbeddingJson)
         {
             if (customerid != customer.CustomerId) return NotFound();
 
-            var existingCustomer = await _context.Customers.FindAsync(customerid);
+            var existingCustomer = await _context.Customers
+                .Include(c => c.Retail)
+                .FirstOrDefaultAsync(c => c.CustomerId == customerid);
+
             if (existingCustomer == null) return NotFound();
 
             ModelState.Remove(nameof(customer.Status));
             ModelState.Remove(nameof(customer.Retail));
+
+            // Normalize and validate ContactNumber (Required, 11 digits, starts with 09)
+            string cleanContact = new string((customer.ContactNumber ?? string.Empty).Where(char.IsDigit).ToArray());
+            customer.ContactNumber = cleanContact;
+            ModelState.Remove(nameof(customer.ContactNumber));
+
+            if (string.IsNullOrWhiteSpace(cleanContact) || cleanContact.Length != 11 || !cleanContact.StartsWith("09"))
+            {
+                ModelState.AddModelError(nameof(customer.ContactNumber), "A valid 11-digit contact number starting with 09 is required.");
+            }
+            else
+            {
+                // Restrict duplicate contact number on any OTHER customer in the same store
+                bool isDuplicate = await _context.Customers
+                    .AnyAsync(c => c.RetailId == existingCustomer.RetailId
+                                && c.CustomerId != existingCustomer.CustomerId
+                                && c.ContactNumber == cleanContact);
+
+                if (isDuplicate)
+                {
+                    ModelState.AddModelError(nameof(customer.ContactNumber), $"The contact number '{cleanContact}' is already registered to another customer.");
+                }
+            }
 
             if (ModelState.IsValid)
             {
                 try
                 {
                     existingCustomer.FullName = customer.FullName.Trim();
-                    existingCustomer.ContactNumber = customer.ContactNumber?.Trim();
+                    existingCustomer.ContactNumber = cleanContact;
 
-                    // NOTE: existingCustomer.RetailId is intentionally untouched to prevent re-assignment
-
-                    // Update Biometrics only if a new scan was captured
                     if (!string.IsNullOrWhiteSpace(faceEmbeddingJson))
                     {
                         existingCustomer.FaceEmbedding = faceEmbeddingJson.Trim();
@@ -179,6 +218,7 @@ namespace SmartScan.Controllers
             customer.FaceEmbedding = existingCustomer.FaceEmbedding;
             customer.StatusId = existingCustomer.StatusId;
             customer.RetailId = existingCustomer.RetailId;
+            customer.Retail = existingCustomer.Retail;
 
             await PopulateUserRetailsAsync();
             return View(customer);
@@ -325,7 +365,6 @@ namespace SmartScan.Controllers
             return Json(new { success = false, message = "Face not recognized. Person is not in customer registry." });
         }
 
-        // ================= MATH HELPERS =================
         private static double ComputeEuclideanDistance(float[] vA, float[] vB)
         {
             double sum = 0.0;

@@ -155,19 +155,18 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
                         if (await _userManager.IsInRoleAsync(user, "Cashier"))
                         {
-                            bool isAssigned = await _context.RetailStaffs.AnyAsync(rs => rs.StaffId == user.Id);
+                            bool isAssigned = await _context.RetailStaffs
+                                .AnyAsync(rs => rs.StaffId == user.Id && rs.StatusId == 1);
 
                             if (isAssigned)
                             {
                                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
-                                {
                                     return LocalRedirect(returnUrl);
-                                }
+
                                 return RedirectToAction("Checkout", "Home", new { area = "" });
                             }
                             else
                             {
-                                // Direct unassigned cashiers to Unassigned waiting room
                                 return RedirectToAction("Unassigned", "Home", new { area = "" });
                             }
                         }

@@ -3,7 +3,28 @@
     ViewData["Title"] = "User Manager";
     ViewData["HeaderTitle"] = "Account Management";
 
-    var profileMap = ViewBag.ProfileMap as Dictionary<string, string> ?? new Dictionary<string, string>();
+    var rawMap = ViewBag.ProfileMap as Dictionary<string, string>;
+    var profileMap = rawMap != null
+        ? new Dictionary<string, string>(rawMap, StringComparer.OrdinalIgnoreCase)
+        : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    string ResolveAvatar(string? rawPath)
+    {
+        if (string.IsNullOrWhiteSpace(rawPath))
+            return "/images/default-pfp.jpg";
+
+        var pic = rawPath.Trim();
+
+        if (pic.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            pic.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            pic.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
+            return pic;
+
+        if (pic.StartsWith("~"))
+            return Url.Content(pic);
+
+        return pic.StartsWith("/") ? pic : "/" + pic;
+    }
 }
 
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
@@ -44,7 +65,7 @@
         </form>
     </div>
 
-    <!-- Overhead TempData Alerts  -->
+    <!-- Overhead TempData Alerts -->
     @if (TempData["UserMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
@@ -97,7 +118,7 @@
                 @foreach (var user in Model)
                 {
                     profileMap.TryGetValue(user.Id, out var userPic);
-                    var avatarUrl = string.IsNullOrWhiteSpace(userPic) ? "/images/default-pfp.jpg" : userPic;
+                    var avatarUrl = ResolveAvatar(userPic);
 
                     <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
@@ -106,6 +127,7 @@
                         <div class="d-flex align-items-center gap-2">
                             <img src="@avatarUrl"
                                  onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
+                                 asp-append-version="true"
                                  alt="@user.UserName"
                                  class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
                                  style="width: 34px; height: 34px; flex-shrink: 0;" />

@@ -43,7 +43,8 @@ namespace SmartScan.Controllers
 
             if (User.IsInRole("Cashier"))
             {
-                bool isAssigned = await _context.RetailStaffs.AnyAsync(rs => rs.StaffId == currentUserId);
+                bool isAssigned = await _context.RetailStaffs
+                    .AnyAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
                 if (isAssigned)
                     return RedirectToAction("Checkout", "Home");
@@ -65,7 +66,9 @@ namespace SmartScan.Controllers
 
             if (User.IsInRole("Cashier"))
             {
-                bool isAssigned = await _context.RetailStaffs.AnyAsync(rs => rs.StaffId == currentUserId);
+                bool isAssigned = await _context.RetailStaffs
+                    .AnyAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+                
                 if (isAssigned)
                 {
                     return RedirectToAction("Checkout", "Home");
@@ -83,7 +86,7 @@ namespace SmartScan.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staffAssignment = await _context.RetailStaffs
                 .Include(rs => rs.Retail)
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
             if (staffAssignment?.Retail == null)
             {
@@ -103,7 +106,7 @@ namespace SmartScan.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staffAssignment = await _context.RetailStaffs
                 .Include(rs => rs.Retail)
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
             if (staffAssignment?.Retail == null)
             {
@@ -121,7 +124,7 @@ namespace SmartScan.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staffAssignment = await _context.RetailStaffs
                 .Include(rs => rs.Retail)
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
             if (staffAssignment?.Retail == null)
             {
@@ -139,7 +142,7 @@ namespace SmartScan.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staffAssignment = await _context.RetailStaffs
                 .Include(rs => rs.Retail)
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
             if (staffAssignment?.Retail == null)
             {
@@ -157,7 +160,7 @@ namespace SmartScan.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staffAssignment = await _context.RetailStaffs
                 .Include(rs => rs.Retail)
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
             if (staffAssignment?.Retail == null)
             {
@@ -207,7 +210,7 @@ namespace SmartScan.Controllers
             productName = productName.Trim();
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             int currentRetailId = staffAssignment?.RetailId ?? 0;
 
             var product = await _context.Products
@@ -240,7 +243,7 @@ namespace SmartScan.Controllers
             });
         }
 
-        // SearchProducts | Filters products matching either name or barcode
+        // SearchProducts | Filters products assigned to the current cashier's retail store inventory
         [HttpGet]
         public async Task<IActionResult> SearchProducts(string term)
         {
@@ -249,15 +252,29 @@ namespace SmartScan.Controllers
                 return Json(new List<object>());
             }
 
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var staffAssignment = await _context.RetailStaffs
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+
+            if (staffAssignment == null)
+            {
+                return Json(new List<object>());
+            }
+
+            int currentRetailId = staffAssignment.RetailId;
             term = term.Trim().ToLower();
 
-            var suggestions = await _context.Products
-                .Where(p => p.ProductName.ToLower().Contains(term) ||
-                           (!string.IsNullOrEmpty(p.Barcode) && p.Barcode.Contains(term)))
-                .Select(p => new
+            var suggestions = await _context.Inventories
+                .Include(i => i.Product)
+                .Where(i => i.RetailId == currentRetailId &&
+                            i.Product != null &&
+                            (i.Product.ProductName.ToLower().Contains(term) ||
+                             (!string.IsNullOrEmpty(i.Product.Barcode) && i.Product.Barcode.Contains(term))))
+                .Select(i => new
                 {
-                    name = p.ProductName,
-                    barcode = p.Barcode ?? ""
+                    name = i.Product!.ProductName,
+                    barcode = i.Product.Barcode ?? "",
+                    stock = i.Stock
                 })
                 .Take(5)
                 .ToListAsync();
@@ -279,7 +296,7 @@ namespace SmartScan.Controllers
             if (string.IsNullOrWhiteSpace(customerName)) return Json(new { success = false });
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             int currentRetailId = staffAssignment?.RetailId ?? 0;
 
             var customer = await _context.Customers
@@ -364,7 +381,7 @@ namespace SmartScan.Controllers
             }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             int currentRetailId = staffAssignment?.RetailId ?? 0;
 
             var registeredCustomers = await _context.Customers
@@ -525,7 +542,7 @@ namespace SmartScan.Controllers
             if (string.IsNullOrEmpty(currentUserId))
                 return Json(new { success = false, message = "Session expired. Please log in again." });
 
-            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             if (retailStaff == null)
                 return Json(new { success = false, message = "Error: Your account is not assigned to a retail store." });
 
@@ -624,36 +641,92 @@ namespace SmartScan.Controllers
                 _context.Transactions.Add(targetTx);
                 await _context.SaveChangesAsync(); // Generates targetTx.TransactionId
 
-                // Stock deduction for standard new purchases
+                // Tracker lists for Low Stock & Depleted Stock Security Alerts
+                var lowStockProducts = new List<string>();
+                var depletedProducts = new List<string>();
+                const int LOW_STOCK_THRESHOLD = 5;
+                DateTime todayStart = PhilippineNow.Date;
+
                 foreach (var item in request.Items)
                 {
-                    var product = await _context.Products.FirstAsync(p =>
-                        p.ProductName.ToLower() == item.Name.Trim().ToLower().Replace(" ", "_") ||
-                        p.ProductName.ToLower() == item.Name.Trim().ToLower());
+                    string normalizedItemName = item.Name.Trim().ToLower().Replace(" ", "_");
+                    string rawItemLower = item.Name.Trim().ToLower();
 
-                    _context.TransactionItems.Add(new TransactionItem
+                    var product = await _context.Products.FirstAsync(p =>
+                        p.ProductName.ToLower() == normalizedItemName ||
+                        p.ProductName.ToLower() == rawItemLower);
+
+                    var txItem = new TransactionItem
                     {
                         TransactionId = targetTx.TransactionId,
                         ProductId = product.ProductId,
                         Quantity = item.Qty,
                         UnitPrice = item.Price
-                    });
+                    };
+                    _context.TransactionItems.Add(txItem);
 
-                    var inventory = await _context.Inventories.FirstOrDefaultAsync(i =>
+                    var inventory = await _context.Inventories.FirstAsync(i =>
                         i.ProductId == product.ProductId && i.RetailId == currentRetailId);
 
-                    if (inventory == null)
-                    {
-                        throw new Exception($"Product '{product.ProductName}' has no inventory record in this store.");
-                    }
-
-                    if (inventory.Stock < item.Qty)
-                    {
-                        throw new Exception($"Insufficient stock for '{product.ProductName}'.");
-                    }
-
+                    int oldStock = inventory.Stock;
                     inventory.Stock -= item.Qty;
                     _context.Inventories.Update(inventory);
+
+                    if (inventory.Stock <= 0 && oldStock > 0)
+                    {
+                        // Always alert when stock hits 0 (AlertTypeId = 5)
+                        bool alreadyDepletedToday = await _context.SecurityAlerts.AnyAsync(a =>
+                            a.RetailId == currentRetailId &&
+                            a.AlertTypeId == 5 &&
+                            a.CreatedAt >= todayStart &&
+                            a.Description.Contains(product.ProductName));
+
+                        if (!alreadyDepletedToday)
+                        {
+                            depletedProducts.Add(product.ProductName);
+                        }
+                    }
+                    else if (inventory.Stock > 0 && inventory.Stock < LOW_STOCK_THRESHOLD)
+                    {
+                        // Trigger if stock crossed below 5 OR if no Low Stock alert was already logged today for this product
+                        bool crossedThreshold = oldStock >= LOW_STOCK_THRESHOLD;
+                        bool alreadyAlertedToday = await _context.SecurityAlerts.AnyAsync(a =>
+                            a.RetailId == currentRetailId &&
+                            a.AlertTypeId == 4 &&
+                            a.CreatedAt >= todayStart &&
+                            a.Description.Contains(product.ProductName));
+
+                        if (crossedThreshold || !alreadyAlertedToday)
+                        {
+                            lowStockProducts.Add(product.ProductName);
+                        }
+                    }
+                }
+
+                string inventoryUrl = Url.Action("Index", "Inventories", new { retailId = currentRetailId }) ?? "/Inventories";
+
+                if (lowStockProducts.Any())
+                {
+                    _context.SecurityAlerts.Add(new SecurityAlert
+                    {
+                        AlertTypeId = 4, // Low Stock Warning
+                        Description = $"Low stock warning (below {LOW_STOCK_THRESHOLD} items left): {string.Join(", ", lowStockProducts)}",
+                        CreatedAt = PhilippineNow,
+                        RetailId = currentRetailId,
+                        ActionUrl = inventoryUrl
+                    });
+                }
+
+                if (depletedProducts.Any())
+                {
+                    _context.SecurityAlerts.Add(new SecurityAlert
+                    {
+                        AlertTypeId = 5, // Stock Depleted
+                        Description = $"Stock completely depleted for: {string.Join(", ", depletedProducts)}",
+                        CreatedAt = PhilippineNow,
+                        RetailId = currentRetailId,
+                        ActionUrl = inventoryUrl
+                    });
                 }
 
                 await _context.SaveChangesAsync();
@@ -673,7 +746,7 @@ namespace SmartScan.Controllers
         public async Task<IActionResult> GetOldTransactions()
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             int currentRetailId = staffAssignment?.RetailId ?? 0;
 
             // Start of today in local Philippine time
@@ -716,7 +789,7 @@ namespace SmartScan.Controllers
         public async Task<IActionResult> GetCustomerDebtTransaction(int customerId)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             int currentRetailId = staffAssignment?.RetailId ?? 0;
 
             // AUTOMATICALLY APPLY LATE FEES BEFORE FETCHING DEBT
@@ -849,7 +922,7 @@ namespace SmartScan.Controllers
             if (string.IsNullOrEmpty(currentUserId))
                 return Json(new { success = false, message = "Session expired." });
 
-            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             if (retailStaff == null)
                 return Json(new { success = false, message = "User not assigned to a retail store." });
 
@@ -892,7 +965,7 @@ namespace SmartScan.Controllers
             }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            var retailStaff = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
             if (retailStaff == null)
             {
                 return Json(new { success = false, message = "Error: Your cashier account is not assigned to any retail store." });
@@ -945,7 +1018,7 @@ namespace SmartScan.Controllers
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var staffAssignment = await _context.RetailStaffs
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
             var query = _context.Customers
                 .AsNoTracking()
