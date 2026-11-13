@@ -27,7 +27,7 @@
                     <!-- Product Name -->
                     <div class="form-group mb-3">
                         <label asp-for="ProductName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Product Name</label>
-                        <input asp-for="ProductName" id="ProductName" class="form-control rounded-3" placeholder="e.g. Nescafe Stick"/>
+                        <input asp-for="ProductName" id="ProductName" class="form-control rounded-3" placeholder="e.g. Nescafe Stick" oninput="this.value = this.value.replace(/[^a-zA-Z0-9\s]/g, '')" />
                         <span asp-validation-for="ProductName" class="text-danger small mt-1 d-block"></span>
                     </div>
 
@@ -44,7 +44,9 @@
                                    id="categorySearchInput"
                                    class="form-control border-0 bg-white shadow-none ps-0 fw-medium"
                                    placeholder="Type to search category..."
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
                                    autocomplete="off" />
+
                             <button class="btn btn-white border-0 text-secondary pe-3"
                                     type="button"
                                     id="clearCategoryBtn"
@@ -66,7 +68,7 @@
                         <label asp-for="Price" class="control-label fw-semibold mb-1" style="color: #1162a3;">Market Price (PHP)</label>
                         <div class="input-group shadow-sm rounded-3 overflow-hidden border">
                             <span class="input-group-text bg-light border-0 fw-bold text-secondary">₱</span>
-                            <input asp-for="Price" id="Price" class="form-control border-0 shadow-none fw-semibold" type="number" step="0.01" min="0.01" onwheel="this.blur()" placeholder="0.00" />
+                            <input asp-for="Price" id="Price" class="form-control border-0 shadow-none fw-semibold" type="number" step="0.01" min="0.01" onwheel="this.blur()" placeholder="0.00" oninput="this.value = this.value.replace(/[^a-zA-Z0-9\s]/g, '')" />
                         </div>
                         <span asp-validation-for="Price" class="text-danger small mt-1 d-block"></span>
                     </div>
@@ -137,11 +139,12 @@
                         <!-- Tab Content -->
                         <div class="tab-content border rounded-3 p-3 bg-light shadow-sm mb-3">
 
-                            <!-- Paste Image URL -->
+                            <!-- Paste Image URL (data-val="false" prevents blocking file upload when URL is empty) -->
                             <div class="tab-pane fade show active" id="url-pane" role="tabpanel">
                                 <input asp-for="ProductImage"
                                        id="productUrlInput"
                                        class="form-control rounded-3"
+                                       data-val="false"
                                        placeholder="https://example.com/image.jpg" />
                                 <div class="form-text small mt-1">Direct web link to an image file.</div>
                             </div>
@@ -149,10 +152,10 @@
                             <!-- Upload Image File -->
                             <div class="tab-pane fade" id="upload-pane" role="tabpanel">
                                 <input type="file" name="ImageUpload" id="ImageUpload" class="form-control rounded-3" accept="image/png, image/jpeg, image/jpg, image/webp" />
-                                <div class="form-text small mt-1">Select a new image file to replace current picture.</div>
+                                <div class="form-text small mt-1">Select an image file from your device (PNG, JPG, WEBP).</div>
                             </div>
                         </div>
-                        <span asp-validation-for="ProductImage" class="text-danger small mt-1 d-block"></span>
+                        <span asp-validation-for="ProductImage" id="productImageError" class="text-danger small mt-1 d-block"></span>
 
                         <!-- Live Image Preview Box -->
                         <div class="image-preview-box shadow-sm mt-3 mb-3" id="previewContainer">
@@ -300,6 +303,7 @@
             const fileInput = document.getElementById("ImageUpload");
             const previewImg = document.getElementById("livePreviewImg");
             const previewPlaceholder = document.getElementById("previewPlaceholder");
+            const imageErrorSpan = document.getElementById("productImageError");
 
             window.updatePreview = function (src) {
                 if (src) {
@@ -308,6 +312,7 @@
                         previewImg.style.display = "block";
                     }
                     if (previewPlaceholder) previewPlaceholder.style.display = "none";
+                    if (imageErrorSpan) imageErrorSpan.textContent = "";
                 } else {
                     if (previewImg) {
                         previewImg.src = "#";
@@ -318,6 +323,9 @@
             };
 
             if (urlInput) {
+                // Ensure jQuery unobtrusive validation never requires URL when uploading a file
+                urlInput.removeAttribute("data-val-required");
+
                 urlInput.addEventListener("input", function () {
                     window.updatePreview(this.value.trim().length > 8 ? this.value.trim() : null);
                 });
@@ -327,6 +335,7 @@
                 fileInput.addEventListener("change", function () {
                     const file = this.files[0];
                     if (file) {
+                        if (urlInput) urlInput.value = ""; // Clear URL if switching to file upload
                         const reader = new FileReader();
                         reader.onload = function (e) {
                             window.updatePreview(e.target.result);
@@ -350,8 +359,27 @@
 
             if (uploadTab) {
                 uploadTab.addEventListener("shown.bs.tab", function () {
+                    if (urlInput) urlInput.value = "";
                     if (fileInput && !fileInput.files.length) {
                         window.updatePreview(null);
+                    }
+                });
+            }
+
+            // ================= FORM SUBMIT MEDIA VALIDATION =================
+            const createForm = document.getElementById("createProductForm");
+            if (createForm) {
+                createForm.addEventListener("submit", function (e) {
+                    const hasUrl = urlInput && urlInput.value.trim().length > 0;
+                    const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+                    if (!hasUrl && !hasFile) {
+                        e.preventDefault();
+                        if (imageErrorSpan) {
+                            imageErrorSpan.textContent = "Please provide either an image URL or upload an image file.";
+                        }
+                    } else if (imageErrorSpan) {
+                        imageErrorSpan.textContent = "";
                     }
                 });
             }

@@ -53,6 +53,7 @@
                                                name="search"
                                                value="@ViewData["CurrentFilter"]"
                                                class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                                               oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
                                                placeholder="Search category..."
                                                aria-label="Search category" />
                                     </div>
@@ -68,7 +69,7 @@
                         </th>
                     </tr>
 
-                    <!-- 2. Sticky Column Headers Row -->
+                    <!-- Sticky Column Headers Row -->
                     <tr class="table-light">
                         <th class="ps-4 py-3 text-secondary text-uppercase fw-bold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;">Category Name</th>
                         <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-semibold border-bottom" style="font-size: 14px; letter-spacing: 0.5px;"></th>
@@ -157,7 +158,7 @@
                                name="CategoryName"
                                id="CategoryName"
                                class="form-control"
-                               oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                               oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
                                placeholder="Enter category name..."
                                required />
                     </div>
@@ -197,7 +198,7 @@
                                    name="CategoryName"
                                    id="editCategoryName"
                                    class="form-control pe-5"
-                                   oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')" 
                                    placeholder="Enter updated category name..."
                                    required />
                             <!-- Inner Clear Button -->

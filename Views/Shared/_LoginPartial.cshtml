@@ -35,12 +35,24 @@
     var isCashier = User.IsInRole("Cashier");
     var isAdmin = User.IsInRole("Admin");
 
-    // Get user's retail IDs
-    var userRetailIds = DbContext.Retails
-        .Where(r => r.AdminOwner == currentUserId ||
-                    DbContext.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId))
-        .Select(r => r.RetailId)
-        .ToList();
+    // Get user's active retail IDs
+    List<int> userRetailIds;
+    if (isCashier && !isAdmin)
+    {
+        userRetailIds = DbContext.RetailStaffs
+            .Where(rs => rs.StaffId == currentUserId && rs.StatusId == 1)
+            .Select(rs => rs.RetailId)
+            .Distinct()
+            .ToList();
+    }
+    else
+    {
+        userRetailIds = DbContext.Retails
+            .Where(r => r.AdminOwner == currentUserId ||
+                        DbContext.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId && rs.StatusId == 1))
+            .Select(r => r.RetailId)
+            .ToList();
+    }
 
     // Base query for unread alerts (checks the AdminAlertReads table)
     var alertsQuery = DbContext.SecurityAlerts
@@ -159,12 +171,15 @@
                             }
                             else
                             {
-                                foreach (var alert in topAlerts)
+                                @foreach (var alert in topAlerts)
                                 {
                                     var alertTypeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
+                                    bool blockNavigation = (isCashier && !isAdmin) || string.IsNullOrEmpty(alert.ActionUrl);
+                                    var targetUrl = blockNavigation ? "#" : alert.ActionUrl;
 
                                     <a class="dropdown-item py-3 border-bottom text-wrap alert-dropdown-item"
-                                       href="@(string.IsNullOrEmpty(alert.ActionUrl) ? "#" : alert.ActionUrl)"
+                                       href="@targetUrl"
+                                       @(blockNavigation ? "onclick=\"event.preventDefault(); event.stopPropagation();\"" : "")
                                        id="alert-item-@alert.AlertId">
 
                                         <!-- Title -->
@@ -361,7 +376,7 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // 1. Clear Dropdown UI completely
+                // Clear Dropdown UI completely
                 const badge = document.getElementById('alertBadge');
                 if (badge) badge.remove();
 
@@ -378,7 +393,7 @@
                 }
                 currentAlertCount = 0;
 
-                // 2. Sync with Index Page (Bulk Move)
+                // Sync with Index Page (Bulk Move)
                 const tbodyUnread = document.getElementById('tbody-unread');
                 if (tbodyUnread) {
                     const rows = Array.from(tbodyUnread.querySelectorAll('.log-row'));
@@ -427,7 +442,10 @@
                 if (data.count > currentAlertCount) {
                     currentAlertCount = data.count;
 
-                    // 1. Update or Create Badge
+                    const readAllBtn = document.getElementById('readAllBtn');
+                    if (readAllBtn) readAllBtn.style.display = 'block';
+
+                    // Update or Create Badge
                     let badge = document.getElementById('alertBadge');
                     const bellLink = document.getElementById('alertsDropdown');
 
@@ -442,13 +460,17 @@
                         document.getElementById('alertCount').textContent = data.count > 9 ? "9+" : data.count;
                     }
 
-                    // 2. Rebuild the List Container
+                    // Rebuild the List Container
                     const listContainer = document.getElementById('alertListContainer');
                     if (listContainer && data.alerts.length > 0) {
                         listContainer.innerHTML = '';
                         data.alerts.forEach(alert => {
+                            const blockNav = !alert.actionUrl || alert.actionUrl === '#';
                             const html = `
-                                <a class="dropdown-item py-3 border-bottom text-wrap alert-dropdown-item" href="${alert.actionUrl}" id="alert-item-${alert.alertId}">
+                                <a class="dropdown-item py-3 border-bottom text-wrap alert-dropdown-item"
+                                   href="${alert.actionUrl}"
+                                   ${blockNav ? 'onclick="event.preventDefault(); event.stopPropagation();"' : ''}
+                                   id="alert-item-${alert.alertId}">
                                     <div class="fw-bold fs-6 alert-item-title">${alert.alertTypeName}</div>
                                     <div class="small alert-item-desc mt-1 lh-sm">${alert.description}</div>
                                     <div class="d-flex justify-content-between align-items-end mt-2">

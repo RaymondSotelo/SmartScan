@@ -166,6 +166,7 @@
                                    step="0.01"
                                    min="0.01"
                                    onwheel="this.blur()"
+                                   onkeydown="if(['-', '+', 'e', 'E'].includes(event.key)) event.preventDefault();"
                                    placeholder="0.00"
                                    oninput="calculateChange()">
                         </div>
@@ -886,9 +887,15 @@
         }
 
         function calculateChange() {
+            const amountInput = document.getElementById('cashAmountReceived');
+            // Strip '-', '+', or any non-digit/decimal characters if pasted
+            if (amountInput && /[^0-9.]/.test(amountInput.value)) {
+                amountInput.value = amountInput.value.replace(/[^0-9.]/g, '');
+            }
+
             const rawDue = document.getElementById('cashTotalDue').value.replace(/[^0-9.-]+/g, "");
             const totalDue = parseFloat(rawDue) || Math.round(total);
-            const amountReceived = parseFloat(document.getElementById('cashAmountReceived').value) || 0;
+            const amountReceived = parseFloat(amountInput.value) || 0;
             const change = amountReceived - totalDue;
             const displayChange = change > 0 ? change : 0;
             document.getElementById('cashChange').value = "₱ " + displayChange.toFixed(2);

@@ -38,13 +38,13 @@
                         <div class="form-group mb-3">
                             <label asp-for="FullName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Full Name</label>
                             <div class="position-relative">
-                                <input asp-for="FullName" id="FullName" class="form-control rounded-3 pe-5" placeholder="e.g., Juan Dela Cruz" required />
+                                <input asp-for="FullName" id="FullName" class="form-control rounded-3 pe-5" placeholder="e.g., Juan Dela Cruz" required oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')" />
 
                                 <!-- Inner Clear Button -->
                                 <button type="button"
-                                        class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none"
-                                        onclick="document.getElementById('FullName').value = ''; document.getElementById('FullName').focus();"
-                                        title="Clear field"
+                                        class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
+                                        onclick="const el = document.getElementById('ContactNumber'); el.value = '09'; el.focus(); if (window.jQuery) $(el).valid();"
+                                        title="Reset field"
                                         tabindex="-1">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
@@ -61,17 +61,18 @@
                                 <input asp-for="ContactNumber"
                                        id="ContactNumber"
                                        type="tel"
-                                       class="form-control rounded-3 border-0 shadow-none ps-3 fw-semibold pe-5"
-                                       maxlength="11"
+                                       class="form-control rounded-3 border-0 shadow-none ps-3 font-monospace fw-semibold pe-5"
+                                       maxlength="13"
                                        inputmode="numeric"
                                        required
-                                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
-                                       placeholder="e.g., 09123456789" />
+                                       oninput="formatPhpPhone(this)"
+                                       onkeydown="handlePhoneBackspace(this, event);"
+                                       placeholder="09XX XXX XXXX" />
 
                                 <button type="button"
                                         class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
-                                        onclick="document.getElementById('ContactNumber').value = ''; document.getElementById('ContactNumber').focus();"
-                                        title="Clear field"
+                                        onclick="const el = document.getElementById('ContactNumber'); el.value = '09'; el.focus();"
+                                        title="Reset field"
                                         tabindex="-1">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
@@ -216,6 +217,20 @@
             if (currentStore) {
                 retailSearchInput.value = currentStore.name || currentStore.text;
             }
+        }
+
+        // Tell jQuery Validation to evaluate ContactNumber without spaces (11 digits instead of 13 chars)
+        if (window.jQuery && $.validator) {
+            $(function () {
+                const contactField = $("#ContactNumber");
+                if (contactField.length && contactField.rules()) {
+                    contactField.rules("add", {
+                        normalizer: function (value) {
+                            return value.replace(/\D/g, '');
+                        }
+                    });
+                }
+            });
         }
 
         // ================= BIOMETRIC CAMERA SCANNER =================
@@ -397,5 +412,48 @@
         }
 
         window.addEventListener('beforeunload', stopBiometricCamera);
+
+        // ================= PHONE FORMATTER (09XX XXX XXXX) =================
+        function formatPhpPhone(input) {
+            let digits = input.value.replace(/\D/g, '');
+
+            if (!digits.startsWith('09')) {
+                digits = '09' + digits.replace(/^0+/, '');
+            }
+
+            digits = digits.slice(0, 11);
+
+            let formatted = '';
+            if (digits.length <= 4) {
+                formatted = digits;
+            } else if (digits.length <= 7) {
+                formatted = digits.slice(0, 4) + ' ' + digits.slice(4);
+            } else {
+                formatted = digits.slice(0, 4) + ' ' + digits.slice(4, 7) + ' ' + digits.slice(7, 11);
+            }
+
+            input.value = formatted;
+        }
+
+        function handlePhoneBackspace(input, event) {
+            if (event.key === 'Backspace' && input.value.replace(/\D/g, '').length <= 2) {
+                event.preventDefault();
+                input.value = '09';
+            }
+        }
+
+        // Immediately format existing DB value (e.g. "09123456789" -> "0912 345 6789")
+        const contactInput = document.getElementById("ContactNumber");
+        if (contactInput) {
+            formatPhpPhone(contactInput);
+        }
+
+        document.getElementById("editCustomerForm")?.addEventListener("submit", function (e) {
+            const digits = contactInput ? contactInput.value.replace(/\D/g, '') : '';
+            if (digits.length !== 11 || !digits.startsWith('09')) {
+                e.preventDefault();
+                contactInput?.focus();
+            }
+        });
     </script>
 }

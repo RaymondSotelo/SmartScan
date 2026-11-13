@@ -8,6 +8,7 @@
 
     var unreadAlerts = Model.Where(a => !readAlertIds.Contains(a.AlertId)).ToList();
     var readAlerts = Model.Where(a => readAlertIds.Contains(a.AlertId)).ToList();
+    bool isCashierOnly = User.IsInRole("Cashier") && !User.IsInRole("Admin");
 }
 
 @functions {
@@ -37,6 +38,15 @@
         <h5 class="mb-0 fw-bold" style="letter-spacing: 0.5px;">
             <i class="fa-solid fa-clipboard-check me-2"></i>Security Logs
         </h5>
+
+        @if (isCashierOnly)
+        {
+            <a asp-controller="Home" asp-action="Checkout"
+               class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary shadow-sm"
+               style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                <i class="fa-solid fa-arrow-left me-1"></i>Return to Checkout
+            </a>
+        }
     </div>
 
     <!-- Scrollable Workspace -->
@@ -125,20 +135,19 @@
                             var safeDesc = alert.Description.Replace("'", "\\'");
                             var safeStore = storeName.Replace("'", "\\'");
 
-                            <tr id="alert-row-@alert.AlertId" class="bg-white border-start border-4  position-relative log-row" style="transition: all 0.3s ease;">
-
-                                <td class="ps-4" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
+                            <tr id="alert-row-@alert.AlertId" class="bg-white border-start border-4 position-relative log-row" style="transition: all 0.3s ease;">
+                                <td class="ps-4" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)" style="cursor: pointer;">
                                     <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
                                 </td>
-								<td class="fw-semibold text-secondary" style="font-size: 14px;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
-									@storeName
-								</td>
-                                <td onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
-                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border -subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                <td class="fw-semibold text-secondary" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)">
+                                    @storeName
+                                </td>
+                                <td onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)" style="cursor: pointer;">
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
                                         <i class="fa-solid fa-circle-exclamation me-1"></i>@typeName
                                     </span>
                                 </td>
-                                <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')" style="cursor: pointer;">
+                                <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px; cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)">
                                     @alert.Description
                                 </td>
                                 <td class="pe-4 text-end text-nowrap">
@@ -174,7 +183,7 @@
                             var safeDesc = alert.Description.Replace("'", "\\'");
                             var safeStore = storeName.Replace("'", "\\'");
 
-                            <tr class="bg-light log-row" style="cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@alert.ActionUrl')">
+                            <tr class="bg-light log-row" style="cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', true)">
                                 <td class="ps-4">
                                     <span class="d-block font-monospace fw-semibold text-secondary" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
                                 </td>
@@ -297,12 +306,18 @@
         }
 
         // Open Inspector Modal
-        function openAlertModal(id, type, store, desc, url) {
+        function openAlertModal(id, type, store, desc, url, isRead = false) {
             currentModalAlertId = id;
 
-            // Updated mapping for the new form fields
-            document.getElementById('modalLogType').innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> ' + type;
-            document.getElementById('modalLogStore').innerHTML = '<i class="fa-solid fa-shop me-1 text-muted"></i> ' + store;
+            // Remove the exclamation/info icon when viewing a Read alert
+            const modalLogType = document.getElementById('modalLogType');
+            if (isRead) {
+                modalLogType.textContent = type;
+            } else {
+                modalLogType.innerHTML = `<i class="fa-solid fa-circle-exclamation me-1"></i> ${type}`;
+            }
+
+            document.getElementById('modalLogStore').innerHTML = `<i class="fa-solid fa-shop me-1 text-muted"></i> ${store}`;
             document.getElementById('modalLogDesc').value = desc;
 
             const actionBtn = document.getElementById('modalLogActionBtn');
@@ -314,13 +329,19 @@
             }
 
             const btnReviewed = document.getElementById('btnReviewed');
-            btnReviewed.replaceWith(btnReviewed.cloneNode(true));
+            const clonedBtn = btnReviewed.cloneNode(true);
+            btnReviewed.replaceWith(clonedBtn);
 
-            document.getElementById('btnReviewed').addEventListener('click', function() {
-                markLogAsRead(currentModalAlertId);
-                var modalInstance = bootstrap.Modal.getInstance(document.getElementById('alertLogModal'));
-                if(modalInstance) modalInstance.hide();
-            });
+            // Hide "Mark as Read" button if already in Read section
+            clonedBtn.style.display = isRead ? 'none' : 'block';
+
+            if (!isRead) {
+                clonedBtn.addEventListener('click', function () {
+                    markLogAsRead(currentModalAlertId);
+                    var modalInstance = bootstrap.Modal.getInstance(document.getElementById('alertLogModal'));
+                    if (modalInstance) modalInstance.hide();
+                });
+            }
 
             var modal = new bootstrap.Modal(document.getElementById('alertLogModal'));
             modal.show();
@@ -415,6 +436,7 @@
 
                         // Reverse loop so the newest alert gets prepended at the very top
                         data.alerts.reverse().forEach(alert => {
+
                             // Only add if the row doesn't already exist on the page
                             if (!document.getElementById('alert-row-' + alert.alertId)) {
                                 if (emptyRow) emptyRow.remove();
@@ -423,6 +445,7 @@
                                 const safeDesc = alert.description.replace(/'/g, "\\'");
                                 const safeStore = alert.storeName.replace(/'/g, "\\'");
                                 const typeName = alert.alertTypeName;
+                                const safeUrl = (!alert.actionUrl || alert.actionUrl === '#') ? '' : alert.actionUrl;
 
                                 const tr = document.createElement('tr');
                                 tr.id = `alert-row-${alert.alertId}`;
@@ -430,18 +453,18 @@
                                 tr.style.transition = "all 0.3s ease";
 
                                 tr.innerHTML = `
-                                    <td class="ps-4" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                    <td class="ps-4" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
                                         <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">${getRelativeTimeJS(alert.timeString)}</span>
                                     </td>
-                                    <td class="fw-semibold text-secondary" style="font-size: 14px;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                    <td class="fw-semibold text-secondary" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
                                         ${alert.storeName}
                                     </td>
-                                    <td onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                    <td onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
                                         <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
                                             <i class="fa-solid fa-circle-exclamation me-1"></i>${typeName}
                                         </span>
                                     </td>
-                                    <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${alert.actionUrl}')" style="cursor: pointer;">
+                                    <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
                                         ${alert.description}
                                     </td>
                                     <td class="pe-4 text-end text-nowrap">
@@ -470,6 +493,64 @@
                     }
                 })
                 .catch(err => console.error("Error fetching live index alerts:", err));
+        }
+
+        function transitionRowToReadTable(unreadRow) {
+            const tbodyRead = document.getElementById('tbody-read');
+            const tbodyUnread = document.getElementById('tbody-unread');
+            const emptyReadRow = document.getElementById('emptyReadRow');
+
+            if (emptyReadRow) emptyReadRow.remove();
+
+            // Extract text from existing Unread row cells
+            const cells = unreadRow.querySelectorAll('td');
+            const timeText = cells[0].innerText.trim();
+            const storeText = cells[1].innerText.trim();
+            const typeText = cells[2].innerText.trim();
+            const descText = cells[3].innerText.trim();
+
+            // Reuse existing onclick from the first cell, swapping `false)` -> `true)`
+            const origOnClick = cells[0].getAttribute('onclick') || '';
+            const readOnClick = origOnClick.replace(/,\s*false\s*\)$/, ', true)');
+
+            const readTr = document.createElement('tr');
+            readTr.className = 'bg-light log-row';
+            readTr.style.cursor = 'pointer';
+            readTr.setAttribute('onclick', readOnClick);
+
+            readTr.innerHTML = `
+                <td class="ps-4">
+                    <span class="d-block font-monospace fw-semibold text-secondary" style="font-size: 13px;">${timeText}</span>
+                </td>
+                <td class="text-muted" style="font-size: 14px;">
+                    ${storeText}
+                </td>
+                <td>
+                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                        ${typeText}
+                    </span>
+                </td>
+                <td colspan="2" class="text-muted text-truncate pe-4" style="max-width: 350px; font-size: 14px;">
+                    ${descText}
+                </td>
+            `;
+
+            unreadRow.remove();
+            tbodyRead.prepend(readTr);
+
+            // Show "All Caught Up!" if no unread rows remain
+            if (tbodyUnread.querySelectorAll('.log-row').length === 0) {
+                tbodyUnread.innerHTML = `
+                    <tr id="emptyUnreadRow">
+                        <td colspan="5" class="text-center py-5 bg-white">
+                            <i class="fa-solid fa-envelope-circle-check fa-3x text-success opacity-50 mb-3"></i>
+                            <h5 class="fw-bold text-secondary">All Caught Up!</h5>
+                            <p class="text-muted small">You have no unread security logs.</p>
+                        </td>
+                    </tr>`;
+            }
+
+            filterLogs();
         }
 
         // Poll every 15 seconds

@@ -18,7 +18,7 @@ public class ProductsController : Controller
     }
 
     // GET: PRODUCTS
-    public async Task<IActionResult> Index(string search)    
+    public async Task<IActionResult> Index(string search)
     {
         ViewData["CurrentFilter"] = search;
 
@@ -56,9 +56,18 @@ public class ProductsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("ProductName,CategoryId,Price,ProductImage,ImageUpload,Barcode")] Product product)
     {
-        // Ignore relational navigation properties during model validation
         ModelState.Remove("Category");
         ModelState.Remove("Status");
+
+        // Strip implicit [Required] validation error on ProductImage if an image file was uploaded
+        if (product.ImageUpload != null && product.ImageUpload.Length > 0)
+        {
+            ModelState.Remove("ProductImage");
+        }
+        else if (string.IsNullOrWhiteSpace(product.ProductImage))
+        {
+            ModelState.AddModelError("ProductImage", "Please provide an image URL or upload an image file.");
+        }
 
         // Checks in the database for similar product name before adding
         if (!string.IsNullOrWhiteSpace(product.ProductName))
@@ -79,7 +88,7 @@ public class ProductsController : Controller
             }
         }
 
-        // Optional: Check if barcode already exists
+        // Check if barcode already exists
         if (!string.IsNullOrWhiteSpace(product.Barcode))
         {
             product.Barcode = product.Barcode.Trim();
@@ -92,10 +101,10 @@ public class ProductsController : Controller
 
         if (ModelState.IsValid)
         {
-            // Checks if an image was uploaded via file tab
+            // Save uploaded file to wwwroot/uploads/products
             if (product.ImageUpload != null && product.ImageUpload.Length > 0)
             {
-                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+                string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "products");
                 Directory.CreateDirectory(uploadsFolder);
 
                 string cleanFileName = Path.GetFileName(product.ImageUpload.FileName);
@@ -107,12 +116,7 @@ public class ProductsController : Controller
                     await product.ImageUpload.CopyToAsync(fileStream);
                 }
 
-                product.ProductImage = "/images/products/" + uniqueFileName;
-            }
-
-            if (product.ImageUpload != null)
-            {
-                ModelState.Remove("ProductImage");
+                product.ProductImage = "/uploads/products/" + uniqueFileName;
             }
 
             product.StatusId = 1;
@@ -170,7 +174,10 @@ public class ProductsController : Controller
             return NotFound();
         }
 
-        // Optional: Check if barcode already exists on a DIFFERENT product
+        // Capture the previous image path before modifying anything
+        string? oldImagePath = existProduct.ProductImage;
+
+        // Check if barcode already exists on a DIFFERENT product
         if (!string.IsNullOrWhiteSpace(product.Barcode))
         {
             product.Barcode = product.Barcode.Trim();
@@ -186,7 +193,7 @@ public class ProductsController : Controller
         // Process new file upload if supplied
         if (product.ImageUpload != null && product.ImageUpload.Length > 0)
         {
-            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "products");
+            string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "products");
             Directory.CreateDirectory(uploadsFolder);
 
             string cleanFileName = Path.GetFileName(product.ImageUpload.FileName);
@@ -198,11 +205,12 @@ public class ProductsController : Controller
                 await product.ImageUpload.CopyToAsync(fileStream);
             }
 
-            product.ProductImage = "/images/products/" + uniqueFileName;
+            product.ProductImage = "/uploads/products/" + uniqueFileName;
             ModelState.Remove("ProductImage");
         }
         else if (string.IsNullOrWhiteSpace(product.ProductImage))
         {
+            // Retain existing image if neither a new file nor a new URL was provided
             product.ProductImage = existProduct.ProductImage;
             ModelState.Remove("ProductImage");
         }
@@ -214,20 +222,26 @@ public class ProductsController : Controller
 
         if (ModelState.IsValid)
         {
-            // 5. Update existing entity fields
             existProduct.ProductName = product.ProductName?.Trim();
             existProduct.CategoryId = product.CategoryId;
             existProduct.Price = product.Price;
             existProduct.ProductImage = product.ProductImage;
             existProduct.StatusId = product.StatusId;
             existProduct.IsAgeRestricted = product.IsAgeRestricted;
-
-            // --- NEW: Map the Barcode Update ---
             existProduct.Barcode = product.Barcode;
 
             try
             {
                 await _context.SaveChangesAsync();
+
+                // Delete old uploaded file if it originated from /uploads/products/ and was replaced
+                if (!string.IsNullOrWhiteSpace(oldImagePath) &&
+                    !string.Equals(oldImagePath, existProduct.ProductImage, StringComparison.OrdinalIgnoreCase) &&
+                    oldImagePath.StartsWith("/uploads/products/", StringComparison.OrdinalIgnoreCase))
+                {
+                    DeleteLocalUpload(oldImagePath);
+                }
+
                 TempData["ProductMessage"] = $"{existProduct.ProductName} was updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
@@ -276,10 +290,19 @@ public class ProductsController : Controller
             return NotFound();
         }
 
+        string? imagePath = product.ProductImage;
+
         try
         {
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
+
+            // Clean up uploaded image file when a product is deleted
+            if (!string.IsNullOrWhiteSpace(imagePath) &&
+                imagePath.StartsWith("/uploads/products/", StringComparison.OrdinalIgnoreCase))
+            {
+                DeleteLocalUpload(imagePath);
+            }
         }
         catch (DbUpdateException)
         {
@@ -292,5 +315,16 @@ public class ProductsController : Controller
     private bool ProductExists(int? productid)
     {
         return _context.Products.Any(e => e.ProductId == productid);
+    }
+
+    private void DeleteLocalUpload(string relativeUrlPath)
+    {
+        string relativeFilePath = relativeUrlPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        string fullPhysicalPath = Path.Combine(_webHostEnvironment.WebRootPath, relativeFilePath);
+
+        if (System.IO.File.Exists(fullPhysicalPath))
+        {
+            System.IO.File.Delete(fullPhysicalPath);
+        }
     }
 }

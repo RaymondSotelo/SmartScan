@@ -27,7 +27,7 @@
                     <!-- Retail Name -->
                     <div class="form-group mb-3">
                         <label asp-for="RetailName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Retail Name</label>
-                        <input asp-for="RetailName" class="form-control rounded-3" placeholder="Enter store name" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
+                        <input asp-for="RetailName" class="form-control rounded-3" placeholder="Enter store name" oninput="this.value = this.value.replace(/[^a-zA-Z0-9\s]/g, '')" />
                         <span asp-validation-for="RetailName" class="text-danger small mt-1 d-block"></span>
                     </div>
 

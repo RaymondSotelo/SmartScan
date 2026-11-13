@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = "Edit Product";
     ViewData["HeaderTitle"] = "Product Management";
+    bool isCanScan = Model?.CanScan == true;
+    bool isLocalUpload = !string.IsNullOrWhiteSpace(Model?.ProductImage) && Model.ProductImage.StartsWith("/");
 }
 
 <div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 mb-3"
@@ -19,26 +21,61 @@
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
             <input type="hidden" asp-for="ProductId" />
+            <input type="hidden" asp-for="CanScan" />
 
             <div class="row g-4">
                 <!-- Left Column: Primary Details & Status -->
                 <div class="col-lg-6">
                     <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">General Information</h6>
 
-                    <!-- Product Name -->
+                    <!-- Product Name (Disabled if CanScan == 1) -->
                     <div class="form-group mb-3">
-                        <label asp-for="ProductName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Product Name</label>
-                        <div class="position-relative">
-                            <input asp-for="ProductName" id="ProductName" class="form-control rounded-3 pe-5" placeholder="Enter product name" />
-                            <button type="button"
-                                    id="clearProductNameBtn"
-                                    class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
-                                    style="display: none;"
-                                    title="Clear field"
-                                    tabindex="-1">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label asp-for="ProductName" class="control-label fw-semibold mb-0" style="color: #1162a3;">Product Name</label>
+                            @if (isCanScan)
+                            {
+                                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size: 11px;">
+                                    <i class="fa-solid fa-lock me-1"></i>AI Scannable (Locked)
+                                </span>
+                            }
                         </div>
+
+                        <div class="position-relative">
+                            @if (isCanScan)
+                            {
+                                <!-- Hidden input preserves ProductName during POST since disabled inputs are omitted by browsers -->
+                                <input type="hidden" asp-for="ProductName" />
+                                <input type="text"
+                                       id="ProductName"
+                                       value="@Model.ProductName"
+                                       class="form-control rounded-3 bg-light text-muted"
+                                       disabled />
+                            }
+                            else
+                            {
+                                <input asp-for="ProductName"
+                                       id="ProductName"
+                                       class="form-control rounded-3 pe-5"
+                                       placeholder="Enter product name"
+                                       oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')" />
+
+                                <button type="button"
+                                        id="clearProductNameBtn"
+                                        class="btn btn-sm text-secondary position-absolute top-50 end-0 translate-middle-y me-1 border-0 shadow-none z-3"
+                                        style="display: none;"
+                                        title="Clear field"
+                                        tabindex="-1">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            }
+                        </div>
+
+                        @if (isCanScan)
+                        {
+                            <small class="text-muted d-block mt-1">
+                                <i class="fa-solid fa-circle-info me-1 text-primary"></i>Product name cannot be edited because this item is registered for AI vision detection.
+                            </small>
+                        }
                         <span asp-validation-for="ProductName" class="text-danger small mt-1 d-block"></span>
                     </div>
 
@@ -55,7 +92,9 @@
                                    id="categorySearchInput"
                                    class="form-control border-0 bg-white shadow-none ps-0 fw-medium pe-5"
                                    placeholder="Type to search category..."
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
                                    autocomplete="off" />
+
                             <button class="btn btn-white border-0 text-secondary pe-3"
                                     type="button"
                                     id="clearCategoryBtn"
@@ -84,6 +123,7 @@
                                    step="0.01"
                                    min="0.01"
                                    onwheel="this.blur()"
+                                   oninput="this.value = this.value.replace(/[^a-zA-Z0-9\s]/g, '')"
                                    placeholder="0.00" />
 
                             <!-- Inner Clear Button -->
@@ -203,20 +243,29 @@
                         <!-- Tab Switcher -->
                         <ul class="nav nav-pills mb-2" id="imageTabs" role="tablist">
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link active py-1 px-3 rounded-pill border shadow-sm me-2" id="url-tab" data-bs-toggle="pill" data-bs-target="#url-pane" type="button" role="tab">Link URL</button>
+                                <button class="nav-link @(!isLocalUpload ? "active" : "") py-1 px-3 rounded-pill border shadow-sm me-2"
+                                        id="url-tab" data-bs-toggle="pill" data-bs-target="#url-pane" type="button" role="tab">
+                                    Link URL
+                                </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link py-1 px-3 rounded-pill border shadow-sm" id="upload-tab" data-bs-toggle="pill" data-bs-target="#upload-pane" type="button" role="tab">Upload File</button>
+                                <button class="nav-link @(isLocalUpload ? "active" : "") py-1 px-3 rounded-pill border shadow-sm"
+                                        id="upload-tab" data-bs-toggle="pill" data-bs-target="#upload-pane" type="button" role="tab">
+                                    Upload File
+                                </button>
                             </li>
                         </ul>
 
                         <!-- Tab Content -->
                         <div class="tab-content border rounded-3 p-3 bg-light shadow-sm mb-3">
-                            <!-- Paste Image URL -->
-                            <div class="tab-pane fade show active" id="url-pane" role="tabpanel">
+                            <!-- Paste Image URL (Left empty if current image is a local upload) -->
+                            <div class="tab-pane fade @(!isLocalUpload ? "show active" : "")" id="url-pane" role="tabpanel">
                                 <div class="position-relative">
-                                    <input asp-for="ProductImage"
+                                    <input type="text"
+                                           name="ProductImage"
                                            id="productUrlInput"
+                                           value="@(isLocalUpload ? "" : Model?.ProductImage)"
+                                           data-val="false"
                                            class="form-control rounded-3 pe-5"
                                            placeholder="https://example.com/image.jpg" />
 
@@ -230,13 +279,26 @@
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
-                                <div class="form-text small mt-1">Direct web link to an image file.</div>
+                                <div class="form-text small mt-1">
+                                    @(isLocalUpload
+                                                                        ? "Leave blank to keep the currently uploaded file, or paste a new web URL to replace it."
+                                                                        : "Direct web link to an image file.")
+                                </div>
                             </div>
 
                             <!-- Upload Image File -->
-                            <div class="tab-pane fade" id="upload-pane" role="tabpanel">
+                            <div class="tab-pane fade @(isLocalUpload ? "show active" : "")" id="upload-pane" role="tabpanel">
+                                @if (isLocalUpload)
+                                {
+                                    <div class="d-flex align-items-center justify-content-between bg-white border rounded-3 px-3 py-2 mb-2">
+                                        <span class="small text-success fw-semibold">
+                                            <i class="fa-solid fa-file-image me-1"></i>Using system-uploaded image
+                                        </span>
+                                        <span class="badge bg-light text-secondary border">Protected</span>
+                                    </div>
+                                }
                                 <input type="file" name="ImageUpload" id="ImageUpload" class="form-control rounded-3" accept="image/png, image/jpeg, image/jpg, image/webp" />
-                                <div class="form-text small mt-1">Select a new image file to replace current picture.</div>
+                                <div class="form-text small mt-1">Select a new image file to replace the current picture.</div>
                             </div>
                         </div>
                         <span asp-validation-for="ProductImage" class="text-danger small mt-1 d-block"></span>
@@ -485,7 +547,7 @@
             function setupDynamicClearField(inputId, btnId, onClearCallback) {
                 const input = document.getElementById(inputId);
                 const btn = document.getElementById(btnId);
-                if (!input || !btn) return;
+                if (!input || !btn || input.disabled) return;
 
                 btn.style.display = input.value.trim() ? "block" : "none";
 
@@ -506,7 +568,7 @@
                 });
             }
 
-            // Attach dynamic clear buttons cleanly
+            // Attach dynamic clear buttons cleanly (skipped automatically if ProductName is disabled)
             setupDynamicClearField("ProductName", "clearProductNameBtn");
             setupDynamicClearField("Price", "clearPriceBtn");
             setupDynamicClearField("productUrlInput", "clearProductUrlBtn", () => window.updatePreview(initialImage));

@@ -27,6 +27,20 @@
     }
 
     int? retailIdParam = ViewBag.RetailId as int? ?? Model.RetailId;
+    string cleanBarcode = System.Text.RegularExpressions.Regex.Replace(Model.ReceiptNumber ?? "000000", "[^0-9A-Za-z]", "");
+
+    // Payment Method Icon & Badge Styling
+    string paymentName = Model.PaymentMethod?.PaymentMethodName ?? "Cash";
+    string paymentIcon = Model.PaymentMethodId switch
+    {
+        2 => "fa-mobile-screen-button",
+        3 => "fa-credit-card",
+        4 => "fa-hand-holding-dollar",
+        _ => "fa-wallet"
+    };
+    string paymentBadgeClass = Model.PaymentMethodId == 4
+        ? "bg-warning-subtle text-warning-emphasis border border-warning-subtle"
+        : "bg-light text-primary border border-primary-subtle";
 }
 
 <!-- Viewport-Locked Card Container -->
@@ -43,10 +57,10 @@
         </div>
 
         <!-- Return Link -->
-		<a href="javascript:history.back()" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+        <a href="javascript:history.back()" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
            style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-			<i class="fa-solid fa-arrow-left me-1"></i>Return
-		</a>
+            <i class="fa-solid fa-arrow-left me-1"></i>Return
+        </a>
     </div>
 
     <!-- Scrollable Workspace (Split Panel Layout) -->
@@ -55,20 +69,20 @@
 
             <!-- LEFT COLUMN: Realistic Thermal POS Receipt -->
             <div class="col-xl-5 col-lg-6 col-md-10 d-flex flex-column align-items-center">
-                <div id="printableReceipt" class="receipt-paper w-100 p-4 border border-bottom-0 pb-5 mb-4">
+                <div id="printableReceipt" class="receipt-paper w-100 p-4 border border-bottom-0 pb-5 mb-4 bg-white rounded-4 shadow-sm" style="max-width: 440px;">
 
                     <!-- Store Branding & Meta -->
                     <div class="text-center mb-3">
                         <div class="d-inline-flex p-2 rounded-circle bg-opacity-10 text-primary mb-2">
-                            <!-- Scaled Logo Image -->
                             <img src="~/images/SmartScanLogo.png"
                                  alt="Smart Scan Logo"
                                  width="55"
                                  height="55"
-                                 class="object-fit-contain flex-shrink-0" />
+                                 class="object-fit-contain flex-shrink-0"
+                                 onerror="this.style.display='none'" />
                         </div>
                         <h5 class="fw-bold text-uppercase mb-0 text-dark" style="letter-spacing: 0.5px;">
-                            @(Model.Retail?.RetailName ?? "SmartScan Retail Partner")
+                            @(Model.Retail?.RetailName ?? "SmartScan Retail")
                         </h5>
                         <p class="text-muted small mb-1">
                             @(Model.Retail?.Address ?? "Automated Vision Checkout System")
@@ -78,10 +92,10 @@
                         </span>
                     </div>
 
-                    <div class="receipt-dashed-line"></div>
+                    <div class="receipt-dashed-line my-2" style="border-top: 1px dashed #bbb;"></div>
 
                     <!-- Receipt Sub-Header Data -->
-                    <div class="small text-secondary mb-2">
+                    <div class="small text-secondary mb-2" style="font-size: 12px;">
                         <div class="d-flex justify-content-between mb-1">
                             <span>Receipt #:</span>
                             <strong class="font-monospace text-dark">@Model.ReceiptNumber</strong>
@@ -94,13 +108,22 @@
                             <span>Cashier / POS:</span>
                             <span class="text-dark">@staffDisplayName</span>
                         </div>
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between mb-1">
                             <span>Customer:</span>
-                            <span class="text-dark">@(Model.Customer?.FullName ?? "Walk-in Guest")</span>
+                            <span class="text-dark fw-semibold">@(Model.Customer?.FullName ?? "Walk-in Guest")</span>
                         </div>
+
+                        <!-- Conditional Due Date Row (Shown ONLY for Store Credit / PaymentMethodId == 4) -->
+                        @if (Model.PaymentMethodId == 4 && Model.DueDate.HasValue)
+                        {
+                            <div class="d-flex justify-content-between">
+                                <span class="text-danger fw-bold">Due Date:</span>
+                                <span class="text-danger fw-bold font-monospace">@Model.DueDate.Value.ToString("MMM dd, yyyy")</span>
+                            </div>
+                        }
                     </div>
 
-                    <div class="receipt-dashed-line"></div>
+                    <div class="receipt-dashed-line my-2" style="border-top: 1px dashed #bbb;"></div>
 
                     <!-- Itemized Purchase List -->
                     <div class="py-1">
@@ -113,24 +136,21 @@
                             @foreach (var item in itemList)
                             {
                                 decimal rowTotal = (decimal)item.UnitPrice * (int)item.Quantity;
-                                <div>
-                                    <div class="d-flex justify-content-between text-dark fw-semibold small">
-                                        <span class="text-truncate pe-2" style="max-width: 220px;">@item.Product.ProductName</span>
-                                        <span>₱@rowTotal.ToString("N2")</span>
+                                <div class="d-flex justify-content-between align-items-center" style="font-size: 12px;">
+                                    <div class="text-truncate pe-2" style="max-width: 240px;">
+                                        <span class="fw-bold text-dark d-block text-truncate">@item.Product.ProductName</span>
+                                        <small class="text-muted">@item.Quantity x ₱@(((decimal)item.UnitPrice).ToString("N2"))</small>
                                     </div>
-                                    <div class="text-muted small d-flex align-items-center gap-1" style="font-size: 11px;">
-                                        <span>@item.Quantity x</span>
-                                        <span>₱@(((decimal)item.UnitPrice).ToString("N2"))</span>
-                                    </div>
+                                    <span class="font-monospace fw-semibold text-dark text-nowrap">₱@rowTotal.ToString("N2")</span>
                                 </div>
                             }
                         </div>
                     </div>
 
-                    <div class="receipt-double-line"></div>
+                    <div class="receipt-double-line my-2" style="border-top: 3px double #bbb;"></div>
 
                     <!-- Financial Summary & Tender -->
-                    <div class="small">
+                    <div class="small" style="font-size: 12px;">
                         <div class="d-flex justify-content-between text-secondary mb-1">
                             <span>Total Items Quantity:</span>
                             <span class="fw-semibold text-dark">@totalItems units</span>
@@ -139,25 +159,36 @@
                             <span>Subtotal:</span>
                             <span class="fw-semibold text-dark">₱@subTotal.ToString("N2")</span>
                         </div>
+
+                        <!-- Total Row (Adapts to Paid vs Unpaid) -->
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fs-6 fw-bold text-dark">TOTAL PAID:</span>
-                            <span class="fs-4 fw-bold text-success font-monospace">₱@Model.TotalAmount.ToString("N2")</span>
+                            @if (Model.StatusId == 4)
+                            {
+                                <span class="fs-6 fw-bold text-dark">TOTAL DUE:</span>
+                                <span class="fs-4 fw-bold text-danger font-monospace">₱@Model.TotalAmount.ToString("N2")</span>
+                            }
+                            else
+                            {
+                                <span class="fs-6 fw-bold text-dark">TOTAL PAID:</span>
+                                <span class="fs-4 fw-bold text-success font-monospace">₱@Model.TotalAmount.ToString("N2")</span>
+                            }
                         </div>
+
                         <div class="d-flex justify-content-between text-secondary pt-1">
                             <span>Payment Tender:</span>
-                            <span class="badge rounded-pill bg-light text-primary border border-primary-subtle fw-semibold px-2">
-                                <i class="fa-solid fa-wallet me-1"></i>@(Model.PaymentMethod?.PaymentMethodName ?? "Cash")
+                            <span class="badge rounded-pill @paymentBadgeClass fw-semibold px-2 py-1">
+                                <i class="fa-solid @paymentIcon me-1"></i>@paymentName
                             </span>
                         </div>
                     </div>
 
-                    <div class="receipt-dashed-line my-3"></div>
+                    <div class="receipt-dashed-line my-3" style="border-top: 1px dashed #bbb;"></div>
 
                     <!-- Barcode Stamp & Footer Thank You -->
                     <div class="text-center pt-2">
                         <div class="barcode-strip mb-2"></div>
                         <span class="font-monospace small text-muted d-block mb-2" style="letter-spacing: 2px;">
-                            *@Model.ReceiptNumber*
+                            *@cleanBarcode*
                         </span>
                         <p class="small text-muted mb-0 fst-italic" style="font-size: 11px;">
                             Thank you for shopping with us!<br />
@@ -172,25 +203,30 @@
             <div class="col-xl-7 col-lg-6 col-md-10">
                 <div class="d-flex flex-column gap-3">
 
-                    <!-- Status & System Integrity Card -->
+                    <!-- Status & System Integrity Card (Updated for StatusId 3 = Paid & 4 = Unpaid/Pending Credit) -->
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Verification Status</span>
+                                <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Payment & Verification Status</span>
                                 <h6 class="fw-bold mb-0 text-dark">SmartScan Cloud Record</h6>
                             </div>
                             <div>
-                                @if (Model.Status?.StatusName?.Equals("Active", StringComparison.OrdinalIgnoreCase) == true ||
-                                                                Model.Status?.StatusName?.Equals("Completed", StringComparison.OrdinalIgnoreCase) == true)
+                                @if (Model.StatusId == 3)
                                 {
                                     <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 12px;">
-                                        <i class="fa-solid fa-circle-check me-1"></i>Completed Order
+                                        <i class="fa-solid fa-circle-check me-1"></i>Paid
+                                    </span>
+                                }
+                                else if (Model.StatusId == 4)
+                                {
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                        <i class="fa-solid fa-clock me-1"></i>Pending Credit
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 12px;">
-                                        @(Model.Status?.StatusName ?? "Archived")
+                                        @(Model.Status?.StatusName ?? "Recorded")
                                     </span>
                                 }
                             </div>

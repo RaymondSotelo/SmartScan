@@ -98,11 +98,16 @@ namespace SmartScan.Controllers
                 .Where(t => userRetailIds.Contains(t.RetailId) && t.CreatedAt >= todayStartUtc)
                 .SumAsync(t => (decimal?)t.TotalAmount) ?? 0.00m;
 
-            // Overdue Debt Watchlist scoped to user's stores
+            // Overdue Debt Watchlist scoped to user's stores (Strictly Unpaid Credit transactions)
             vm.OverdueAccounts = await scopedCustomers
                 .AsNoTracking()
                 .Where(c => c.CurrentDebt > 0 &&
-                            c.Transactions.Any(t => userRetailIds.Contains(t.RetailId) && t.DueDate.HasValue && t.DueDate.Value < todayDateOnly))
+                            c.Transactions.Any(t =>
+                                userRetailIds.Contains(t.RetailId) &&
+                                t.PaymentMethodId == 4 &&
+                                t.StatusId == 4 &&
+                                t.DueDate.HasValue &&
+                                t.DueDate.Value < todayDateOnly))
                 .Select(c => new OverdueDebtItem
                 {
                     CustomerId = c.CustomerId,
@@ -110,7 +115,12 @@ namespace SmartScan.Controllers
                     ContactNumber = c.ContactNumber,
                     AmountDue = c.CurrentDebt,
                     DueDate = c.Transactions
-                        .Where(t => userRetailIds.Contains(t.RetailId) && t.DueDate.HasValue && t.DueDate.Value < todayDateOnly)
+                        .Where(t =>
+                            userRetailIds.Contains(t.RetailId) &&
+                            t.PaymentMethodId == 4 &&
+                            t.StatusId == 4 &&
+                            t.DueDate.HasValue &&
+                            t.DueDate.Value < todayDateOnly)
                         .Min(t => t.DueDate)!.Value
                 })
                 .OrderBy(c => c.DueDate)
@@ -119,10 +129,15 @@ namespace SmartScan.Controllers
 
             vm.OverdueDebtAmount = await scopedCustomers
                 .Where(c => c.CurrentDebt > 0 &&
-                            c.Transactions.Any(t => userRetailIds.Contains(t.RetailId) && t.DueDate.HasValue && t.DueDate.Value < todayDateOnly))
-                .SumAsync(c => c.CurrentDebt);
+                            c.Transactions.Any(t =>
+                                userRetailIds.Contains(t.RetailId) &&
+                                t.PaymentMethodId == 4 &&
+                                t.StatusId == 4 &&
+                                t.DueDate.HasValue &&
+                                t.DueDate.Value < todayDateOnly))
+                .SumAsync(c => (decimal?)c.CurrentDebt) ?? 0.00m;
 
-            // Newly Registered Customer Feed (Replaced PhilSys Verification Log)
+            // Newly Registered Customer Feed
             vm.RecentVerifications = await scopedCustomers
                 .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAt)
@@ -138,8 +153,7 @@ namespace SmartScan.Controllers
             return View(vm);
         }
 
-        // [UPDATE THIS LATER TO MANAGE ADMIN ROLE] <<--
-        // Currently managing Staff Role <--
+        // Currently managing Cashier Role <--
         public async Task<IActionResult> UserManagement(string search)
         {
             ViewData["CurrentFilter"] = search;
@@ -148,16 +162,17 @@ namespace SmartScan.Controllers
             var cashierRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Cashier");
             if (cashierRole == null)
             {
+                ViewBag.ProfileMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 return View(new List<IdentityUser>());
             }
 
             // Query only cashier accounts
             var cashierQuery = (from user in _context.Users
-                         join userRole in _context.UserRoles on user.Id equals userRole.UserId
-                         where userRole.RoleId == cashierRole.Id
-                         select user)
-                 .AsNoTracking()
-                 .AsQueryable();
+                                join userRole in _context.UserRoles on user.Id equals userRole.UserId
+                                where userRole.RoleId == cashierRole.Id
+                                select user)
+                                .AsNoTracking()
+                                .AsQueryable();
 
             // Search Filter
             if (!string.IsNullOrWhiteSpace(search))
@@ -169,9 +184,22 @@ namespace SmartScan.Controllers
                 );
             }
 
-            var cashier = await cashierQuery.OrderBy(u => u.UserName).ToListAsync();
+            var cashiers = await cashierQuery.OrderBy(u => u.UserName).ToListAsync();
 
-            return View(cashier);
+            // Retrieve profile pictures mapped by UserId
+            var cashierIds = cashiers.Select(u => u.Id).ToList();
+
+            ViewBag.ProfileMap = await _context.UserProfiles
+                .AsNoTracking()
+                .Where(up => cashierIds.Contains(up.UserId) && !string.IsNullOrEmpty(up.ProfilePicture))
+                .GroupBy(up => up.UserId)
+                .ToDictionaryAsync(
+                    g => g.Key,
+                    g => g.First().ProfilePicture!,
+                    StringComparer.OrdinalIgnoreCase
+                );
+
+            return View(cashiers);
         }
 
         public async Task<IActionResult> AdminApproval(string search)

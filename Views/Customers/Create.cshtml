@@ -36,7 +36,7 @@
                         <!-- Full Name -->
                         <div class="form-group mb-3">
                             <label asp-for="FullName" class="control-label fw-semibold mb-1" style="color: #1162a3;">Full Name</label>
-                            <input asp-for="FullName" id="FullName" class="form-control rounded-3" placeholder="e.g., Juan Dela Cruz" required autocomplete="off" />
+                            <input asp-for="FullName" id="FullName" class="form-control rounded-3" placeholder="e.g., Juan Dela Cruz" required autocomplete="off" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')" />
                             <span asp-validation-for="FullName" class="text-danger small mt-1 d-block"></span>
                         </div>
 
@@ -49,12 +49,14 @@
                                 <input asp-for="ContactNumber"
                                        id="ContactNumber"
                                        type="tel"
-                                       class="form-control rounded-3"
-                                       maxlength="11"
+                                       class="form-control rounded-3 border-0 font-monospace"
+                                       maxlength="13"
                                        inputmode="numeric"
                                        required
-                                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
-                                       placeholder="e.g., 09123456789" />
+                                       value="@(string.IsNullOrWhiteSpace(Model?.ContactNumber) ? "09" : Model.ContactNumber)"
+                                       oninput="formatPhpPhone(this)"
+                                       onkeydown="handlePhoneBackspace(this, event);"
+                                       placeholder="09XX XXX XXXX" />
                             </div>
                             <span asp-validation-for="ContactNumber" class="text-danger small mt-1 d-block"></span>
                             <div class="form-text small" style="font-size: 11px;">11-digit mobile number required for Store Credit SMS updates.</div>
@@ -73,7 +75,9 @@
                                        id="retailSearchInput"
                                        class="form-control border-0 bg-white shadow-none ps-0 fw-medium"
                                        placeholder="Type to search retail store..."
-                                       autocomplete="off" />
+                                       autocomplete="off"
+                                       oninput="this.value = this.value.replace(/[^a-zA-Z0-9\s]/g, '')" />
+
                                 <button class="btn btn-white border-0 text-secondary pe-3"
                                         type="button"
                                         id="clearRetailBtn"
@@ -196,6 +200,20 @@
 
         // Embedded list from ViewBag/ViewData (populated in CustomersController.Create GET)
         const retailItems = @Html.Raw(Json.Serialize(ViewBag.Retails ?? new List<object>()));
+
+        // Tell jQuery Validation to evaluate ContactNumber without spaces (11 digits instead of 13 chars)
+        if (window.jQuery && $.validator) {
+            $(function () {
+                const contactField = $("#ContactNumber");
+                if (contactField.length && contactField.rules()) {
+                    contactField.rules("add", {
+                        normalizer: function (value) {
+                            return value.replace(/\D/g, '');
+                        }
+                    });
+                }
+            });
+        }
 
         function filterRetails(query) {
             retailDropdownList.innerHTML = "";
@@ -424,5 +442,48 @@
         }
 
         window.addEventListener('beforeunload', stopBiometricCamera);
+
+        // ================= PHONE FORMATTER (09XX XXX XXXX) =================
+        function formatPhpPhone(input) {
+            let digits = input.value.replace(/\D/g, '');
+
+            if (!digits.startsWith('09')) {
+                digits = '09' + digits.replace(/^0+/, '');
+            }
+
+            digits = digits.slice(0, 11);
+
+            let formatted = '';
+            if (digits.length <= 4) {
+                formatted = digits;
+            } else if (digits.length <= 7) {
+                formatted = digits.slice(0, 4) + ' ' + digits.slice(4);
+            } else {
+                formatted = digits.slice(0, 4) + ' ' + digits.slice(4, 7) + ' ' + digits.slice(7, 11);
+            }
+
+            input.value = formatted;
+        }
+
+        function handlePhoneBackspace(input, event) {
+            if (event.key === 'Backspace' && input.value.replace(/\D/g, '').length <= 2) {
+                event.preventDefault();
+                input.value = '09';
+            }
+        }
+
+        // Format pre-existing model value on validation reload & enforce 11 digits on submit
+        const contactInput = document.getElementById("ContactNumber");
+        if (contactInput) {
+            formatPhpPhone(contactInput);
+        }
+
+        document.getElementById("createCustomerForm")?.addEventListener("submit", function (e) {
+            const digits = contactInput ? contactInput.value.replace(/\D/g, '') : '';
+            if (digits.length !== 11 || !digits.startsWith('09')) {
+                e.preventDefault();
+                contactInput?.focus();
+            }
+        });
     </script>
 }
