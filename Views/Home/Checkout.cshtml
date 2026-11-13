@@ -544,6 +544,13 @@
                             const data = await response.json();
 
                             if (data.success && data.price !== undefined) {
+                                // Ignore products that have 0 stock / are not carried in this store's inventory
+                                // (prevents false "0 unit(s) left" popups when YOLO misclassifies similar twinpacks)
+                                if (!data.stock || data.stock <= 0) {
+                                    scanCooldowns[itemName] = now;
+                                    continue;
+                                }
+
                                 const savedItem = manualItems.find(i => i.name === data.name);
                                 const savedQty = savedItem ? savedItem.qty : 0;
                                 const newQtyToAdd = quantityInFrame - savedQty;
@@ -554,9 +561,8 @@
 
                                     lockYoloItem(itemName, data.name, data.price, newQtyToAdd, data.stock, data.isAgeRestricted === true || data.isAgeRestricted === 1);
 
-                                    // Append auto badge flag temporarily to show in cart
                                     const newlyAdded = manualItems.find(i => i.name === data.name);
-                                    if(newlyAdded) newlyAdded.isAutoScanned = true;
+                                    if (newlyAdded) newlyAdded.isAutoScanned = true;
                                 }
                             }
                         }

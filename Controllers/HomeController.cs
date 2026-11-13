@@ -243,7 +243,7 @@ namespace SmartScan.Controllers
             });
         }
 
-        // SearchProducts | Filters products assigned to the current cashier's retail store inventory
+        // SearchProducts | Filters products matching either name or barcode inside the store's inventory
         [HttpGet]
         public async Task<IActionResult> SearchProducts(string term)
         {
@@ -252,27 +252,22 @@ namespace SmartScan.Controllers
                 return Json(new List<object>());
             }
 
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs
-                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
-
-            if (staffAssignment == null)
-            {
-                return Json(new List<object>());
-            }
-
-            int currentRetailId = staffAssignment.RetailId;
             term = term.Trim().ToLower();
 
+            // Resolve logged-in Cashier's assigned store
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
+            int currentRetailId = staffAssignment?.RetailId ?? 0;
+
+            // Query Inventories for this specific store, joining the Product data
             var suggestions = await _context.Inventories
                 .Include(i => i.Product)
-                .Where(i => i.RetailId == currentRetailId &&
-                            i.Product != null &&
-                            (i.Product.ProductName.ToLower().Contains(term) ||
-                             (!string.IsNullOrEmpty(i.Product.Barcode) && i.Product.Barcode.Contains(term))))
+                .Where(i => i.RetailId == currentRetailId && i.Product != null)
+                .Where(i => i.Product.ProductName.ToLower().Contains(term) ||
+                           (!string.IsNullOrEmpty(i.Product.Barcode) && i.Product.Barcode.Contains(term)))
                 .Select(i => new
                 {
-                    name = i.Product!.ProductName,
+                    name = i.Product.ProductName,
                     barcode = i.Product.Barcode ?? "",
                     stock = i.Stock
                 })
