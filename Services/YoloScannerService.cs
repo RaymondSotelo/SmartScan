@@ -14,7 +14,8 @@ namespace SmartScan.Services
     {
         private readonly InferenceSession _session;
 
-        private const float CONFIDENCE_THRESHOLD = 0.40f;
+        // Dropped to 15% to ensure the severe glare on the plastic sachets doesn't cause them to be deleted
+        private const float CONFIDENCE_THRESHOLD = 0.15f;
         private const int MODEL_INPUT_SIZE = 640;
 
         // Fallback array
@@ -144,10 +145,13 @@ namespace SmartScan.Services
                 {
                     string rawName = _classes[bestClass];
 
-                    // Fixed Validation: Safely checks the exact string without replacing spaces with underscores
+                    // THE BULLETPROOF FILTER: Strips out ALL punctuation, apostrophes, and spaces.
+                    // "Lady's Choice " becomes "ladyschoice". "Lady’s Choice" becomes "ladyschoice".
+                    string cleanYoloName = new string(rawName.Where(c => char.IsLetterOrDigit(c)).ToArray()).ToLower();
+
                     bool isAllowedInStore = storeInventory != null && storeInventory.Any(inv =>
-                        inv.Trim().Equals(rawName.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                        inv.Trim().Replace("_", " ").Equals(rawName.Trim().Replace("_", " "), StringComparison.OrdinalIgnoreCase));
+                        new string(inv.Where(c => char.IsLetterOrDigit(c)).ToArray()).ToLower() == cleanYoloName
+                    );
 
                     if (isAllowedInStore)
                     {

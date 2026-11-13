@@ -131,7 +131,7 @@
                                     <th class="border-0 pb-2 text-center" style="width: 45px;">Qty</th>
                                     <th class="border-0 pb-2 text-end">Price</th>
                                     <th class="border-0 pb-2 text-end">Subtotal</th>
-                                    <th class="border-0 pb-2 text-center" style="width: 45px;"></th>
+                                    <th class="border-0 pb-2 text-center" style="width: 70px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="identifiedItemsList">
@@ -437,6 +437,27 @@
     </div>
 </div>
 
+<!-- Modal: Barcode Scanner Modal (Restored for your groupmate's scanner button) -->
+<div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white p-3 border-0 flex-shrink-0" style="background-color: #1162a3;">
+                <h6 class="modal-title fw-bold mb-0 fs-5">
+                    <i class="fa-solid fa-barcode me-2"></i>Scan Product Barcode
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center bg-light">
+                <div id="scannerStatus" class="alert alert-info py-2 small fw-semibold text-center mb-3">
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...
+                </div>
+                <!-- This qrReader div is what your groupmate's code uses to show the video! -->
+                <div id="qrReader" class="w-100 rounded-3 overflow-hidden border shadow-sm mx-auto" style="min-height: 250px; background-color: #000;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
@@ -517,10 +538,7 @@
                                     scanCooldowns[itemName] = now;
                                     playBeepSound();
 
-                                    const safeName = itemName.replace(/'/g, "\\'");
-                                    const safeDbName = data.name.replace(/'/g, "\\'");
-
-                                    lockYoloItem(safeName, safeDbName, data.price, newQtyToAdd, data.stock, data.isAgeRestricted === true || data.isAgeRestricted === 1);
+                                    lockYoloItem(itemName, data.name, data.price, newQtyToAdd, data.stock, data.isAgeRestricted === true || data.isAgeRestricted === 1);
 
                                     // Append auto badge flag temporarily to show in cart
                                     const newlyAdded = manualItems.find(i => i.name === data.name);
@@ -626,7 +644,7 @@
                     });
 
                     playBeepSound();
-                    await buildCartAndRender({}, false);
+                    await buildCartAndRender({}, {});
 
                 } catch (err) {
                     console.error("Webcam barcode lookup error:", err);
@@ -801,7 +819,7 @@
                             });
 
                             playBeepSound();
-                            await buildCartAndRender({}, false);
+                            await buildCartAndRender({}, {});
                             closeScannerModal();
                             return;
                         } else {
@@ -987,7 +1005,7 @@
                             } else {
                                 if (existing) {
                                     existing.qty++;
-                                    existing.isAutoScanned = false; // Reset to manual badge if typed
+                                    existing.isAutoScanned = false;
                                 } else {
                                     manualItems.push({
                                         name: product.name,
@@ -1002,7 +1020,7 @@
 
                             productSearchInput.value = "";
                             productSearchResults.style.display = "none";
-                            await buildCartAndRender({}, false);
+                            await buildCartAndRender({}, {});
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -1137,7 +1155,7 @@
                     const wrapper = document.getElementById("cameraDropdownWrapper");
                     if (wrapper) wrapper.style.backgroundColor = "#1162a3";
 
-                    buildCartAndRender({}, false);
+                    buildCartAndRender({}, {});
                 });
             }
 
@@ -1181,11 +1199,20 @@
                         }).catch(() => { });
                     } else if (zxingReader && !isZxingBusy) {
                         isZxingBusy = true;
-                        zxingReader.decodeFromCanvas(enhancedCanvas).then(result => {
-                            if (result && result.getText()) handleWebcamBarcodeDetected(result.getText());
-                        }).catch(() => { }).finally(() => {
+                        try {
+                            if (typeof zxingReader.decodeFromCanvas === 'function') {
+                                zxingReader.decodeFromCanvas(enhancedCanvas).then(result => {
+                                    if (result && result.getText()) handleWebcamBarcodeDetected(result.getText());
+                                }).catch(() => { }).finally(() => {
+                                    isZxingBusy = false;
+                                });
+                            } else {
+                                isZxingBusy = false;
+                            }
+                        } catch (err) {
+                            console.warn("Barcode scanner skipped.", err);
                             isZxingBusy = false;
-                        });
+                        }
                     }
                 }
 
@@ -1255,19 +1282,20 @@
                         }
                     }
 
+                    // Strict >= 80 rule enforced here
                     const yoloCounts = {};
-                    let hasLowConfidence = false;
+                    const lowConfidenceItems = {};
 
                     for (const detected of detections) {
                         if (detected.confidence < 80) {
-                            hasLowConfidence = true;
+                            lowConfidenceItems[detected.name] = Math.max(lowConfidenceItems[detected.name] || 0, Math.round(detected.confidence));
                         } else {
                             yoloCounts[detected.name] = (yoloCounts[detected.name] || 0) + 1;
                         }
                     }
 
                     await processLiveAutoAdd(yoloCounts);
-                    await buildCartAndRender(yoloCounts, hasLowConfidence);
+                    await buildCartAndRender(yoloCounts, lowConfidenceItems);
 
                 } catch (error) {
                     console.error("Cannot connect to Python Server:", error);
@@ -1276,7 +1304,7 @@
             }
 
             // ================= CART RENDERER =================
-            window.buildCartAndRender = async function(yoloCounts, hasLowConfidence) {
+            window.buildCartAndRender = async function(yoloCounts, lowConfidenceItems = {}) {
                 let htmlOutput = "";
                 let currentTotal = 0;
 
@@ -1304,7 +1332,6 @@
                         const availableStock = (product.stock || 0) - savedQty;
                         let newQtyToLock = qty - savedQty;
 
-                        // Only show pending UI if item isn't in cart yet
                         if (newQtyToLock > 0 && !savedItem) {
                             if (newQtyToLock > availableStock) {
                                 newQtyToLock = availableStock;
@@ -1312,8 +1339,6 @@
 
                             if (newQtyToLock > 0) {
                                 const subtotal = product.price * newQtyToLock;
-                                const safeName = itemName.replace(/'/g, "\\'");
-                                const safeDbName = product.name.replace(/'/g, "\\'");
 
                                 let stockBadge = "";
                                 if (product.stock <= 5 && product.stock > 0) {
@@ -1368,7 +1393,7 @@
                         : ``;
 
                     const sourceBadgeHtml = item.isAutoScanned
-                        ? `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-robot"></i> Auto</span>`
+                        ? `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-lock"></i> Locked</span>`
                         : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-user-pen"></i> Manual</span>`;
 
                     htmlOutput += `
@@ -1382,7 +1407,11 @@
                             <td class="text-end text-muted small">₱${item.price.toFixed(2)}</td>
                             <td class="text-end text-primary fw-bold small">₱${subtotal.toFixed(2)}</td>
                             <td class="text-center">
-                                <div class="d-inline-flex gap-1">
+                                <div class="d-inline-flex gap-1 align-items-center">
+                                    <!-- Static Checkmark Icon (Not Clickable) -->
+                                    <div class="text-success rounded-circle border border-success d-flex align-items-center justify-content-center bg-success-subtle" style="width: 22px; height: 22px;" title="Ready">
+                                        <i class="fa-solid fa-check" style="font-size: 9px;"></i>
+                                    </div>
                                     <button class="btn btn-sm btn-outline-primary rounded-circle p-1" style="width: 22px; height: 22px; display: inline-grid; place-items: center;" onclick="editManualItem(${index})" title="Edit Qty">
                                         <i class="fa-solid fa-pen" style="font-size: 9px;"></i>
                                     </button>
@@ -1394,11 +1423,23 @@
                         </tr>`;
                 });
 
-                if (hasLowConfidence) {
-                    htmlOutput += `
-                        <tr class="table-warning">
-                            <td colspan="5" class="text-danger fw-semibold text-center small py-1" style="font-size: 11px;"><i class="fa-solid fa-triangle-exclamation me-1"></i>Hold item steady over tray.</td>
-                        </tr>`;
+                for (const [itemName, conf] of Object.entries(lowConfidenceItems)) {
+                    const isAlreadyLocked = manualItems.some(i => i.name === itemName);
+                    if (!isAlreadyLocked) {
+                        htmlOutput += `
+                            <tr class="table-warning">
+                                <td class="fw-medium text-truncate text-muted" style="max-width: 140px;">
+                                    ${escapeHtml(itemName)}
+                                    <br><span class="badge bg-warning text-dark border border-warning rounded-pill mt-1" style="font-size: 9px;"><i class="fa-solid fa-spinner fa-spin"></i> Low Confidence (${conf}%)</span>
+                                </td>
+                                <td class="text-center fw-bold text-muted">-</td>
+                                <td class="text-end text-muted small fw-medium">Pending</td>
+                                <td class="text-end text-muted fw-bold small fw-medium">Pending</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-secondary" style="font-size: 10px;" disabled>Proceed</button>
+                                </td>
+                            </tr>`;
+                    }
                 }
 
                 if (htmlOutput === "" && manualItems.length === 0) {
@@ -1435,7 +1476,7 @@
                     }).then((result) => {
                         if (result.isConfirmed) {
                             manualItems = [];
-                            buildCartAndRender({}, false);
+                            buildCartAndRender({}, {});
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Cart Cleared',
@@ -1475,7 +1516,25 @@
                         manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock, isAgeRestricted: isAgeRestricted, isAutoScanned: true });
                     }
                 }
-                buildCartAndRender({}, false);
+                buildCartAndRender({}, {});
+            };
+
+            window.quickAddManualItem = function (index) {
+                const item = manualItems[index];
+                if (!item) return;
+
+                if (item.qty + 1 > item.stock) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Stock Limit',
+                        text: `Cannot add more. Store inventory limit is ${item.stock}.`,
+                        confirmButtonColor: '#1162a3'
+                    });
+                    return;
+                }
+
+                item.qty += 1;
+                buildCartAndRender({}, {});
             };
 
             window.editManualItem = function (index) {
@@ -1524,13 +1583,13 @@
                     const adjustModal = bootstrap.Modal.getInstance(document.getElementById("adjustQuantityModal"));
                     if (adjustModal) adjustModal.hide();
 
-                    buildCartAndRender({}, false);
+                    buildCartAndRender({}, {});
                 });
             }
 
             window.removeManualItem = function (index) {
                 manualItems.splice(index, 1);
-                buildCartAndRender({}, false);
+                buildCartAndRender({}, {});
             };
 
             // ================= PROCEED TO PAYMENT (WITH AGE CHECK ROUTING) =================
