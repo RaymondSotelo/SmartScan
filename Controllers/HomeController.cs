@@ -196,6 +196,13 @@ namespace SmartScan.Controllers
             return View();
         }
 
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult DigitalReceipt()
+        {
+            return View();
+        }
+
         // -===================- [LOGIC METHODS] -===================-
 
         // GetProductDetails | Retrieves product details inside inventory for the current cashier's retail store

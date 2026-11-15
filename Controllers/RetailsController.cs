@@ -419,19 +419,37 @@ namespace SmartScan.Controllers
         }
 
         // GET: Retails/SalesAnalysis
+        [HttpGet]
         public async Task<IActionResult> SalesAnalysis(int? retailId, int? id, string range = "7days")
         {
             var targetId = retailId ?? id;
             if (targetId == null || targetId == 0) return NotFound();
 
-            var today = DateTime.Today;
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId)) return Challenge();
+
+            // Security Check: Verify user belongs to this store as Owner or active Staff
+            var store = await _context.Retails
+                .Include(r => r.RetailStaffs)
+                .FirstOrDefaultAsync(r => r.RetailId == targetId);
+
+            if (store == null) return NotFound();
+
+            bool isAuthorized = store.AdminOwner == currentUserId ||
+                                store.RetailStaffs.Any(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+
+            if (!isAuthorized) return Forbid();
+
+            // Centralized Philippine Standard Time (UTC+8) baseline
+            DateTime philippineNow = DateTime.UtcNow.AddHours(8);
+            var todayLocal = philippineNow.Date;
 
             DateTime startDate = range switch
             {
-                "1month" => today.AddMonths(-1),
-                "6months" => today.AddMonths(-6),
-                "1year" => today.AddYears(-1),
-                _ => today.AddDays(-6)
+                "1month" => todayLocal.AddMonths(-1),
+                "6months" => todayLocal.AddMonths(-6),
+                "1year" => todayLocal.AddYears(-1),
+                _ => todayLocal.AddDays(-6)
             };
 
             string rangeLabel = range switch
@@ -442,19 +460,23 @@ namespace SmartScan.Controllers
                 _ => "Last 7 Days"
             };
 
+            // Base queries scoped to the retail store and date range (removed restrictive StatusId == 1)
             var transactionsQuery = _context.Transactions
-                .Where(t => t.RetailId == targetId && t.StatusId == 1 && t.CreatedAt >= startDate);
+                .AsNoTracking()
+                .Where(t => t.RetailId == targetId && t.CreatedAt >= startDate);
 
             var itemsQuery = _context.TransactionItems
+                .AsNoTracking()
                 .Include(ti => ti.Product)
-                .Where(ti => ti.Transaction.RetailId == targetId && ti.Transaction.StatusId == 1 && ti.Transaction.CreatedAt >= startDate);
+                .Where(ti => ti.Transaction.RetailId == targetId && ti.Transaction.CreatedAt >= startDate);
 
             var model = new SalesAnalysisViewModel
             {
                 CurrentRange = range,
                 RangeLabel = rangeLabel,
                 TodayTransactions = await _context.Transactions
-                    .Where(t => t.RetailId == targetId && t.StatusId == 1 && t.CreatedAt.Date == today)
+                    .AsNoTracking()
+                    .Where(t => t.RetailId == targetId && t.CreatedAt >= todayLocal)
                     .CountAsync(),
                 TotalRevenue = await transactionsQuery.Select(t => (decimal?)t.TotalAmount).SumAsync() ?? 0m,
                 TotalItemsSold = await itemsQuery.Select(ti => (int?)ti.Quantity).SumAsync() ?? 0
@@ -482,7 +504,7 @@ namespace SmartScan.Controllers
                     .Select(g => new { Date = g.Key, Revenue = g.Sum(t => t.TotalAmount) })
                     .ToListAsync();
 
-                int totalDays = (today - startDate).Days;
+                int totalDays = (todayLocal - startDate).Days;
                 for (int i = 0; i <= totalDays; i++)
                 {
                     var d = startDate.AddDays(i);
@@ -500,7 +522,7 @@ namespace SmartScan.Controllers
                 int totalMonths = range == "6months" ? 6 : 12;
                 for (int i = totalMonths; i >= 0; i--)
                 {
-                    var m = today.AddMonths(-i);
+                    var m = todayLocal.AddMonths(-i);
                     labels.Add(m.ToString("MMM yyyy"));
                     values.Add(monthlyRevenue.FirstOrDefault(x => x.Year == m.Year && x.Month == m.Month)?.Revenue ?? 0m);
                 }
@@ -509,9 +531,9 @@ namespace SmartScan.Controllers
             model.RevenueDatesJson = JsonSerializer.Serialize(labels);
             model.RevenueValuesJson = JsonSerializer.Serialize(values);
 
-            // Graph 2: Top Products
+            // Graph 2: Top Products (with null-safety for products)
             var top5Products = await itemsQuery
-                .GroupBy(ti => ti.Product.ProductName)
+                .GroupBy(ti => ti.Product != null ? ti.Product.ProductName : "Unknown Item")
                 .Select(g => new { Name = g.Key, Qty = g.Sum(ti => ti.Quantity) })
                 .OrderByDescending(x => x.Qty)
                 .Take(5)
@@ -523,7 +545,7 @@ namespace SmartScan.Controllers
             // Graph 3: Payment Methods
             var paymentMethods = await transactionsQuery
                 .Include(t => t.PaymentMethod)
-                .GroupBy(t => t.PaymentMethod.PaymentMethodName)
+                .GroupBy(t => t.PaymentMethod != null ? t.PaymentMethod.PaymentMethodName : "Cash")
                 .Select(g => new { Method = g.Key, Count = g.Count() })
                 .ToListAsync();
 
@@ -600,6 +622,21 @@ namespace SmartScan.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportExcel(int retailId, string? revenueChartImg, string? productsChartImg, string? paymentChartImg, string range = "7days")
         {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId)) return Challenge();
+
+            // Verify user owns or is active staff for this retail store
+            var store = await _context.Retails
+                .Include(r => r.RetailStaffs)
+                .FirstOrDefaultAsync(r => r.RetailId == retailId);
+
+            if (store == null) return NotFound();
+
+            bool isAuthorized = store.AdminOwner == currentUserId ||
+                                store.RetailStaffs.Any(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+
+            if (!isAuthorized) return Forbid();
+
             DateTime startDate = range switch
             {
                 "1month" => DateTime.Today.AddMonths(-1),
@@ -617,8 +654,7 @@ namespace SmartScan.Controllers
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            var store = await _context.Retails.FindAsync(retailId);
-            string safeStoreName = string.IsNullOrWhiteSpace(store?.RetailName) ? $"Store_{retailId}" : store.RetailName.Replace(" ", "_");
+            string safeStoreName = string.IsNullOrWhiteSpace(store.RetailName) ? $"Store_{retailId}" : store.RetailName.Replace(" ", "_");
 
             var sevenDaysAgo = DateTime.Today.AddDays(-6);
             int txLast7Days = transactions.Count(t => t.CreatedAt >= sevenDaysAgo);
@@ -747,11 +783,25 @@ namespace SmartScan.Controllers
         }
 
         // POST: Retails/ExportPdf
-        // POST: Retails/ExportPdf
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportPdf(int retailId, string? revenueChartImg, string? productsChartImg, string? paymentChartImg, [FromServices] IWebHostEnvironment env, string range = "7days")
         {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId)) return Challenge();
+
+            // Verify user owns or is active staff for this retail store
+            var store = await _context.Retails
+                .Include(r => r.RetailStaffs)
+                .FirstOrDefaultAsync(r => r.RetailId == retailId);
+
+            if (store == null) return NotFound();
+
+            bool isAuthorized = store.AdminOwner == currentUserId ||
+                                store.RetailStaffs.Any(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+
+            if (!isAuthorized) return Forbid();
+
             DateTime startDate = range switch
             {
                 "1month" => DateTime.Today.AddMonths(-1),
@@ -769,8 +819,7 @@ namespace SmartScan.Controllers
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            var store = await _context.Retails.FindAsync(retailId);
-            string safeStoreName = string.IsNullOrWhiteSpace(store?.RetailName) ? $"Store_{retailId}" : store.RetailName.Replace(" ", "");
+            string safeStoreName = string.IsNullOrWhiteSpace(store.RetailName) ? $"Store_{retailId}" : store.RetailName.Replace(" ", "_"); // Fixed filename consistency
 
             var totalRevenue = transactions.Sum(t => t.TotalAmount);
             var sevenDaysAgo = DateTime.Today.AddDays(-6);

@@ -30,63 +30,69 @@
 }
 
 @{
+    bool isCustomerDisplay = Context.Request.Path.StartsWithSegments("/Home/CustomerDisplay", StringComparison.OrdinalIgnoreCase);
+    bool isSignedIn = SignInManager.IsSignedIn(User);
+
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
     var currentUserName = User.Identity?.Name;
     var isCashier = User.IsInRole("Cashier");
     var isAdmin = User.IsInRole("Admin");
 
-    // Get user's active retail IDs
-    List<int> userRetailIds;
-    if (isCashier && !isAdmin)
+    var topAlerts = new List<SecurityAlert>();
+
+    // Only query alerts if the user is signed in and not on CustomerDisplay
+    if (isSignedIn && !isCustomerDisplay && !string.IsNullOrEmpty(currentUserId))
     {
-        userRetailIds = DbContext.RetailStaffs
-            .Where(rs => rs.StaffId == currentUserId && rs.StatusId == 1)
-            .Select(rs => rs.RetailId)
-            .Distinct()
+        List<int> userRetailIds;
+        if (isCashier && !isAdmin)
+        {
+            userRetailIds = DbContext.RetailStaffs
+                .Where(rs => rs.StaffId == currentUserId && rs.StatusId == 1)
+                .Select(rs => rs.RetailId)
+                .Distinct()
+                .ToList();
+        }
+        else
+        {
+            userRetailIds = DbContext.Retails
+                .Where(r => r.AdminOwner == currentUserId ||
+                            DbContext.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId && rs.StatusId == 1))
+                .Select(r => r.RetailId)
+                .ToList();
+        }
+
+        // Base query for unread alerts (checks the AdminAlertReads table)
+        var alertsQuery = DbContext.SecurityAlerts
+            .Include(a => a.AlertType)
+            .Where(a => a.RetailId.HasValue && userRetailIds.Contains(a.RetailId.Value))
+            .Where(a => !DbContext.AdminAlertReads.Any(read => read.AlertId == a.AlertId && read.AdminId == currentUserId && read.IsRead));
+
+        // Filter out alerts where the description contains the current user's username
+        if (!string.IsNullOrEmpty(currentUserName))
+        {
+            alertsQuery = alertsQuery.Where(a => !a.Description.Contains(currentUserName));
+        }
+
+        // Role-Based Filtering
+        if (isCashier && !isAdmin)
+        {
+            // Cashiers only see: 4 (Low Stock), 5 (Depleted), 6 (Anomaly)
+            var allowedTypes = new List<int> { 4, 5, 6 };
+            alertsQuery = alertsQuery.Where(a => allowedTypes.Contains(a.AlertTypeId));
+        }
+
+        // Execute query and sort by exact timestamp
+        topAlerts = alertsQuery
+            .OrderByDescending(a => a.CreatedAt)
+            .ThenByDescending(a => a.AlertId)
             .ToList();
     }
-    else
-    {
-        userRetailIds = DbContext.Retails
-            .Where(r => r.AdminOwner == currentUserId ||
-                        DbContext.RetailStaffs.Any(rs => rs.RetailId == r.RetailId && rs.StaffId == currentUserId && rs.StatusId == 1))
-            .Select(r => r.RetailId)
-            .ToList();
-    }
-
-    // Base query for unread alerts (checks the AdminAlertReads table)
-    var alertsQuery = DbContext.SecurityAlerts
-        .Include(a => a.AlertType)
-        .Where(a => a.RetailId.HasValue && userRetailIds.Contains(a.RetailId.Value))
-        .Where(a => !DbContext.AdminAlertReads.Any(read => read.AlertId == a.AlertId && read.AdminId == currentUserId && read.IsRead));
-
-    // Filter out alerts where the description contains the current user's username
-    if (!string.IsNullOrEmpty(currentUserName))
-    {
-        alertsQuery = alertsQuery.Where(a => !a.Description.Contains(currentUserName));
-    }
-
-    // Role-Based Filtering
-    if (isCashier && !isAdmin)
-    {
-        // Cashiers only see: 4 (Low Stock), 5 (Depleted), 6 (Anomaly)
-        var allowedTypes = new List<int> { 4, 5, 6 };
-        alertsQuery = alertsQuery.Where(a => allowedTypes.Contains(a.AlertTypeId));
-    }
-
-    // Execute query and sort by exact timestamp
-    var topAlerts = alertsQuery
-        .OrderByDescending(a => a.CreatedAt)
-        .ThenByDescending(a => a.AlertId)
-        .ToList();
-
-    bool isCustomerDisplay = Context.Request.Path.StartsWithSegments("/Home/CustomerDisplay", StringComparison.OrdinalIgnoreCase);
 }
 
 @if (!isCustomerDisplay)
 {
     <ul class="navbar-nav align-items-center">
-        @if (SignInManager.IsSignedIn(User))
+        @if (isSignedIn)
         {
             var currentUser = await UserManager.GetUserAsync(User);
             const string fallbackAvatar = "/images/default-pfp.jpg";
@@ -119,7 +125,7 @@
                         </a>
                     </li>
                     <li>
-                        <form class="d-block w-100 m-0" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })" method="post">
+                        <form id="logoutForm" class="d-block w-100 m-0" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })" method="post">
                             <button type="submit" class="dropdown-item py-2 fw-medium text-danger d-flex align-items-center w-100">
                                 <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger" style="width: 20px;"></i>Logout
                             </button>
@@ -134,7 +140,6 @@
                     <i class="fa-solid fa-bell fs-5"></i>
                     @if (topAlerts.Any())
                     {
-                        <!-- ADDED IDs to target with JavaScript -->
                         <span id="alertBadge" class="position-absolute top-25 start-75 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.65rem; padding: 0.25em 0.45em;">
                             <span id="alertCount">@(topAlerts.Count() > 9 ? "9+" : topAlerts.Count())</span>
                             <span class="visually-hidden">New alerts</span>
@@ -154,7 +159,7 @@
                                     onclick="markAllAlertsAsRead(event)"
                                     title="Mark all as read"
                                     style="display: @(topAlerts.Any() ? "block" : "none");">
-                                    Read All <i class="fa-solid fa-check"></i>
+                                Read All <i class="fa-solid fa-check"></i>
                             </button>
                         </div>
                     </li>
@@ -179,7 +184,7 @@
 
                                     <a class="dropdown-item py-3 border-bottom text-wrap alert-dropdown-item"
                                        href="@targetUrl"
-                                       @(blockNavigation ? "onclick=\"event.preventDefault(); event.stopPropagation();\"" : "")
+                                       @(blockNavigation? Html.Raw("onclick=\"event.preventDefault(); event.stopPropagation();\"") : null)
                                        id="alert-item-@alert.AlertId">
 
                                         <!-- Title -->
@@ -231,214 +236,302 @@
     </ul>
 }
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const dropdownEl = document.getElementById('userProfileDropdown');
-        if (dropdownEl) {
-            const dropdownMenu = dropdownEl.nextElementSibling;
-            let isClosing = false;
+@if (isSignedIn && !isCustomerDisplay)
+{
+    <script>
+        let currentAlertCount = @(topAlerts.Count());
+        let alertInterval = null;
+        let isLoggingOutOrUnloading = false;
+        let activePollAbortController = null;
 
-            dropdownEl.parentElement.addEventListener('hide.bs.dropdown', function (e) {
-                if (isClosing) return;
-                e.preventDefault();
-                isClosing = true;
-                dropdownMenu.classList.add('collapsing-out');
-
-                setTimeout(() => {
-                    dropdownMenu.classList.remove('collapsing-out');
-                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
-                    if (bsDropdown) bsDropdown.hide();
-                    isClosing = false;
-                }, 170);
-            });
-        }
-    });
-
-    // --- GLOBAL HELPER: Move Row to Read Table ---
-    function transitionRowToReadTable(row) {
-        const tbodyRead = document.getElementById('tbody-read');
-        const tbodyUnread = document.getElementById('tbody-unread');
-        if (!tbodyRead || !row) return;
-
-        // 1. Remove empty state from Read table if it exists
-        const emptyReadRow = document.getElementById('emptyReadRow');
-        if (emptyReadRow) emptyReadRow.remove();
-
-        // 2. Morph the row's styling to match "Read" alerts
-        row.className = 'bg-light log-row';
-        row.style.opacity = '1';
-        row.style.transform = 'none';
-
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 5) {
-            // Time cell
-            const timeSpan = cells[0].querySelector('span');
-            if (timeSpan) {
-                timeSpan.classList.remove('text-dark', 'fw-bold');
-                timeSpan.classList.add('text-secondary', 'fw-semibold');
+        function stopAlertPolling() {
+            isLoggingOutOrUnloading = true;
+            if (alertInterval) {
+                clearInterval(alertInterval);
+                alertInterval = null;
             }
-            // Store cell
-            cells[1].className = 'text-muted';
-            // Badge cell
-            const badgeSpan = cells[2].querySelector('.badge');
-            if (badgeSpan) {
-                badgeSpan.className = 'badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm';
+            if (activePollAbortController) {
+                activePollAbortController.abort();
+                activePollAbortController = null;
             }
-            // Description cell (Spans across the empty button space)
-            cells[3].className = 'text-muted text-truncate pe-4';
-            cells[3].setAttribute('colspan', '2');
-            // Remove Action button cell
-            cells[4].remove();
         }
 
-        // 3. Prepend to top of Read table
-        tbodyRead.prepend(row);
-
-        // 4. If Unread is now empty, inject empty state UI
-        if (tbodyUnread && tbodyUnread.querySelectorAll('.log-row').length === 0) {
-            tbodyUnread.innerHTML = `
-                <tr id="emptyUnreadRow">
-                    <td colspan="5" class="text-center py-5 bg-white">
-                        <i class="fa-solid fa-check-double fa-3x text-success opacity-50 mb-3"></i>
-                        <h5 class="fw-bold text-secondary">All Caught Up!</h5>
-                        <p class="text-muted small">You have no unread security logs.</p>
-                    </td>
-                </tr>
-            `;
+        function getAntiForgeryHeaders() {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (tokenInput && tokenInput.value) {
+                headers['RequestVerificationToken'] = tokenInput.value;
+            }
+            return headers;
         }
-    }
 
-    // --- AJAX: Mark Single Alert As Read (From Dropdown) ---
-    function markAlertAsRead(event, alertId) {
-        event.preventDefault();
-        event.stopPropagation();
+        document.addEventListener('DOMContentLoaded', function () {
+            const dropdownEl = document.getElementById('userProfileDropdown');
+            if (dropdownEl) {
+                const dropdownMenu = dropdownEl.nextElementSibling;
+                let isClosing = false;
 
-        fetch(`/SecurityAlerts/MarkAsRead?alertId=${alertId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // 1. Clear from Dropdown
-                const alertElement = document.getElementById(`alert-item-${alertId}`);
-                if (alertElement) alertElement.remove();
+                dropdownEl.parentElement.addEventListener('hide.bs.dropdown', function (e) {
+                    if (isClosing) return;
+                    e.preventDefault();
+                    isClosing = true;
+                    dropdownMenu.classList.add('collapsing-out');
 
-                const remainingAlerts = document.querySelectorAll('.alert-dropdown-item').length;
-                const badge = document.getElementById('alertBadge');
-                const countSpan = document.getElementById('alertCount');
-                const readAllBtn = document.getElementById('readAllBtn');
+                    setTimeout(() => {
+                        dropdownMenu.classList.remove('collapsing-out');
+                        const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
+                        if (bsDropdown) bsDropdown.hide();
+                        isClosing = false;
+                    }, 170);
+                });
+            }
 
-                if (remainingAlerts === 0) {
+            // Immediately stop polling if user clicks Logout
+            const logoutForm = document.getElementById('logoutForm');
+            if (logoutForm) {
+                logoutForm.addEventListener('submit', function () {
+                    stopAlertPolling();
+                });
+            }
+
+            // Start polling every 15 seconds only for authenticated sessions
+            alertInterval = setInterval(fetchLiveAlerts, 15000);
+        });
+
+        // Stop polling and abort pending fetch requests when navigating away
+        window.addEventListener('beforeunload', stopAlertPolling);
+        window.addEventListener('pagehide', stopAlertPolling);
+
+        // --- GLOBAL HELPER: Move Row to Read Table ---
+        function transitionRowToReadTable(row) {
+            const tbodyRead = document.getElementById('tbody-read');
+            const tbodyUnread = document.getElementById('tbody-unread');
+            if (!tbodyRead || !row) return;
+
+            // 1. Remove empty state from Read table if it exists
+            const emptyReadRow = document.getElementById('emptyReadRow');
+            if (emptyReadRow) emptyReadRow.remove();
+
+            // 2. Morph the row's styling to match "Read" alerts
+            row.className = 'bg-light log-row';
+            row.style.opacity = '1';
+            row.style.transform = 'none';
+
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 5) {
+                // Time cell
+                const timeSpan = cells[0].querySelector('span');
+                if (timeSpan) {
+                    timeSpan.classList.remove('text-dark', 'fw-bold');
+                    timeSpan.classList.add('text-secondary', 'fw-semibold');
+                }
+                // Store cell
+                cells[1].className = 'text-muted';
+                // Badge cell
+                const badgeSpan = cells[2].querySelector('.badge');
+                if (badgeSpan) {
+                    badgeSpan.className = 'badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm';
+                }
+                // Description cell (Spans across the empty button space)
+                cells[3].className = 'text-muted text-truncate pe-4';
+                cells[3].setAttribute('colspan', '2');
+                // Remove Action button cell
+                cells[4].remove();
+            }
+
+            // 3. Prepend to top of Read table
+            tbodyRead.prepend(row);
+
+            // 4. If Unread is now empty, inject empty state UI
+            if (tbodyUnread && tbodyUnread.querySelectorAll('.log-row').length === 0) {
+                tbodyUnread.innerHTML = `
+                    <tr id="emptyUnreadRow">
+                        <td colspan="5" class="text-center py-5 bg-white">
+                            <i class="fa-solid fa-check-double fa-3x text-success opacity-50 mb-3"></i>
+                            <h5 class="fw-bold text-secondary">All Caught Up!</h5>
+                            <p class="text-muted small">You have no unread security logs.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // --- AJAX: Mark Single Alert As Read (From Dropdown) ---
+        async function markAlertAsRead(event, alertId) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (isLoggingOutOrUnloading) return;
+
+            try {
+                const response = await fetch(`/SecurityAlerts/MarkAsRead?alertId=${alertId}`, {
+                    method: 'POST',
+                    headers: getAntiForgeryHeaders()
+                });
+
+                if (!response.ok || response.redirected) return;
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) return;
+
+                const data = await response.json();
+                if (data.success) {
+                    // 1. Clear from Dropdown
+                    const alertElement = document.getElementById(`alert-item-${alertId}`);
+                    if (alertElement) alertElement.remove();
+
+                    const remainingAlerts = document.querySelectorAll('.alert-dropdown-item').length;
+                    const badge = document.getElementById('alertBadge');
+                    const countSpan = document.getElementById('alertCount');
+                    const readAllBtn = document.getElementById('readAllBtn');
+
+                    if (remainingAlerts === 0) {
+                        if (badge) badge.remove();
+                        if (readAllBtn) readAllBtn.style.display = 'none';
+                        const scrollContainer = document.getElementById('alertListContainer');
+                        if (scrollContainer) {
+                            scrollContainer.innerHTML = `
+                                <div class="dropdown-item py-4 text-muted text-center">
+                                    <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i><br />
+                                    No unread alerts.
+                                </div>`;
+                        }
+                    } else if (countSpan) {
+                        countSpan.textContent = remainingAlerts > 9 ? "9+" : remainingAlerts;
+                    }
+                    currentAlertCount = remainingAlerts;
+
+                    // 2. Sync with Index Page (Animate & Move)
+                    const indexRow = document.getElementById('alert-row-' + alertId);
+                    if (indexRow) {
+                        let unreadCountBtn = document.getElementById('unreadCountBtn');
+                        let readCountBtn = document.getElementById('readCountBtn');
+                        if (unreadCountBtn && readCountBtn) {
+                            unreadCountBtn.innerText = Math.max(0, parseInt(unreadCountBtn.innerText) - 1);
+                            readCountBtn.innerText = parseInt(readCountBtn.innerText) + 1;
+                        }
+
+                        indexRow.style.opacity = '0';
+                        indexRow.style.transform = 'translateX(20px)';
+                        setTimeout(() => transitionRowToReadTable(indexRow), 300);
+                    }
+                }
+            } catch (error) {
+                console.debug('Mark as read skipped or failed:', error);
+            }
+        }
+
+        // --- AJAX: Mark ALL Alerts As Read (From Dropdown) ---
+        async function markAllAlertsAsRead(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (isLoggingOutOrUnloading) return;
+
+            try {
+                const response = await fetch('/SecurityAlerts/MarkAllAsRead', {
+                    method: 'POST',
+                    headers: getAntiForgeryHeaders()
+                });
+
+                if (!response.ok || response.redirected) return;
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) return;
+
+                const data = await response.json();
+                if (data.success) {
+                    // Clear Dropdown UI completely
+                    const badge = document.getElementById('alertBadge');
                     if (badge) badge.remove();
+
+                    const readAllBtn = document.getElementById('readAllBtn');
                     if (readAllBtn) readAllBtn.style.display = 'none';
-                    const scrollContainer = document.getElementById('alertListContainer');
-                    if (scrollContainer) {
-                        scrollContainer.innerHTML = `
+
+                    const listContainer = document.getElementById('alertListContainer');
+                    if (listContainer) {
+                        listContainer.innerHTML = `
                             <div class="dropdown-item py-4 text-muted text-center">
                                 <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i><br />
                                 No unread alerts.
                             </div>`;
                     }
-                } else if (countSpan) {
-                    countSpan.textContent = remainingAlerts > 9 ? "9+" : remainingAlerts;
-                }
-                currentAlertCount = remainingAlerts;
+                    currentAlertCount = 0;
 
-                // 2. Sync with Index Page (Animate & Move)
-                const indexRow = document.getElementById('alert-row-' + alertId);
-                if (indexRow) {
-                    let unreadCountBtn = document.getElementById('unreadCountBtn');
-                    let readCountBtn = document.getElementById('readCountBtn');
-                    if (unreadCountBtn && readCountBtn) {
-                        unreadCountBtn.innerText = Math.max(0, parseInt(unreadCountBtn.innerText) - 1);
-                        readCountBtn.innerText = parseInt(readCountBtn.innerText) + 1;
-                    }
+                    // Sync with Index Page (Bulk Move)
+                    const tbodyUnread = document.getElementById('tbody-unread');
+                    if (tbodyUnread) {
+                        const rows = Array.from(tbodyUnread.querySelectorAll('.log-row'));
+                        const rowCount = rows.length;
 
-                    indexRow.style.opacity = '0';
-                    indexRow.style.transform = 'translateX(20px)';
-                    setTimeout(() => transitionRowToReadTable(indexRow), 300);
-                }
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
+                        if (rowCount > 0) {
+                            rows.forEach(r => transitionRowToReadTable(r));
 
-    // --- AJAX: Mark ALL Alerts As Read (From Dropdown) ---
-    function markAllAlertsAsRead(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        fetch('/SecurityAlerts/MarkAllAsRead', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Clear Dropdown UI completely
-                const badge = document.getElementById('alertBadge');
-                if (badge) badge.remove();
-
-                const readAllBtn = document.getElementById('readAllBtn');
-                if (readAllBtn) readAllBtn.style.display = 'none';
-
-                const listContainer = document.getElementById('alertListContainer');
-                if (listContainer) {
-                    listContainer.innerHTML = `
-                        <div class="dropdown-item py-4 text-muted text-center">
-                            <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i><br />
-                            No unread alerts.
-                        </div>`;
-                }
-                currentAlertCount = 0;
-
-                // Sync with Index Page (Bulk Move)
-                const tbodyUnread = document.getElementById('tbody-unread');
-                if (tbodyUnread) {
-                    const rows = Array.from(tbodyUnread.querySelectorAll('.log-row'));
-                    const rowCount = rows.length;
-
-                    if (rowCount > 0) {
-                        // Rapidly move all rows over using our helper
-                        rows.forEach(r => transitionRowToReadTable(r));
-
-                        let unreadCountBtn = document.getElementById('unreadCountBtn');
-                        let readCountBtn = document.getElementById('readCountBtn');
-                        if (unreadCountBtn && readCountBtn) {
-                            readCountBtn.innerText = parseInt(readCountBtn.innerText) + rowCount;
-                            unreadCountBtn.innerText = "0";
+                            let unreadCountBtn = document.getElementById('unreadCountBtn');
+                            let readCountBtn = document.getElementById('readCountBtn');
+                            if (unreadCountBtn && readCountBtn) {
+                                readCountBtn.innerText = parseInt(readCountBtn.innerText) + rowCount;
+                                unreadCountBtn.innerText = "0";
+                            }
                         }
                     }
                 }
+            } catch (err) {
+                console.debug("Mark all alerts as read skipped or failed:", err);
             }
-        })
-        .catch(err => console.error("Error marking all alerts as read", err));
-    }
+        }
 
-    // --- NEW: LIVE POLLING SYSTEM ---
-    let currentAlertCount = @(topAlerts.Count());
+        // --- LIVE POLLING SYSTEM ---
+        function getRelativeTimeJS(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
 
-    function getRelativeTimeJS(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInSeconds = Math.floor((now - date) / 1000);
+            if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours} hrs, ${diffInMinutes % 60} mins ago`;
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 30) return `${diffInDays} days, ${diffInHours % 24} hrs ago`;
 
-        if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-        const diffInMinutes = Math.floor(diffInSeconds / 60);
-        if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) return `${diffInHours} hrs, ${diffInMinutes % 60} mins ago`;
-        const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays < 30) return `${diffInDays} days, ${diffInHours % 24} hrs ago`;
+            return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+        }
 
-        return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-    }
+        async function fetchLiveAlerts() {
+            if (isLoggingOutOrUnloading) return;
 
-    function fetchLiveAlerts() {
-        fetch('/SecurityAlerts/GetLiveAlerts')
-            .then(response => response.json())
-            .then(data => {
+            try {
+                if (activePollAbortController) {
+                    activePollAbortController.abort();
+                }
+                activePollAbortController = new AbortController();
+
+                const response = await fetch('/SecurityAlerts/GetLiveAlerts', {
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: activePollAbortController.signal,
+                    cache: 'no-store'
+                });
+
+                // If redirected to login or unauthorized, stop polling immediately
+                if (!response.ok || response.redirected) {
+                    stopAlertPolling();
+                    return;
+                }
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    stopAlertPolling();
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data || typeof data.count === 'undefined') return;
+
                 if (data.count > currentAlertCount) {
                     currentAlertCount = data.count;
 
@@ -449,7 +542,7 @@
                     let badge = document.getElementById('alertBadge');
                     const bellLink = document.getElementById('alertsDropdown');
 
-                    if (!badge && data.count > 0) {
+                    if (!badge && data.count > 0 && bellLink) {
                         badge = document.createElement('span');
                         badge.id = 'alertBadge';
                         badge.className = 'position-absolute top-25 start-75 translate-middle badge rounded-pill bg-danger border border-light';
@@ -457,18 +550,19 @@
                         badge.innerHTML = `<span id="alertCount">${data.count > 9 ? "9+" : data.count}</span><span class="visually-hidden">New alerts</span>`;
                         bellLink.appendChild(badge);
                     } else if (badge) {
-                        document.getElementById('alertCount').textContent = data.count > 9 ? "9+" : data.count;
+                        const countEl = document.getElementById('alertCount');
+                        if (countEl) countEl.textContent = data.count > 9 ? "9+" : data.count;
                     }
 
                     // Rebuild the List Container
                     const listContainer = document.getElementById('alertListContainer');
-                    if (listContainer && data.alerts.length > 0) {
+                    if (listContainer && Array.isArray(data.alerts) && data.alerts.length > 0) {
                         listContainer.innerHTML = '';
                         data.alerts.forEach(alert => {
                             const blockNav = !alert.actionUrl || alert.actionUrl === '#';
                             const html = `
                                 <a class="dropdown-item py-3 border-bottom text-wrap alert-dropdown-item"
-                                   href="${alert.actionUrl}"
+                                   href="${alert.actionUrl || '#'}"
                                    ${blockNav ? 'onclick="event.preventDefault(); event.stopPropagation();"' : ''}
                                    id="alert-item-${alert.alertId}">
                                     <div class="fw-bold fs-6 alert-item-title">${alert.alertTypeName}</div>
@@ -487,10 +581,14 @@
                         });
                     }
                 }
-            })
-            .catch(err => console.error("Error fetching live alerts:", err));
-    }
-
-    // Poll the server every 15 seconds (15000 ms)
-    setInterval(fetchLiveAlerts, 15000);
-</script>
+            } catch (err) {
+                // Suppress AbortError and network interruptions during logout/navigation
+                if (err.name !== 'AbortError') {
+                    console.debug("Background poll skipped:", err);
+                }
+            } finally {
+                activePollAbortController = null;
+            }
+        }
+    </script>
+}

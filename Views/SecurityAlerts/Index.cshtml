@@ -152,7 +152,7 @@
                                 </td>
                                 <td class="pe-4 text-end text-nowrap">
                                     <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
-                                            onclick="markLogAsRead(@alert.AlertId)"
+                                            onclick="markLogAsRead(@alert.AlertId, event)"
                                             title="Mark as Read">
                                         <i class="fa-solid fa-check me-1"></i>Read
                                     </button>
@@ -261,6 +261,44 @@
 @section Scripts {
     <script>
         let currentModalAlertId = null;
+        let indexAlertInterval = null;
+        let isIndexUnloading = false;
+        let activeIndexPollAbortController = null;
+
+        function stopIndexAlertPolling() {
+            isIndexUnloading = true;
+            if (indexAlertInterval) {
+                clearInterval(indexAlertInterval);
+                indexAlertInterval = null;
+            }
+            if (activeIndexPollAbortController) {
+                activeIndexPollAbortController.abort();
+                activeIndexPollAbortController = null;
+            }
+        }
+
+        function getIndexAntiForgeryHeaders() {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (tokenInput && tokenInput.value) {
+                headers['RequestVerificationToken'] = tokenInput.value;
+            }
+            return headers;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const logoutForm = document.getElementById('logoutForm');
+            if (logoutForm) {
+                logoutForm.addEventListener('submit', stopIndexAlertPolling);
+            }
+            indexAlertInterval = setInterval(fetchLiveIndexAlerts, 15000);
+        });
+
+        window.addEventListener('beforeunload', stopIndexAlertPolling);
+        window.addEventListener('pagehide', stopIndexAlertPolling);
 
         // Tab Switcher
         function switchTab(tabName) {
@@ -282,7 +320,6 @@
             const input = document.getElementById('logSearchInput').value.toLowerCase();
             const clearBtn = document.getElementById('clearLogSearchBtn');
 
-            // Show the clear button if there is text, hide it if empty
             if (clearBtn) {
                 clearBtn.style.display = input.trim().length > 0 ? 'block' : 'none';
             }
@@ -309,7 +346,6 @@
         function openAlertModal(id, type, store, desc, url, isRead = false) {
             currentModalAlertId = id;
 
-            // Remove the exclamation/info icon when viewing a Read alert
             const modalLogType = document.getElementById('modalLogType');
             if (isRead) {
                 modalLogType.textContent = type;
@@ -332,12 +368,11 @@
             const clonedBtn = btnReviewed.cloneNode(true);
             btnReviewed.replaceWith(clonedBtn);
 
-            // Hide "Mark as Read" button if already in Read section
             clonedBtn.style.display = isRead ? 'none' : 'block';
 
             if (!isRead) {
-                clonedBtn.addEventListener('click', function () {
-                    markLogAsRead(currentModalAlertId);
+                clonedBtn.addEventListener('click', function (e) {
+                    markLogAsRead(currentModalAlertId, e);
                     var modalInstance = bootstrap.Modal.getInstance(document.getElementById('alertLogModal'));
                     if (modalInstance) modalInstance.hide();
                 });
@@ -348,24 +383,32 @@
         }
 
         // AJAX: Mark as Read (From Index Table Button)
-        function markLogAsRead(alertId) {
-            if (!event) event = window.event;
-            if (event.stopPropagation) event.stopPropagation();
+        async function markLogAsRead(alertId, e) {
+            const evt = e || window.event;
+            if (evt && evt.stopPropagation) evt.stopPropagation();
+
+            if (isIndexUnloading) return;
 
             const row = document.getElementById('alert-row-' + alertId);
             if (!row) return;
 
-            fetch(`/SecurityAlerts/MarkAsRead?alertId=${alertId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
+            try {
+                const response = await fetch(`/SecurityAlerts/MarkAsRead?alertId=${alertId}`, {
+                    method: 'POST',
+                    headers: getIndexAntiForgeryHeaders()
+                });
+
+                if (!response.ok || response.redirected) return;
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) return;
+
+                const data = await response.json();
                 if (data.success) {
                     // 1. Update Index Counters
                     let unreadCountBtn = document.getElementById('unreadCountBtn');
                     let readCountBtn = document.getElementById('readCountBtn');
-                    if(unreadCountBtn && readCountBtn) {
+                    if (unreadCountBtn && readCountBtn) {
                         unreadCountBtn.innerText = Math.max(0, parseInt(unreadCountBtn.innerText) - 1);
                         readCountBtn.innerText = parseInt(readCountBtn.innerText) + 1;
                     }
@@ -393,7 +436,7 @@
                     } else if (countSpan) {
                         countSpan.textContent = remaining > 9 ? "9+" : remaining;
                     }
-                    // Inform the live poller so it doesn't immediately overwrite us
+
                     if (typeof currentAlertCount !== 'undefined') currentAlertCount = remaining;
 
                     // 3. Animate and MOVE row from Unread to Read table
@@ -402,13 +445,12 @@
 
                     setTimeout(() => transitionRowToReadTable(row), 300);
                 }
-            })
-            .catch(err => console.error("Error updating log status", err));
+            } catch (err) {
+                console.debug("Mark log as read skipped or failed:", err);
+            }
         }
 
         // --- LIVE INDEX POLLING SYSTEM ---
-
-        // JS Time formatter helper
         function getRelativeTimeJS(dateString) {
             const date = new Date(dateString);
             const now = new Date();
@@ -425,74 +467,98 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
         }
 
-        function fetchLiveIndexAlerts() {
-            fetch('/SecurityAlerts/GetLiveAlerts')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.alerts && data.alerts.length > 0) {
-                        const tbodyUnread = document.getElementById('tbody-unread');
-                        const emptyRow = document.getElementById('emptyUnreadRow');
-                        let newAlertsAdded = 0;
+        async function fetchLiveIndexAlerts() {
+            if (isIndexUnloading) return;
 
-                        // Reverse loop so the newest alert gets prepended at the very top
-                        data.alerts.reverse().forEach(alert => {
+            try {
+                if (activeIndexPollAbortController) {
+                    activeIndexPollAbortController.abort();
+                }
+                activeIndexPollAbortController = new AbortController();
 
-                            // Only add if the row doesn't already exist on the page
-                            if (!document.getElementById('alert-row-' + alert.alertId)) {
-                                if (emptyRow) emptyRow.remove();
+                const response = await fetch('/SecurityAlerts/GetLiveAlerts', {
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: activeIndexPollAbortController.signal,
+                    cache: 'no-store'
+                });
 
-                                // Escape single quotes to prevent breaking the onclick function
-                                const safeDesc = alert.description.replace(/'/g, "\\'");
-                                const safeStore = alert.storeName.replace(/'/g, "\\'");
-                                const typeName = alert.alertTypeName;
-                                const safeUrl = (!alert.actionUrl || alert.actionUrl === '#') ? '' : alert.actionUrl;
+                // Stop polling if unauthorized or redirected to login
+                if (!response.ok || response.redirected) {
+                    stopIndexAlertPolling();
+                    return;
+                }
 
-                                const tr = document.createElement('tr');
-                                tr.id = `alert-row-${alert.alertId}`;
-                                tr.className = "bg-white border-start border-4 position-relative log-row";
-                                tr.style.transition = "all 0.3s ease";
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    stopIndexAlertPolling();
+                    return;
+                }
 
-                                tr.innerHTML = `
-                                    <td class="ps-4" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
-                                        <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">${getRelativeTimeJS(alert.timeString)}</span>
-                                    </td>
-                                    <td class="fw-semibold text-secondary" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
-                                        ${alert.storeName}
-                                    </td>
-                                    <td onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
-                                        <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
-                                            <i class="fa-solid fa-circle-exclamation me-1"></i>${typeName}
-                                        </span>
-                                    </td>
-                                    <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
-                                        ${alert.description}
-                                    </td>
-                                    <td class="pe-4 text-end text-nowrap">
-                                        <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
-                                                onclick="markLogAsRead(${alert.alertId})"
-                                                title="Mark as Read">
-                                            <i class="fa-solid fa-check me-1"></i>Read
-                                        </button>
-                                    </td>
-                                `;
+                const data = await response.json();
+                if (data && Array.isArray(data.alerts) && data.alerts.length > 0) {
+                    const tbodyUnread = document.getElementById('tbody-unread');
+                    const emptyRow = document.getElementById('emptyUnreadRow');
+                    let newAlertsAdded = 0;
 
-                                tbodyUnread.prepend(tr);
-                                newAlertsAdded++;
-                            }
-                        });
+                    data.alerts.slice().reverse().forEach(alert => {
+                        if (!document.getElementById('alert-row-' + alert.alertId)) {
+                            if (emptyRow) emptyRow.remove();
 
-                        if (newAlertsAdded > 0) {
-                            // Update the Unread Tab Counter
-                            const unreadCountBtn = document.getElementById('unreadCountBtn');
-                            let currentCount = parseInt(unreadCountBtn.innerText) || 0;
-                            unreadCountBtn.innerText = currentCount + newAlertsAdded;
+                            const safeDesc = alert.description.replace(/'/g, "\\'");
+                            const safeStore = alert.storeName.replace(/'/g, "\\'");
+                            const typeName = alert.alertTypeName;
+                            const safeUrl = (!alert.actionUrl || alert.actionUrl === '#') ? '' : alert.actionUrl;
 
-                            // Re-apply live search just in case the user is currently typing
-                            filterLogs();
+                            const tr = document.createElement('tr');
+                            tr.id = `alert-row-${alert.alertId}`;
+                            tr.className = "bg-white border-start border-4 position-relative log-row";
+                            tr.style.transition = "all 0.3s ease";
+
+                            tr.innerHTML = `
+                                <td class="ps-4" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
+                                    <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">${getRelativeTimeJS(alert.timeString)}</span>
+                                </td>
+                                <td class="fw-semibold text-secondary" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
+                                    ${alert.storeName}
+                                </td>
+                                <td onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                        <i class="fa-solid fa-circle-exclamation me-1"></i>${typeName}
+                                    </span>
+                                </td>
+                                <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
+                                    ${alert.description}
+                                </td>
+                                <td class="pe-4 text-end text-nowrap">
+                                    <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
+                                            onclick="markLogAsRead(${alert.alertId}, event)"
+                                            title="Mark as Read">
+                                        <i class="fa-solid fa-check me-1"></i>Read
+                                    </button>
+                                </td>
+                            `;
+
+                            tbodyUnread.prepend(tr);
+                            newAlertsAdded++;
                         }
+                    });
+
+                    if (newAlertsAdded > 0) {
+                        const unreadCountBtn = document.getElementById('unreadCountBtn');
+                        let currentCount = parseInt(unreadCountBtn.innerText) || 0;
+                        unreadCountBtn.innerText = currentCount + newAlertsAdded;
+
+                        filterLogs();
                     }
-                })
-                .catch(err => console.error("Error fetching live index alerts:", err));
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.debug("Background index poll skipped:", err);
+                }
+            } finally {
+                activeIndexPollAbortController = null;
+            }
         }
 
         function transitionRowToReadTable(unreadRow) {
@@ -502,14 +568,12 @@
 
             if (emptyReadRow) emptyReadRow.remove();
 
-            // Extract text from existing Unread row cells
             const cells = unreadRow.querySelectorAll('td');
             const timeText = cells[0].innerText.trim();
             const storeText = cells[1].innerText.trim();
             const typeText = cells[2].innerText.trim();
             const descText = cells[3].innerText.trim();
 
-            // Reuse existing onclick from the first cell, swapping `false)` -> `true)`
             const origOnClick = cells[0].getAttribute('onclick') || '';
             const readOnClick = origOnClick.replace(/,\s*false\s*\)$/, ', true)');
 
@@ -538,7 +602,6 @@
             unreadRow.remove();
             tbodyRead.prepend(readTr);
 
-            // Show "All Caught Up!" if no unread rows remain
             if (tbodyUnread.querySelectorAll('.log-row').length === 0) {
                 tbodyUnread.innerHTML = `
                     <tr id="emptyUnreadRow">
@@ -552,8 +615,5 @@
 
             filterLogs();
         }
-
-        // Poll every 15 seconds
-        setInterval(fetchLiveIndexAlerts, 15000);
     </script>
 }

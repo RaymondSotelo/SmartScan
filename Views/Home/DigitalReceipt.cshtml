@@ -1,0 +1,385 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Receipt - SmartScan Retail</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="icon" type="image/png" href="~/images/SmartScanLogo.png" asp-append-version="true" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body class="d-flex flex-column justify-content-center align-items-center p-2 p-sm-3">
+
+    <!-- Viewport-Locked Outer Container matching GenerateReceipt -->
+    <div class="card shadow border-0 rounded-4 d-flex flex-column bg-white w-100 mx-auto"
+         style="height: calc(100dvh - 32px); max-height: 860px; max-width: 560px;">
+
+        <!-- Top Navigation Header -->
+        <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+             style="background-color: #1162a3;">
+            <div class="d-flex align-items-center gap-2">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fa-solid fa-receipt me-2"></i>Digital Receipt
+                </h6>
+                <!-- Dynamic Status Badge in Header -->
+                <span id="headerStatusBadge" class="badge rounded-pill px-3 py-1 fw-bold ms-1 shadow-sm" style="font-size: 11px;">
+                    <i class="fa-solid fa-circle-check me-1"></i>Completed
+                </span>
+            </div>
+
+            <!-- Save to Phone Button -->
+            <button type="button" id="savePhoneBtn"
+                    class="btn btn-sm btn-light rounded-pill px-3 fw-semibold text-primary shadow-sm d-flex align-items-center"
+                    style="background-color: #dbeafe; border-color: #cfe2f3 !important; height: 36px;"
+                    onclick="saveToPhoneGallery()">
+                <i class="fa-solid fa-download me-1"></i>Save Image
+            </button>
+        </div>
+
+        <!-- Interior Scrollable Workspace -->
+        <div class="card-body p-3 p-sm-4 flex-grow-1 d-flex flex-column align-items-center bg-light bg-opacity-50 overflow-y-auto no-scrollbar" style="min-height: 0;">
+
+            <!-- Thermal POS Paper Card (Identical to GenerateReceipt) -->
+            <div id="printableReceipt" class="receipt-paper w-100 p-4 border bg-white rounded-4 shadow-sm mx-auto my-auto"
+                 style="max-width: 440px;">
+
+                <!-- Top Status Indicator -->
+                <div class="text-end mb-2">
+                    <span id="receiptStatusBadge" class="badge rounded-pill px-3 py-1 fw-bold shadow-sm" style="font-size: 11px;">
+                        <i class="fa-solid fa-circle-check me-1"></i>Completed
+                    </span>
+                </div>
+
+                <!-- Store Branding & Header -->
+                <div class="text-center mb-3">
+                    <div class="d-inline-flex p-2 rounded-circle bg-primary bg-opacity-10 text-primary mb-1">
+                        <img src="/images/SmartScanLogo.png"
+                             alt="Smart Scan Logo"
+                             width="48"
+                             height="48"
+                             class="object-fit-contain"
+                             onerror="this.style.display='none'" />
+                    </div>
+                    <h5 class="fw-bold text-uppercase mb-0 text-dark" style="letter-spacing: 0.5px; font-size: 1.15rem;">
+                        SmartScan Retail
+                    </h5>
+                    <p class="text-muted small mb-1" style="font-size: 11px;">
+                        Automated Vision Checkout System
+                    </p>
+                    <span class="badge rounded-pill bg-light text-secondary border fw-medium px-3 py-1" style="font-size: 10px;">
+                        OFFICIAL TRANSACTION RECEIPT
+                    </span>
+                </div>
+
+                <div class="receipt-dashed-line"></div>
+
+                <!-- Metadata -->
+                <div class="small text-secondary mb-2" style="font-size: 12px;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Receipt #:</span>
+                        <strong class="font-monospace text-dark" id="receiptNumberDisplay">#REC-000000</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Date & Time:</span>
+                        <span class="text-dark" id="receiptDateDisplay">--</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Cashier / POS:</span>
+                        <span class="text-dark" id="receiptCashierDisplay">Main Station</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1" id="receiptCustomerRow">
+                        <span>Customer:</span>
+                        <span class="text-dark fw-semibold" id="receiptCustomerDisplay">Walk-in Guest</span>
+                    </div>
+                    <!-- Due Date Row (Strictly for Store Credits) -->
+                    <div class="justify-content-between" id="receiptDueDateRow" style="display: none !important;">
+                        <span class="text-danger fw-bold">Due Date:</span>
+                        <span class="text-danger fw-bold font-monospace" id="receiptDueDateDisplay"></span>
+                    </div>
+                </div>
+
+                <div class="receipt-dashed-line"></div>
+
+                <!-- Itemized Purchase List -->
+                <div class="py-1">
+                    <div class="d-flex justify-content-between text-muted fw-bold text-uppercase mb-2" style="font-size: 11px;">
+                        <span>Item Description</span>
+                        <span class="text-end">Total</span>
+                    </div>
+                    <div id="receiptItemList" class="d-flex flex-column gap-2 mb-2 no-scrollbar" style="max-height: 220px; overflow-y: auto;">
+                        <div class="text-center text-muted small py-3">Loading receipt items...</div>
+                    </div>
+                </div>
+
+                <div class="receipt-double-line"></div>
+
+                <!-- Financial Summary -->
+                <div class="small" style="font-size: 12px;">
+                    <div class="d-flex justify-content-between text-secondary mb-1">
+                        <span>Total Quantity:</span>
+                        <span class="fw-semibold text-dark" id="receiptTotalQty">0 units</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mb-2">
+                        <span>Subtotal:</span>
+                        <span class="fw-semibold text-dark" id="receiptSubtotal">₱0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pt-1 border-top">
+                        <span class="fs-6 fw-bold text-dark" id="receiptTotalLabel">TOTAL PAID:</span>
+                        <span class="fs-5 fw-bold text-success font-monospace" id="receiptGrandTotal">₱0.00</span>
+                    </div>
+
+                    <!-- Cash Tender Details -->
+                    <div id="cashDetailsSection" style="display: none;">
+                        <div class="d-flex justify-content-between text-secondary mb-1">
+                            <span>Amount Paid:</span>
+                            <span class="fw-semibold text-dark" id="receiptAmountPaid">₱0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between text-secondary mb-2">
+                            <span>Change:</span>
+                            <span class="fw-bold text-success font-monospace" id="receiptChange">₱0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between text-secondary pt-1">
+                        <span>Payment Tender:</span>
+                        <span id="receiptPaymentMethodBadge"></span>
+                    </div>
+                </div>
+
+                <div class="receipt-dashed-line"></div>
+
+                <!-- Footer & Barcode -->
+                <div class="text-center pt-1">
+                    <div class="barcode-strip mb-2"></div>
+                    <span class="font-monospace small text-muted d-block mb-1" id="barcodeNumber" style="letter-spacing: 2px;">
+                        *00000000*
+                    </span>
+                    <p class="small text-muted mb-0 fst-italic" style="font-size: 10px;">
+                        Thank you for shopping with us!<br />
+                        Verified by SmartScan Automated Vision System
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return "";
+            const el = document.createElement("div");
+            el.textContent = String(value);
+            return el.innerHTML;
+        }
+
+        function getPaymentBadgeHtml(methodName) {
+            const safeName = escapeHtml(methodName || 'Cash In Hand');
+            const lower = safeName.toLowerCase();
+
+            if (lower.includes("store")) {
+                return `
+                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
+                          style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba;">
+                        <i class="fa-solid fa-coins me-1"></i>${safeName}
+                    </span>
+                `;
+            }
+            if (lower.includes("gcash") || lower.includes("ewallet") || lower.includes("e-wallet")) {
+                return `
+                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-success"
+                          style="font-size: 11px; background-color: #dcfce7; border: 1.5px solid #bbf7d0;">
+                        <i class="fa-solid fa-mobile-screen-button me-1"></i>${safeName}
+                    </span>
+                `;
+            }
+            if (lower.includes("credit")) {
+                return `
+                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
+                          style="font-size: 11px; background-color: #f3e8ff; color: #6b21a8; border: 1.5px solid #e9d5ff;">
+                        <i class="fa-solid fa-credit-card me-1"></i>${safeName}
+                    </span>
+                `;
+            }
+            return `
+                <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-primary"
+                      style="font-size: 11px; background-color: #e0f2fe; border: 1.5px solid #bae6fd;">
+                    <i class="fa-solid fa-money-bill-wave me-1"></i>${safeName}
+                </span>
+            `;
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = new URLSearchParams(window.location.search).get("d");
+            if (!token) return;
+
+            try {
+                const data = JSON.parse(decodeURIComponent(atob(token)));
+
+                // 1. Status Badge Mapping (3 = Completed, 4 = Pending Settlement)
+                const numericStatusId = parseInt(data.s ?? 3, 10);
+                const headerBadge = document.getElementById("headerStatusBadge");
+                const receiptBadge = document.getElementById("receiptStatusBadge");
+                const totalLabel = document.getElementById("receiptTotalLabel");
+                const grandTotalEl = document.getElementById("receiptGrandTotal");
+
+                if (numericStatusId === 4) {
+                    const pendingHtml = '<i class="fa-solid fa-clock me-1"></i>Pending Settlement';
+                    const pendingStyle = "font-size: 11px; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba;";
+
+                    if (headerBadge) {
+                        headerBadge.className = "badge rounded-pill px-3 py-1 fw-bold ms-1 shadow-sm";
+                        headerBadge.style = pendingStyle;
+                        headerBadge.innerHTML = pendingHtml;
+                    }
+                    if (receiptBadge) {
+                        receiptBadge.className = "badge rounded-pill px-3 py-1 fw-bold shadow-sm";
+                        receiptBadge.style = pendingStyle;
+                        receiptBadge.innerHTML = pendingHtml;
+                    }
+                    if (totalLabel) totalLabel.textContent = "TOTAL DUE:";
+                    if (grandTotalEl) {
+                        grandTotalEl.classList.remove("text-success");
+                        grandTotalEl.classList.add("text-danger");
+                    }
+                } else {
+                    const completedHtml = '<i class="fa-solid fa-circle-check me-1"></i>Completed';
+                    const completedClass = "badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-bold shadow-sm";
+
+                    if (headerBadge) {
+                        headerBadge.className = completedClass + " ms-1";
+                        headerBadge.style = "font-size: 11px;";
+                        headerBadge.innerHTML = completedHtml;
+                    }
+                    if (receiptBadge) {
+                        receiptBadge.className = completedClass;
+                        receiptBadge.style = "font-size: 11px;";
+                        receiptBadge.innerHTML = completedHtml;
+                    }
+                }
+
+                // 2. Metadata
+                const receiptNum = data.r || "#REC-000000";
+                document.getElementById("receiptNumberDisplay").textContent = receiptNum;
+                document.getElementById("barcodeNumber").textContent = `*${receiptNum.replace(/[^0-9A-Z]/gi, '')}*`;
+                document.getElementById("receiptDateDisplay").textContent = data.d || "--";
+                document.getElementById("receiptCashierDisplay").textContent = data.c || "Main Station";
+                document.getElementById("receiptCustomerDisplay").textContent = data.u || "Walk-in Guest";
+
+                // 3. Conditional Due Date (Strictly for Store Credits)
+                const method = data.m || "Cash In Hand";
+                const isStoreCredit = method.toLowerCase().includes("store");
+                const rawDueDate = data.due;
+                const dueDateRow = document.getElementById("receiptDueDateRow");
+                const dueDateDisplay = document.getElementById("receiptDueDateDisplay");
+
+                const hasValidDate = rawDueDate &&
+                                     String(rawDueDate).trim() !== '' &&
+                                     String(rawDueDate).trim() !== '--' &&
+                                     String(rawDueDate).toLowerCase() !== 'null';
+
+                if (isStoreCredit && hasValidDate) {
+                    dueDateDisplay.textContent = rawDueDate;
+                    dueDateRow.style.setProperty("display", "flex", "important");
+                } else {
+                    dueDateDisplay.textContent = '';
+                    dueDateRow.style.setProperty("display", "none", "important");
+                }
+
+                // 4. Itemized Rows
+                const itemsContainer = document.getElementById("receiptItemList");
+                itemsContainer.innerHTML = "";
+                let totalUnits = 0;
+                let calculatedSubtotal = 0;
+
+                if (Array.isArray(data.i) && data.i.length > 0) {
+                    data.i.forEach(arr => {
+                        const name = arr[0] || "Product";
+                        const qty = Number(arr[1]) || 1;
+                        const price = parseFloat(arr[2]) || 0;
+                        const rowTotal = qty * price;
+
+                        totalUnits += qty;
+                        calculatedSubtotal += rowTotal;
+
+                        itemsContainer.innerHTML += `
+                            <div class="d-flex justify-content-between align-items-center" style="font-size: 11px;">
+                                <div class="text-truncate pe-2">
+                                    <span class="fw-bold text-dark">${escapeHtml(name)}</span>
+                                    <small class="text-muted d-block">${qty} x ₱${price.toFixed(2)}</small>
+                                </div>
+                                <span class="font-monospace fw-semibold text-dark text-nowrap">₱${rowTotal.toFixed(2)}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    itemsContainer.innerHTML = `<div class="text-center text-muted small py-2">No individual items recorded.</div>`;
+                }
+
+                // 5. Totals & Tender Details
+                const grandTotal = parseFloat(data.t ?? calculatedSubtotal);
+                document.getElementById("receiptTotalQty").textContent = `${totalUnits} units`;
+                document.getElementById("receiptSubtotal").textContent = `₱${calculatedSubtotal.toFixed(2)}`;
+                document.getElementById("receiptGrandTotal").textContent = `₱${grandTotal.toFixed(2)}`;
+
+                document.getElementById("receiptPaymentMethodBadge").innerHTML = getPaymentBadgeHtml(method);
+
+                // 6. Cash Tender Details
+                const cashSection = document.getElementById("cashDetailsSection");
+                if (method.toLowerCase().includes("cash") && data.p !== undefined && data.p !== "") {
+                    cashSection.style.display = "block";
+                    document.getElementById("receiptAmountPaid").textContent = `₱${ parseFloat(data.p).toFixed(2)}`;
+                    document.getElementById("receiptChange").textContent = `₱${ parseFloat(data.ch || 0).toFixed(2)}`;
+                } else {
+                    cashSection.style.display = "none";
+                }
+            } catch (e) {
+                console.error("Failed to parse digital receipt:", e);
+            }
+        });
+
+        async function saveToPhoneGallery() {
+            const receiptEl = document.getElementById("printableReceipt");
+            const btn = document.getElementById("savePhoneBtn");
+            const itemList = document.getElementById("receiptItemList");
+            if (!receiptEl || typeof html2canvas === "undefined") return;
+
+            const originalMaxHeight = itemList ? itemList.style.maxHeight : "";
+
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Saving...';
+                }
+
+                // Expand scrollable item list so long receipts capture completely
+                if (itemList) itemList.style.maxHeight = "none";
+
+                const canvas = await html2canvas(receiptEl, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: "#ffffff"
+                });
+
+                const recNum = document.getElementById("receiptNumberDisplay")?.textContent?.replace(/[^0-9A-Z-]/gi, '') || "Receipt";
+                const link = document.createElement("a");
+                link.download = `SmartScan-${recNum}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            } catch (err) {
+                console.error("Error saving receipt image:", err);
+            } finally {
+                if (itemList) itemList.style.maxHeight = originalMaxHeight;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-download me-1"></i>Save Image';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
