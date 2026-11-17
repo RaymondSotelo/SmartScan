@@ -34,10 +34,9 @@
                      style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate;">
 
                     <!-- Live Video Stream Container -->
-                    <!-- CHANGED: Added object-fit: contain to prevent cropping on the edges! -->
-                    <div id="videoContainer" class="position-relative w-100 h-100 rounded-4 overflow-hidden bg-black" style="display: none;">
-                        <video id="webcamFeed" autoplay playsinline class="w-100 h-100 rounded-4" style="object-fit: contain;"></video>
-                        <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100 rounded-4" style="pointer-events: none; object-fit: contain;"></canvas>
+                    <div id="videoContainer" class="position-relative w-100 h-100 rounded-4 overflow-hidden" style="display: none;">
+                        <video id="webcamFeed" autoplay playsinline class="w-100 h-100 rounded-4" style="object-fit: cover;"></video>
+                        <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100 rounded-4" style="pointer-events: none;"></canvas>
 
                         <!-- Top Left: YOLO Engine Badge -->
                         <div class="position-absolute top-0 start-0 m-3 z-3" style="pointer-events: none;">
@@ -132,7 +131,6 @@
                                     <th class="border-0 pb-2 text-center" style="width: 45px;">Qty</th>
                                     <th class="border-0 pb-2 text-end">Price</th>
                                     <th class="border-0 pb-2 text-end">Subtotal</th>
-                                    <!-- NEW "LOCK ALL" BATCH BUTTON -->
                                     <th class="border-0 pb-2 text-center" style="width: 85px;">
                                         <button class="btn btn-sm btn-success py-0 px-2 fw-bold shadow-sm" onclick="lockAllItems()" title="Lock all items to scan next batch" style="font-size: 0.7rem;">
                                             <i class="fa-solid fa-lock me-1"></i>LOCK ALL
@@ -585,9 +583,7 @@
             let isProcessingFrame = false;
             let mediaStream = null;
             const recentDetections = [];
-            
-            // This prevents the camera from deleting items when it flickers.
-            const detectionHoldMs = 1500; 
+            const detectionHoldMs = 300;
 
             const priceCache = {};
             let manualItems = [];
@@ -617,7 +613,7 @@
                         const cartItem = manualItems.find(i => i.name === prod.name);
 
                         if (cartItem) {
-                            if (!cartItem.isLocked) { 
+                            if (!cartItem.isLocked) {
                                 const targetQty = Math.min(quantityInFrame, prod.stock);
                                 if (cartItem.qty !== targetQty) {
                                     if (targetQty > cartItem.qty) playBeepSound();
@@ -634,7 +630,7 @@
                                     qty: targetQty,
                                     stock: prod.stock,
                                     isAgeRestricted: prod.isAgeRestricted === true || prod.isAgeRestricted === 1,
-                                    isLocked: false 
+                                    isLocked: false
                                 });
                             }
                         }
@@ -651,7 +647,7 @@
                                 break;
                             }
                         }
-                        
+
                         if (!isSeenByYolo) {
                             manualItems.splice(i, 1);
                         }
@@ -747,7 +743,7 @@
                         qty: 1,
                         stock: product.stock,
                         isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
-                        isLocked: true 
+                        isLocked: true
                     });
 
                     playBeepSound();
@@ -921,7 +917,7 @@
                                 qty: 1,
                                 stock: product.stock,
                                 isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
-                                isLocked: true // Locked to protect from auto-removal
+                                isLocked: true
                             });
 
                             playBeepSound();
@@ -1121,7 +1117,7 @@
                             } else {
                                 if (existing) {
                                     existing.qty++;
-                                    existing.isLocked = true; 
+                                    existing.isLocked = true;
                                 } else {
                                     manualItems.push({
                                         name: product.name,
@@ -1361,7 +1357,7 @@
                         }
 
                         if (priceCache[detected.name] && priceCache[detected.name].notFound) {
-                            continue; 
+                            continue;
                         }
                         validDetections.push(detected);
                     }
@@ -1420,9 +1416,8 @@
                     }
 
                     const yoloCounts = {};
-                    const lowConfidenceItems = {}; 
+                    const lowConfidenceItems = {};
 
-                    // WE NOW COUNT FROM THE SMOOTHED MEMORY BUFFER, NOT THE GLITCHY RAW FRAME
                     for (const detected of recentDetections) {
                         if (detected.confidence >= 80) {
                             yoloCounts[detected.name] = (yoloCounts[detected.name] || 0) + 1;
@@ -1562,7 +1557,7 @@
                         if (result.isConfirmed) {
                             manualItems = [];
                             buildCartAndRender();
-                            
+
                             if (stopBtn && !stopBtn.classList.contains("d-none")) {
                                 stopBtn.click();
                             }
@@ -1621,7 +1616,7 @@
 
                     qtyInput.classList.remove("is-invalid");
                     manualItems[index].qty = newQty;
-                    manualItems[index].isLocked = true; 
+                    manualItems[index].isLocked = true;
 
                     const adjustModal = bootstrap.Modal.getInstance(document.getElementById("adjustQuantityModal"));
                     if (adjustModal) adjustModal.hide();
@@ -1635,7 +1630,7 @@
                 buildCartAndRender();
             };
 
-            // ================= PROCEED TO PAYMENT =================
+            // ================= PROCEED TO PAYMENT (WITH AGE CHECK ROUTING) =================
             const btnProceed = document.getElementById("btnProceedToPayment");
             if (btnProceed) {
                 btnProceed.addEventListener("click", () => {
