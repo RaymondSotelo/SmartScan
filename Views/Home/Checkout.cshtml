@@ -34,9 +34,10 @@
                      style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate;">
 
                     <!-- Live Video Stream Container -->
-                    <div id="videoContainer" class="position-relative w-100 h-100 rounded-4 overflow-hidden" style="display: none;">
-                        <video id="webcamFeed" autoplay playsinline class="w-100 h-100 rounded-4" style="object-fit: cover;"></video>
-                        <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100 rounded-4" style="pointer-events: none;"></canvas>
+                    <!-- CHANGED: Added object-fit: contain to prevent cropping on the edges! -->
+                    <div id="videoContainer" class="position-relative w-100 h-100 rounded-4 overflow-hidden bg-black" style="display: none;">
+                        <video id="webcamFeed" autoplay playsinline class="w-100 h-100 rounded-4" style="object-fit: contain;"></video>
+                        <canvas id="overlayCanvas" class="position-absolute top-0 start-0 w-100 h-100 rounded-4" style="pointer-events: none; object-fit: contain;"></canvas>
 
                         <!-- Top Left: YOLO Engine Badge -->
                         <div class="position-absolute top-0 start-0 m-3 z-3" style="pointer-events: none;">
@@ -131,7 +132,12 @@
                                     <th class="border-0 pb-2 text-center" style="width: 45px;">Qty</th>
                                     <th class="border-0 pb-2 text-end">Price</th>
                                     <th class="border-0 pb-2 text-end">Subtotal</th>
-                                    <th class="border-0 pb-2 text-center" style="width: 70px;"></th>
+                                    <!-- NEW "LOCK ALL" BATCH BUTTON -->
+                                    <th class="border-0 pb-2 text-center" style="width: 85px;">
+                                        <button class="btn btn-sm btn-success py-0 px-2 fw-bold shadow-sm" onclick="lockAllItems()" title="Lock all items to scan next batch" style="font-size: 0.7rem;">
+                                            <i class="fa-solid fa-lock me-1"></i>LOCK ALL
+                                        </button>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="identifiedItemsList">
@@ -579,52 +585,76 @@
             let isProcessingFrame = false;
             let mediaStream = null;
             const recentDetections = [];
-            const detectionHoldMs = 300;
+            
+            // This prevents the camera from deleting items when it flickers.
+            const detectionHoldMs = 1500; 
 
             const priceCache = {};
             let manualItems = [];
             let shouldResumeYoloAfterBarcode = false;
 
-            // ================= LIVE AUTO-ADD LOGIC =================
-            let scanCooldowns = {};
-            const COOLDOWN_MS = 4000;
-
+            // ================= LIVE AUTO-ADD/REMOVE LOGIC (SYNC) =================
             async function processLiveAutoAdd(yoloCounts) {
-                const now = Date.now();
-
                 for (const [itemName, quantityInFrame] of Object.entries(yoloCounts)) {
-                    if (scanCooldowns[itemName] && (now - scanCooldowns[itemName] < COOLDOWN_MS)) {
-                        continue;
+                    if (!priceCache[itemName]) {
+                        try {
+                            const response = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(itemName)}`);
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.success && data.price !== undefined) {
+                                    priceCache[itemName] = data;
+                                } else {
+                                    priceCache[itemName] = { notFound: true };
+                                }
+                            } else {
+                                priceCache[itemName] = { notFound: true };
+                            }
+                        } catch(e) { priceCache[itemName] = { notFound: true }; }
                     }
 
-                    try {
-                        const response = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(itemName)}`);
-                        if (response.ok) {
-                            const data = await response.json();
+                    const prod = priceCache[itemName];
+                    if (prod && !prod.notFound) {
+                        const cartItem = manualItems.find(i => i.name === prod.name);
 
-                            if (data.success && data.price !== undefined) {
-                                if (!data.stock || data.stock <= 0) {
-                                    scanCooldowns[itemName] = now;
-                                    continue;
-                                }
-
-                                const savedItem = manualItems.find(i => i.name === data.name);
-                                const savedQty = savedItem ? savedItem.qty : 0;
-                                const newQtyToAdd = quantityInFrame - savedQty;
-
-                                if (newQtyToAdd > 0) {
-                                    scanCooldowns[itemName] = now;
-                                    playBeepSound();
-
-                                    lockYoloItem(itemName, data.name, data.price, newQtyToAdd, data.stock, data.isAgeRestricted === true || data.isAgeRestricted === 1);
-
-                                    const newlyAdded = manualItems.find(i => i.name === data.name);
-                                    if (newlyAdded) newlyAdded.isAutoScanned = true;
+                        if (cartItem) {
+                            if (!cartItem.isLocked) { 
+                                const targetQty = Math.min(quantityInFrame, prod.stock);
+                                if (cartItem.qty !== targetQty) {
+                                    if (targetQty > cartItem.qty) playBeepSound();
+                                    cartItem.qty = targetQty;
                                 }
                             }
+                        } else {
+                            const targetQty = Math.min(quantityInFrame, prod.stock);
+                            if (targetQty > 0) {
+                                playBeepSound();
+                                manualItems.push({
+                                    name: prod.name,
+                                    price: prod.price,
+                                    qty: targetQty,
+                                    stock: prod.stock,
+                                    isAgeRestricted: prod.isAgeRestricted === true || prod.isAgeRestricted === 1,
+                                    isLocked: false 
+                                });
+                            }
                         }
-                    } catch (err) {
-                        console.error("Auto-add fetch error:", err);
+                    }
+                }
+
+                for (let i = manualItems.length - 1; i >= 0; i--) {
+                    const item = manualItems[i];
+                    if (!item.isLocked) {
+                        let isSeenByYolo = false;
+                        for (const [yoloName, yoloQty] of Object.entries(yoloCounts)) {
+                            if (priceCache[yoloName] && priceCache[yoloName].name === item.name) {
+                                isSeenByYolo = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!isSeenByYolo) {
+                            manualItems.splice(i, 1);
+                        }
                     }
                 }
             }
@@ -717,18 +747,17 @@
                         qty: 1,
                         stock: product.stock,
                         isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
-                        isAutoScanned: false
+                        isLocked: true 
                     });
 
                     playBeepSound();
-                    await buildCartAndRender({}, {});
+                    await buildCartAndRender();
 
                 } catch (err) {
                     console.error("Webcam barcode lookup error:", err);
                 }
             }
 
-            // ================= BARCODE MODAL SCANNER =================
             let html5QrScanner = null;
             let isScannerActive = false;
             let isProcessingScan = false;
@@ -892,11 +921,11 @@
                                 qty: 1,
                                 stock: product.stock,
                                 isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
-                                isAutoScanned: false
+                                isLocked: true // Locked to protect from auto-removal
                             });
 
                             playBeepSound();
-                            await buildCartAndRender({}, {});
+                            await buildCartAndRender();
                             closeScannerModal();
                             return;
                         } else {
@@ -1092,7 +1121,7 @@
                             } else {
                                 if (existing) {
                                     existing.qty++;
-                                    existing.isAutoScanned = false;
+                                    existing.isLocked = true; 
                                 } else {
                                     manualItems.push({
                                         name: product.name,
@@ -1100,14 +1129,14 @@
                                         qty: 1,
                                         stock: product.stock,
                                         isAgeRestricted: product.isAgeRestricted === true || product.isAgeRestricted === 1,
-                                        isAutoScanned: false
+                                        isLocked: true
                                     });
                                 }
                             }
 
                             productSearchInput.value = "";
                             productSearchResults.style.display = "none";
-                            await buildCartAndRender({}, {});
+                            await buildCartAndRender();
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -1242,7 +1271,7 @@
                     const wrapper = document.getElementById("cameraDropdownWrapper");
                     if (wrapper) wrapper.style.backgroundColor = "#1162a3";
 
-                    buildCartAndRender({}, {});
+                    buildCartAndRender();
                 });
             }
 
@@ -1316,12 +1345,33 @@
                     const now = Date.now();
                     const currentDetections = detections.filter(d => d.box);
 
-                    const detectedCountDisplay = document.getElementById("detectedCountDisplay");
-                    if (detectedCountDisplay) {
-                        detectedCountDisplay.textContent = currentDetections.length;
+                    const validDetections = [];
+                    for (const detected of currentDetections) {
+                        if (!priceCache[detected.name]) {
+                            priceCache[detected.name] = { pending: true };
+                            fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(detected.name)}`)
+                                .then(res => res.json())
+                                .then(prod => {
+                                    if (prod.success === false || prod.price === undefined) {
+                                        priceCache[detected.name] = { notFound: true };
+                                    } else {
+                                        priceCache[detected.name] = prod;
+                                    }
+                                }).catch(() => { priceCache[detected.name] = { notFound: true }; });
+                        }
+
+                        if (priceCache[detected.name] && priceCache[detected.name].notFound) {
+                            continue; 
+                        }
+                        validDetections.push(detected);
                     }
 
-                    for (const detected of currentDetections) {
+                    const detectedCountDisplay = document.getElementById("detectedCountDisplay");
+                    if (detectedCountDisplay) {
+                        detectedCountDisplay.textContent = validDetections.length;
+                    }
+
+                    for (const detected of validDetections) {
                         const [x1, y1, x2, y2] = detected.box;
                         let previous = recentDetections.find(item =>
                             item.name === detected.name &&
@@ -1370,18 +1420,19 @@
                     }
 
                     const yoloCounts = {};
-                    const lowConfidenceItems = {};
+                    const lowConfidenceItems = {}; 
 
-                    for (const detected of detections) {
-                        if (detected.confidence < 80) {
-                            lowConfidenceItems[detected.name] = Math.max(lowConfidenceItems[detected.name] || 0, Math.round(detected.confidence));
-                        } else {
+                    // WE NOW COUNT FROM THE SMOOTHED MEMORY BUFFER, NOT THE GLITCHY RAW FRAME
+                    for (const detected of recentDetections) {
+                        if (detected.confidence >= 80) {
                             yoloCounts[detected.name] = (yoloCounts[detected.name] || 0) + 1;
+                        } else {
+                            lowConfidenceItems[detected.name] = Math.max(lowConfidenceItems[detected.name] || 0, Math.round(detected.confidence));
                         }
                     }
 
                     await processLiveAutoAdd(yoloCounts);
-                    await buildCartAndRender(yoloCounts, lowConfidenceItems);
+                    await buildCartAndRender(lowConfidenceItems);
 
                 } catch (error) {
                     console.error("Cannot connect to Python Server:", error);
@@ -1390,85 +1441,9 @@
             }
 
             // ================= CART RENDERER =================
-            window.buildCartAndRender = async function(yoloCounts, lowConfidenceItems = {}) {
+            window.buildCartAndRender = async function(lowConfidenceItems = {}) {
                 let htmlOutput = "";
                 let currentTotal = 0;
-
-                for (const [itemName, qty] of Object.entries(yoloCounts)) {
-                    if (!priceCache[itemName]) {
-                        try {
-                            const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(itemName)}`);
-                            if (dbResponse.ok) {
-                                const productData = await dbResponse.json();
-                                priceCache[itemName] = (productData.success === false || productData.price === undefined)
-                                    ? { name: itemName, notFound: true }
-                                    : productData;
-                            } else {
-                                priceCache[itemName] = { name: itemName, notFound: true };
-                            }
-                        } catch (err) {
-                            priceCache[itemName] = { name: itemName, notFound: true };
-                        }
-                    }
-
-                    const product = priceCache[itemName];
-                    if (!product.notFound) {
-                        const savedItem = manualItems.find(i => i.name === product.name);
-                        const savedQty = savedItem ? savedItem.qty : 0;
-                        const availableStock = (product.stock || 0) - savedQty;
-                        let newQtyToLock = qty - savedQty;
-
-                        if (newQtyToLock > 0 && !savedItem) {
-                            if (newQtyToLock > availableStock) {
-                                newQtyToLock = availableStock;
-                            }
-
-                            if (newQtyToLock > 0) {
-                                const subtotal = product.price * newQtyToLock;
-
-                                let stockBadge = "";
-                                if (product.stock <= 5 && product.stock > 0) {
-                                    stockBadge = `<br><span class="text-warning" style="font-size: 10px;"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock: ${product.stock} total</span>`;
-                                }
-
-                                htmlOutput += `
-                                    <tr>
-                                        <td class="fw-medium text-truncate text-muted" style="max-width: 140px;">
-                                            ${escapeHtml(product.name)}
-                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill ms-1" style="font-size: 9px;">Processing...</span>
-                                            ${stockBadge}
-                                        </td>
-                                        <td class="text-center fw-bold text-muted">${newQtyToLock}</td>
-                                        <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
-                                        <td class="text-end text-muted fw-bold small fw-medium">₱${subtotal.toFixed(2)}</td>
-                                        <td class="text-center">
-                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                        </td>
-                                    </tr>`;
-                            } else {
-                                htmlOutput += `
-                                    <tr class="table-danger border-danger">
-                                        <td class="fw-medium text-truncate text-danger" style="max-width: 140px;">${escapeHtml(product.name)} <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">Limit Reached</span></td>
-                                        <td class="text-center fw-bold text-danger">Max</td>
-                                        <td class="text-end text-muted small fw-medium">₱${product.price.toFixed(2)}</td>
-                                        <td class="text-end text-danger fw-bold small fw-medium">Stock: ${product.stock}</td>
-                                        <td class="text-center"></td>
-                                    </tr>`;
-                            }
-                        }
-                    } else {
-                        htmlOutput += `
-                            <tr>
-                                <td class="text-warning fw-bold text-truncate" style="max-width: 140px;"><i class="fa-solid fa-triangle-exclamation me-1"></i>${escapeHtml(itemName)}</td>
-                                <td class="text-center">${qty}</td>
-                                <td class="text-end">-</td>
-                                <td class="text-end text-danger small">Unknown</td>
-                                <td></td>
-                            </tr>`;
-                    }
-                }
 
                 manualItems.forEach((item, index) => {
                     const subtotal = item.price * item.qty;
@@ -1478,9 +1453,13 @@
                         ? `<span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 9px;">18+</span>`
                         : ``;
 
-                    const sourceBadgeHtml = item.isAutoScanned
+                    const sourceBadgeHtml = item.isLocked
                         ? `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-lock"></i> Locked</span>`
-                        : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-user-pen"></i> Manual</span>`;
+                        : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1" style="font-size: 9px;"><i class="fa-solid fa-video"></i> Auto-Syncing</span>`;
+
+                    const lockIcon = item.isLocked ? "fa-lock" : "fa-lock-open";
+                    const lockBtnClass = item.isLocked ? "btn-success bg-success-subtle border-success" : "btn-outline-secondary";
+                    const lockTitle = item.isLocked ? "Unlock Auto-Sync" : "Lock Product";
 
                     htmlOutput += `
                         <tr>
@@ -1494,9 +1473,9 @@
                             <td class="text-end text-primary fw-bold small">₱${subtotal.toFixed(2)}</td>
                             <td class="text-center">
                                 <div class="d-inline-flex gap-1 align-items-center">
-                                    <div class="text-success rounded-circle border border-success d-flex align-items-center justify-content-center bg-success-subtle" style="width: 22px; height: 22px;" title="Ready">
-                                        <i class="fa-solid fa-check" style="font-size: 9px;"></i>
-                                    </div>
+                                    <button class="btn btn-sm ${lockBtnClass} rounded-circle p-1" style="width: 22px; height: 22px; display: inline-grid; place-items: center;" onclick="toggleLockItem(${index})" title="${lockTitle}">
+                                        <i class="fa-solid ${lockIcon}" style="font-size: 9px;"></i>
+                                    </button>
                                     <button class="btn btn-sm btn-outline-primary rounded-circle p-1" style="width: 22px; height: 22px; display: inline-grid; place-items: center;" onclick="editManualItem(${index})" title="Edit Qty">
                                         <i class="fa-solid fa-pen" style="font-size: 9px;"></i>
                                     </button>
@@ -1509,19 +1488,19 @@
                 });
 
                 for (const [itemName, conf] of Object.entries(lowConfidenceItems)) {
-                    const isAlreadyLocked = manualItems.some(i => i.name === itemName);
-                    if (!isAlreadyLocked) {
+                    const isAlreadyInCart = manualItems.some(i => i.name === itemName);
+                    if (!isAlreadyInCart) {
                         htmlOutput += `
                             <tr class="table-warning">
                                 <td class="fw-medium text-truncate text-muted" style="max-width: 140px;">
                                     ${escapeHtml(itemName)}
-                                    <br><span class="badge bg-warning text-dark border border-warning rounded-pill mt-1" style="font-size: 9px;"><i class="fa-solid fa-spinner fa-spin"></i> Low Confidence (${conf}%)</span>
+                                    <br><span class="badge bg-warning text-dark border border-warning rounded-pill mt-1" style="font-size: 9px;"><i class="fa-solid fa-spinner fa-spin"></i> Low Conf (${conf}%)</span>
                                 </td>
                                 <td class="text-center fw-bold text-muted">-</td>
                                 <td class="text-end text-muted small fw-medium">Pending</td>
                                 <td class="text-end text-muted fw-bold small fw-medium">Pending</td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-secondary" style="font-size: 10px;" disabled>Proceed</button>
+                                    <button class="btn btn-sm btn-secondary" style="font-size: 10px;" disabled>Processing</button>
                                 </td>
                             </tr>`;
                     }
@@ -1544,6 +1523,27 @@
             };
 
             // ================= CART CONTROLS =================
+            window.lockAllItems = function() {
+                let lockedAny = false;
+                manualItems.forEach(item => {
+                    if (!item.isLocked) {
+                        item.isLocked = true;
+                        lockedAny = true;
+                    }
+                });
+                if (lockedAny) {
+                    playBeepSound();
+                    buildCartAndRender();
+                }
+            };
+
+            window.toggleLockItem = function(index) {
+                if (manualItems[index]) {
+                    manualItems[index].isLocked = !manualItems[index].isLocked;
+                    buildCartAndRender();
+                }
+            };
+
             const btnVoid = document.getElementById("btnVoidCart");
             if (btnVoid) {
                 btnVoid.addEventListener("click", () => {
@@ -1561,7 +1561,12 @@
                     }).then((result) => {
                         if (result.isConfirmed) {
                             manualItems = [];
-                            buildCartAndRender({}, {});
+                            buildCartAndRender();
+                            
+                            if (stopBtn && !stopBtn.classList.contains("d-none")) {
+                                stopBtn.click();
+                            }
+
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Cart Cleared',
@@ -1573,54 +1578,6 @@
                     });
                 });
             }
-
-            window.lockYoloItem = function (formattedName, displayName, price, qty, maxStock, isAgeRestricted = false) {
-                const existing = manualItems.find(i => i.name === displayName);
-                const currentQty = existing ? existing.qty : 0;
-
-                if (currentQty + qty > maxStock) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Inventory Limit Reached',
-                        text: `The store only has ${maxStock} unit(s) of "${displayName}" left in stock.`,
-                        confirmButtonColor: '#1162a3'
-                    });
-                    const allowedQty = maxStock - currentQty;
-                    if (allowedQty > 0) {
-                        if (existing) {
-                            existing.qty += allowedQty;
-                            existing.isAutoScanned = true;
-                        }
-                        else manualItems.push({ name: displayName, price: price, qty: allowedQty, stock: maxStock, isAgeRestricted: isAgeRestricted, isAutoScanned: true });
-                    }
-                } else {
-                    if (existing) {
-                        existing.qty += qty;
-                        existing.isAutoScanned = true;
-                    } else {
-                        manualItems.push({ name: displayName, price: price, qty: qty, stock: maxStock, isAgeRestricted: isAgeRestricted, isAutoScanned: true });
-                    }
-                }
-                buildCartAndRender({}, {});
-            };
-
-            window.quickAddManualItem = function (index) {
-                const item = manualItems[index];
-                if (!item) return;
-
-                if (item.qty + 1 > item.stock) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Stock Limit',
-                        text: `Cannot add more. Store inventory limit is ${item.stock}.`,
-                        confirmButtonColor: '#1162a3'
-                    });
-                    return;
-                }
-
-                item.qty += 1;
-                buildCartAndRender({}, {});
-            };
 
             window.editManualItem = function (index) {
                 const item = manualItems[index];
@@ -1664,20 +1621,21 @@
 
                     qtyInput.classList.remove("is-invalid");
                     manualItems[index].qty = newQty;
+                    manualItems[index].isLocked = true; 
 
                     const adjustModal = bootstrap.Modal.getInstance(document.getElementById("adjustQuantityModal"));
                     if (adjustModal) adjustModal.hide();
 
-                    buildCartAndRender({}, {});
+                    buildCartAndRender();
                 });
             }
 
             window.removeManualItem = function (index) {
                 manualItems.splice(index, 1);
-                buildCartAndRender({}, {});
+                buildCartAndRender();
             };
 
-            // ================= PROCEED TO PAYMENT (WITH AGE CHECK ROUTING) =================
+            // ================= PROCEED TO PAYMENT =================
             const btnProceed = document.getElementById("btnProceedToPayment");
             if (btnProceed) {
                 btnProceed.addEventListener("click", () => {
@@ -1718,7 +1676,7 @@
             }, 3000);
         });
 
-        // ================= RECENT TRANSACTIONS STATE & INTERACTIVE RECEIPT + QR =================
+        // ================= RECENT TRANSACTIONS STATE & INTERACTIVE RECEIPT =================
         let allTodayTransactions = [];
         let activeModalTransaction = null;
         let activeModalPublicUrl = "";
@@ -1726,37 +1684,16 @@
 
         function getPaymentBadgeHtml(methodId, methodName) {
             const safeName = escapeHtml(methodName || 'Cash');
-
             if (methodId === 4) {
-                return `
-                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
-                          style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba;">
-                        <i class="fa-solid fa-coins me-1"></i>${safeName}
-                    </span>
-                `;
+                return `<span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba;"><i class="fa-solid fa-coins me-1"></i>${safeName}</span>`;
             }
             if (methodId === 2) {
-                return `
-                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-success"
-                          style="font-size: 11px; background-color: #dcfce7; border: 1.5px solid #bbf7d0;">
-                        <i class="fa-solid fa-mobile-screen-button me-1"></i>${safeName}
-                    </span>
-                `;
+                return `<span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-success" style="font-size: 11px; background-color: #dcfce7; border: 1.5px solid #bbf7d0;"><i class="fa-solid fa-mobile-screen-button me-1"></i>${safeName}</span>`;
             }
             if (methodId === 3) {
-                return `
-                    <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
-                          style="font-size: 11px; background-color: #f3e8ff; color: #6b21a8; border: 1.5px solid #e9d5ff;">
-                        <i class="fa-solid fa-credit-card me-1"></i>${safeName}
-                    </span>
-                `;
+                return `<span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px; background-color: #f3e8ff; color: #6b21a8; border: 1.5px solid #e9d5ff;"><i class="fa-solid fa-credit-card me-1"></i>${safeName}</span>`;
             }
-            return `
-                <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-primary"
-                      style="font-size: 11px; background-color: #e0f2fe; border: 1.5px solid #bae6fd;">
-                    <i class="fa-solid fa-money-bill-wave me-1"></i>${safeName}
-                </span>
-            `;
+            return `<span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-primary" style="font-size: 11px; background-color: #e0f2fe; border: 1.5px solid #bae6fd;"><i class="fa-solid fa-money-bill-wave me-1"></i>${safeName}</span>`;
         }
 
         window.openOldTransactions = async function () {
@@ -1771,17 +1708,12 @@
 
             const container = document.getElementById('oldTransactionsList');
             if (container) {
-                container.innerHTML = `
-                    <div class="text-center py-4 text-muted small">
-                        <i class="fa-solid fa-spinner fa-spin text-primary me-2"></i>Loading transactions...
-                    </div>
-                `;
+                container.innerHTML = `<div class="text-center py-4 text-muted small"><i class="fa-solid fa-spinner fa-spin text-primary me-2"></i>Loading transactions...</div>`;
             }
 
             try {
                 const response = await fetch('/Home/GetOldTransactions');
                 const data = await response.json();
-
                 if (data.success && Array.isArray(data.transactions) && data.transactions.length > 0) {
                     allTodayTransactions = data.transactions;
                     renderTransactionCards(allTodayTransactions);
@@ -1859,7 +1791,6 @@
                 const rNum = String(tx.receiptNumber || '').toLowerCase();
                 const cName = String(tx.customerName || '').toLowerCase();
                 const pMethod = String(tx.paymentMethod || '').toLowerCase();
-
                 const totalNum = typeof tx.total === 'number' ? tx.total : parseFloat(tx.total || 0);
                 const totalFormatted = totalNum.toFixed(2);
                 const totalRaw = String(totalNum);
@@ -1928,11 +1859,7 @@
             const dueDateEl = document.getElementById('modalReceiptDueDate');
 
             if (dueDateRow) {
-                const hasValidDate = rawDueDate &&
-                                     String(rawDueDate).trim() !== '' &&
-                                     String(rawDueDate).trim() !== '--' &&
-                                     String(rawDueDate).toLowerCase() !== 'null';
-
+                const hasValidDate = rawDueDate && String(rawDueDate).trim() !== '' && String(rawDueDate).trim() !== '--' && String(rawDueDate).toLowerCase() !== 'null';
                 if (numericMethodId === 4 && hasValidDate) {
                     if (dueDateEl) dueDateEl.textContent = rawDueDate;
                     dueDateRow.style.setProperty("display", "flex", "important");
@@ -2033,7 +1960,7 @@
             return lines.join("\n");
         }
 
-        function openModalReceiptQrView() {
+        window.openModalReceiptQrView = function() {
             if (!activeModalTransaction) return;
 
             const receiptSection = document.getElementById('txReceiptViewSection');
@@ -2063,35 +1990,7 @@
             renderTxModalQrByMode(isTextMode ? 'text' : 'web');
         }
 
-        function renderTxModalQrByMode(mode) {
-            const container = document.getElementById('txModalQrContainer');
-            if (!container || typeof QRCode === 'undefined') return;
-
-            const qrContent = mode === 'text' ? activeModalPlainText : activeModalPublicUrl;
-            container.innerHTML = '';
-            new QRCode(container, {
-                text: qrContent,
-                width: 200,
-                height: 200,
-                colorDark: "#0f172a",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.M
-            });
-
-            if (activeModalTransaction) {
-                const totalNum = typeof activeModalTransaction.total === 'number'
-                    ? activeModalTransaction.total
-                    : parseFloat(activeModalTransaction.total || 0);
-                localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({
-                    mode: "receipt",
-                    receiptNumber: activeModalTransaction.receiptNumber || "#REC-000000",
-                    total: totalNum,
-                    qrContent: qrContent
-                }));
-            }
-        }
-
-        function renderTxModalQrByMode(mode) {
+        window.renderTxModalQrByMode = function(mode) {
             const container = document.getElementById('txModalQrContainer');
             if (!container || typeof QRCode === 'undefined') return;
 
@@ -2106,7 +2005,6 @@
                 correctLevel: QRCode.CorrectLevel.M
             });
 
-            // Also broadcast to Customer Display if open
             if (activeModalTransaction) {
                 const totalNum = typeof activeModalTransaction.total === 'number'
                     ? activeModalTransaction.total
@@ -2120,7 +2018,7 @@
             }
         }
 
-        function copyTxModalReceiptLink() {
+        window.copyTxModalReceiptLink = function() {
             const input = document.getElementById('txModalPublicReceiptUrl');
             const toast = document.getElementById('txModalCopyToast');
             if (!input) return;
@@ -2135,7 +2033,7 @@
             });
         }
 
-        function backToReceiptDetailsFromQr() {
+        window.backToReceiptDetailsFromQr = function() {
             const receiptSection = document.getElementById('txReceiptViewSection');
             const qrSection = document.getElementById('txQrViewSection');
             const headerTitle = document.getElementById('txModalHeaderTitle');
@@ -2145,7 +2043,7 @@
             if (headerTitle) headerTitle.innerHTML = '<i class="fa-solid fa-receipt me-2"></i>Receipt Details';
         }
 
-        function closeReceiptPreview() {
+        window.closeReceiptPreview = function() {
             const listSection = document.getElementById('txListViewSection');
             const receiptSection = document.getElementById('txReceiptViewSection');
             const qrSection = document.getElementById('txQrViewSection');
@@ -2155,13 +2053,6 @@
             if (qrSection) qrSection.style.display = 'none';
             if (listSection) listSection.style.display = 'block';
             if (headerTitle) headerTitle.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2"></i>Today\'s Completed Transactions';
-        }
-
-        // ================= PAY DEBT BUTTON TRIGGER =================
-        function initiateDebtPayment() {
-            sessionStorage.setItem("verificationReason", "PayDebt");
-            sessionStorage.setItem("verificationRedirect", "DebtSettlement");
-            window.location.href = "/Home/CustomerVerification";
         }
     </script>
 }
