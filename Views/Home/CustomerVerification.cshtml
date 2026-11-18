@@ -1174,42 +1174,51 @@
         }
 
         let scannedQrJwtToken = null;
+        let scannedQrPayload = null;
+        let scannedQrFormat = null; // "JWT" | "PSA_JSON"
 
         async function processPhilSysLiveScan(decodedText) {
             if (isProcessingScan) return;
             isProcessingScan = true;
 
             const trimmedToken = (decodedText || "").trim();
-            const jwtParts = trimmedToken.split('.');
-
-            // Reject non-JWT plain JSON or arbitrary barcodes
-            if (jwtParts.length !== 3 || trimmedToken.startsWith("{")) {
-                updateOverlayStatus("fa-shield-xmark", "Rejected: Fake or non-PhilSys QR", "text-danger");
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Invalid PhilSys QR Code',
-                    text: 'This QR code does not match the official signed PSA PhilSys format.',
-                    confirmButtonColor: '#dc3545'
-                });
-                setTimeout(() => { isProcessingScan = false; }, 1200);
-                return;
-            }
+            console.log("=== RAW PHILSYS QR DECODED ===", trimmedToken);
 
             try {
-                // Decode JWT Header & Payload
-                const decodeB64Url = (str) => {
-                    const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-                    return decodeURIComponent(atob(base64).split('').map(c =>
-                        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-                    ).join(''));
-                };
+                let qrData = null;
+                const jwtParts = trimmedToken.split('.');
 
-                const header = JSON.parse(decodeB64Url(jwtParts[0]));
-                if (!header.alg || header.alg.toLowerCase() === "none") {
-                    throw new Error("Unsigned JWT header rejected.");
+                if (jwtParts.length === 3 && !trimmedToken.startsWith("{")) {
+                    // Format A: 3-Part JWS Token (header.payload.signature)
+                    const decodeB64Url = (str) => {
+                        const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+                        const pad = base64.length % 4;
+                        const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+                        return decodeURIComponent(atob(padded).split('').map(c =>
+                            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+                        ).join(''));
+                    };
+
+                    const header = JSON.parse(decodeB64Url(jwtParts[0]));
+                    if (!header.alg || header.alg.toLowerCase() === "none") {
+                        throw new Error("Unsigned JWT header rejected.");
+                    }
+
+                    qrData = JSON.parse(decodeB64Url(jwtParts[1]));
+                    scannedQrFormat = "JWT";
+                } else if (trimmedToken.startsWith("{")) {
+                    // Format B: Direct PSA PhilSys JSON Object (v1.0 or v2.0)
+                    qrData = JSON.parse(trimmedToken);
+                    const issuer = (qrData.Issuer || qrData.iss || "").toString().toLowerCase();
+                    const isValidIssuer = issuer.includes("national-id.gov.ph") || issuer.includes("psa") || issuer.includes("philsys");
+                    if (!isValidIssuer) {
+                        throw new Error("JSON QR does not come from PSA PhilSys.");
+                    }
+                    scannedQrFormat = "PSA_JSON";
+                } else {
+                    throw new Error("Unsupported QR payload format.");
                 }
 
-                const qrData = JSON.parse(decodeB64Url(jwtParts[1]));
                 const subject = qrData.subject || qrData;
 
                 const rawPcn = (subject.pcn || subject.PCN || "").toString().replace(/[^0-9]/g, '');
@@ -1228,20 +1237,20 @@
 
                 const normalizedDob = dateObj.toISOString().split('T')[0];
 
-                // Populate inputs & lock token for backend verification
                 document.getElementById('digitalIdInput').value = rawPcn;
                 document.getElementById('manualDobInput').value = normalizedDob;
-                scannedQrJwtToken = trimmedToken;
+                scannedQrPayload = trimmedToken;
 
                 await verifyGovernmentId(true, trimmedToken);
             } catch (err) {
                 console.warn("PhilSys QR validation failed:", err);
-                scannedQrJwtToken = null;
-                updateOverlayStatus("fa-shield-xmark", "Unrecognized PhilSys QR", "text-danger");
+                scannedQrPayload = null;
+                scannedQrFormat = null;
+                updateOverlayStatus("fa-shield-xmark", "Invalid or unsupported PhilSys QR", "text-danger");
                 Swal.fire({
                     icon: 'error',
-                    title: 'Unrecognized PhilSys QR',
-                    text: 'Unable to verify authentic PhilSys credentials from this QR code.',
+                    title: 'Invalid PhilSys QR Code',
+                    text: 'Could not verify PSA PhilSys credentials from this QR code. If using a newer Digital National ID, enter the 16-digit PCN and DOB manually.',
                     confirmButtonColor: '#dc3545'
                 });
                 setTimeout(() => { isProcessingScan = false; }, 1200);

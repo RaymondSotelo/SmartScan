@@ -505,70 +505,70 @@ namespace SmartScan.Controllers
             if (req.IsFromQrScan)
             {
                 if (string.IsNullOrWhiteSpace(req.RawQrToken))
-                    return Json(new { isValid = false, message = "Missing PhilSys QR cryptographic token." });
+                    return Json(new { isValid = false, message = "Missing PhilSys QR payload." });
 
-                var parts = req.RawQrToken.Trim().Split('.');
-                if (parts.Length != 3 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1]) || string.IsNullOrWhiteSpace(parts[2]))
-                    return Json(new { isValid = false, message = "Invalid or forged QR format: Not a valid signed PhilSys JWS token." });
+                string trimmedToken = req.RawQrToken.Trim();
 
                 try
                 {
-                    // Validate JWT Header
-                    string headerJson = DecodeBase64Url(parts[0]);
-                    using var headerDoc = JsonDocument.Parse(headerJson);
-                    var headerRoot = headerDoc.RootElement;
+                    string payloadJson;
 
-                    string alg = headerRoot.TryGetProperty("alg", out var algProp) ? (algProp.GetString() ?? "") : "";
-                    if (string.IsNullOrWhiteSpace(alg) || alg.Equals("none", StringComparison.OrdinalIgnoreCase))
-                        return Json(new { isValid = false, message = "Security Alert: Unsigned or tampered QR token rejected." });
+                    if (trimmedToken.StartsWith("{"))
+                    {
+                        // Format B: Direct PSA PhilSys JSON
+                        payloadJson = trimmedToken;
+                    }
+                    else
+                    {
+                        // Format A: 3-Part Signed PhilSys JWS
+                        var parts = trimmedToken.Split('.');
+                        if (parts.Length != 3 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1]) || string.IsNullOrWhiteSpace(parts[2]))
+                            return Json(new { isValid = false, message = "Invalid QR format: Not a recognized PhilSys QR structure." });
 
-                    // Validate JWT Payload & PSA Schema
-                    string payloadJson = DecodeBase64Url(parts[1]);
+                        string headerJson = DecodeBase64Url(parts[0]);
+                        using var headerDoc = JsonDocument.Parse(headerJson);
+                        string alg = headerDoc.RootElement.TryGetProperty("alg", out var algProp) ? (algProp.GetString() ?? "") : "";
+                        if (string.IsNullOrWhiteSpace(alg) || alg.Equals("none", StringComparison.OrdinalIgnoreCase))
+                            return Json(new { isValid = false, message = "Security Alert: Unsigned or tampered QR token rejected." });
+
+                        payloadJson = DecodeBase64Url(parts[1]);
+                    }
+
                     using var payloadDoc = JsonDocument.Parse(payloadJson);
                     var root = payloadDoc.RootElement;
 
-                    // Check Issuer ("PSA" or official PhilSys issuer URL)
-                    string issuer = root.TryGetProperty("iss", out var issProp) ? (issProp.GetString() ?? "") :
-                                    root.TryGetProperty("Issuer", out var issuerProp) ? (issuerProp.GetString() ?? "") : "";
+                    string issuer = GetFirstStringProperty(root, "Issuer", "iss");
+                    bool isOfficialIssuer = issuer.Contains("national-id.gov.ph", StringComparison.OrdinalIgnoreCase)
+                                         || issuer.Contains("PSA", StringComparison.OrdinalIgnoreCase)
+                                         || issuer.Contains("philsys", StringComparison.OrdinalIgnoreCase);
 
-                    if (!string.IsNullOrWhiteSpace(issuer) &&
-                        !issuer.Contains("PSA", StringComparison.OrdinalIgnoreCase) &&
-                        !issuer.Contains("philsys", StringComparison.OrdinalIgnoreCase))
+                    if (trimmedToken.StartsWith("{") && !isOfficialIssuer)
                     {
-                        return Json(new { isValid = false, message = $"Invalid QR Issuer ('{issuer}'). Only official PSA PhilSys IDs are accepted." });
+                        return Json(new { isValid = false, message = "Rejected: QR JSON is missing official PSA / national-id.gov.ph issuer metadata." });
                     }
 
-                    // Extract subject object (PhilSys v1/v2 nests claims inside "subject")
                     JsonElement subject = root.TryGetProperty("subject", out var subjProp) ? subjProp : root;
 
-                    // Verify PCN inside token matches submitted PCN
                     string tokenPcnRaw = GetFirstStringProperty(subject, "pcn", "PCN");
                     string tokenPcnDigits = new string(tokenPcnRaw.Where(char.IsDigit).ToArray());
-
                     if (tokenPcnDigits.Length != 16 || tokenPcnDigits != digitsOnly)
-                        return Json(new { isValid = false, message = "PCN mismatch or missing 16-digit PCN inside PhilSys QR token." });
+                        return Json(new { isValid = false, message = "PCN mismatch or missing 16-digit PCN inside PhilSys QR." });
 
-                    // Verify Date of Birth inside token matches submitted DOB
                     string tokenDobRaw = GetFirstStringProperty(subject, "bd", "DOB", "dob", "DateOfBirth", "birthDate");
                     if (string.IsNullOrWhiteSpace(tokenDobRaw) || !DateTime.TryParse(tokenDobRaw, out DateTime tokenDob))
-                        return Json(new { isValid = false, message = "Missing or invalid Date of Birth inside PhilSys QR token." });
+                        return Json(new { isValid = false, message = "Missing or invalid Date of Birth inside PhilSys QR." });
 
                     if (tokenDob.Date != dob.Date)
-                        return Json(new { isValid = false, message = "Date of Birth mismatch: Input DOB does not match the PhilSys QR record." });
+                        return Json(new { isValid = false, message = "Date of Birth mismatch against PhilSys QR record." });
 
-                    // Verify required PhilSys identity name fields exist in subject
                     string fName = GetFirstStringProperty(subject, "fName", "fname", "n_f");
                     string lName = GetFirstStringProperty(subject, "lName", "lname", "n_l");
                     if (string.IsNullOrWhiteSpace(fName) || string.IsNullOrWhiteSpace(lName))
-                        return Json(new { isValid = false, message = "Incomplete PhilSys QR identity claims (missing holder name)." });
+                        return Json(new { isValid = false, message = "Incomplete PhilSys QR identity claims." });
                 }
-                catch (JsonException)
+                catch (Exception)
                 {
                     return Json(new { isValid = false, message = "Corrupted or unreadable PhilSys QR payload." });
-                }
-                catch (FormatException)
-                {
-                    return Json(new { isValid = false, message = "Malformed Base64 encoding in PhilSys QR token." });
                 }
             }
 
