@@ -69,7 +69,7 @@ namespace SmartScan.Controllers
             {
                 bool isAssigned = await _context.RetailStaffs
                     .AnyAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
-                
+
                 if (isAssigned)
                 {
                     return RedirectToAction("Checkout", "Home");
@@ -169,7 +169,7 @@ namespace SmartScan.Controllers
             }
 
             // --- ACCESS RESTRICTION: Block direct URL typing ---
-            string? referer = Request.Headers.Referer.ToString();
+            string? referer = Request.Headers["Referer"].ToString();
 
             // Direct typing in address bar results in an empty referer header
             if (string.IsNullOrWhiteSpace(referer))
@@ -654,14 +654,59 @@ namespace SmartScan.Controllers
 
                 using var doc = JsonDocument.Parse(responseString);
                 var checkoutUrl = doc.RootElement.GetProperty("invoice_url").GetString();
+                var invoiceId = doc.RootElement.GetProperty("id").GetString(); // We need this for polling
 
-                return Json(new { success = true, checkoutUrl = checkoutUrl });
+                return Json(new { success = true, checkoutUrl = checkoutUrl, invoiceId = invoiceId }); // Added invoiceId
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+        // VerifyXenditPayment | Called by frontend polling every 3 seconds
+        [HttpGet]
+        public async Task<IActionResult> VerifyXenditPayment(string invoiceId)
+        {
+            if (string.IsNullOrEmpty(invoiceId))
+            {
+                return Json(new { status = "PENDING" });
+            }
+
+            try
+            {
+                using var client = new HttpClient();
+
+                // Using the exact same key you provided above
+                const string SecretKey = "xnd_development_i2JEYU0yrrXSwm0GivqR0pEL9CcLk7znFZIwQ2QDGAPVM7xc1KPLgL6pHykZ";
+
+                var authToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SecretKey}:"));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+
+                var response = await client.GetAsync($"https://api.xendit.co/v2/invoices/{invoiceId}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonString = await response.Content.ReadAsStringAsync();
+                    using JsonDocument doc = JsonDocument.Parse(jsonString);
+
+                    var status = doc.RootElement.GetProperty("status").GetString();
+
+                    return Json(new
+                    {
+                        status = status,
+                        transactionId = invoiceId
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error verifying Xendit payment: {ex.Message}");
+            }
+
+            return Json(new { status = "PENDING" });
+        }
+
 
         // SaveTransaction | Completes and records transaction
         [HttpPost]
@@ -885,7 +930,7 @@ namespace SmartScan.Controllers
             var todayLocal = PhilippineNow.Date;
 
             var transactions = await _context.Transactions
-                .Include(t => t.Retail) 
+                .Include(t => t.Retail)
                 .Include(t => t.PaymentMethod)
                 .Include(t => t.Status)
                 .Include(t => t.Customer)
