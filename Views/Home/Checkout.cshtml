@@ -120,6 +120,16 @@
                             <i class="fa-solid fa-basket-shopping text-primary"></i>
                             <span class="fw-bold text-primary small text-uppercase">Digital Cart</span>
                         </div>
+
+                        <button type="button"
+                                id="btnLockAllItems"
+                                class="btn btn-sm fw-bold rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+                                style="background-color: #dbeafe; color: #1162a3; border: 1px solid #cfe2f3; font-size: 0.75rem; transition: all 0.2s ease;"
+                                onclick="lockAllItems()"
+                                title="Lock all items to scan next batch">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>Lock All</span>
+                        </button>
                     </div>
 
                     <!-- Scrollable Receipt Item Table -->
@@ -131,11 +141,7 @@
                                     <th class="border-0 pb-2 text-center" style="width: 45px;">Qty</th>
                                     <th class="border-0 pb-2 text-end">Price</th>
                                     <th class="border-0 pb-2 text-end">Subtotal</th>
-                                    <th class="border-0 pb-2 text-center" style="width: 85px;">
-                                        <button class="btn btn-sm btn-success py-0 px-2 fw-bold shadow-sm" onclick="lockAllItems()" title="Lock all items to scan next batch" style="font-size: 0.7rem;">
-                                            <i class="fa-solid fa-lock me-1"></i>LOCK ALL
-                                        </button>
-                                    </th>
+                                    <th class="border-0 pb-2 text-center" style="width: 85px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="identifiedItemsList">
@@ -310,12 +316,16 @@
                                 <strong class="font-monospace text-dark" id="modalReceiptNumber">#REC-000000</strong>
                             </div>
                             <div class="d-flex justify-content-between mb-1">
-                                <span>Date & Time:</span>
-                                <span class="text-dark" id="modalReceiptDate">--</span>
+                                <span>Date &amp; Time:</span>
+                                <span class="text-dark" id="modalReceiptDate">YYYY-MM-DD 00:00 AM</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Retail Store:</span>
+                                <span class="text-dark fw-semibold" id="modalReceiptStore">@(ViewBag.RetailName ?? "SmartScan Retail")</span>
                             </div>
                             <div class="d-flex justify-content-between mb-1">
                                 <span>Cashier / POS:</span>
-                                <span class="text-dark" id="modalReceiptCashier">@(User.Identity?.Name ?? "Main Station")</span>
+                                <span class="text-dark">@(User.Identity?.Name ?? "Main Station")</span>
                             </div>
                             <div class="d-flex justify-content-between mb-1" id="modalCustomerRow" style="display: none;">
                                 <span>Customer:</span>
@@ -534,6 +544,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/pos-tab-guard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -551,6 +562,16 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
+            const canOperate = window.SmartScanTabGuard.claimRegister(() => {
+                // If another tab takes over, immediately release webcam hardware
+                if (typeof pauseYoloScanner === "function") {
+                    pauseYoloScanner();
+                }
+            });
+
+            // Do NOT wipe CustomerDisplay or initialize camera if this is a blocked duplicate tab
+            if (!canOperate) return;
+
             // Purge stale customer & debt session data if starting a fresh checkout session
             if (!sessionStorage.getItem("verificationReason")) {
                 sessionStorage.removeItem("verifiedCustomerId");
@@ -1004,7 +1025,9 @@
                         clearTimeout(searchTimeout);
                         searchTimeout = setTimeout(async () => {
                             try {
-                                const response = await fetch(`/Home/SearchProducts?term=${encodeURIComponent(query)}`);
+                                const response = await fetch(`/Home/SearchProducts?term=${encodeURIComponent(query)}`, {
+                                    cache: 'no-store'
+                                });
                                 if (response.ok) {
                                     const results = await response.json();
                                     renderSearchResults(results);
@@ -1077,7 +1100,9 @@
                     if (!query) return;
 
                     try {
-                        const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(query)}`);
+                        const dbResponse = await fetch(`/Home/GetProductDetails?productName=${encodeURIComponent(query)}`, {
+                            cache: 'no-store'
+                        });
 
                         if (dbResponse.ok) {
                             const product = await dbResponse.json();
@@ -1104,8 +1129,14 @@
 
                             saveRecentSearch(product.name);
 
-                            const existing = manualItems.find(i => i.name === product.name);
+                            const existing = manualItems.find(i => i.name.toLowerCase() === product.name.toLowerCase());
                             const currentQty = existing ? existing.qty : 0;
+
+                            // Always sync the latest stock & price from the database response
+                            if (existing) {
+                                existing.stock = product.stock;
+                                existing.price = product.price;
+                            }
 
                             if (currentQty + 1 > product.stock) {
                                 Swal.fire({
@@ -1508,6 +1539,24 @@
                 if (list) list.innerHTML = htmlOutput;
                 if (totalDueDisplay) totalDueDisplay.innerText = `₱ ${currentTotal.toFixed(2)}`;
 
+                const btnLockAll = document.getElementById("btnLockAllItems");
+                if (btnLockAll) {
+                    const hasUnlocked = manualItems.some(item => !item.isLocked);
+                    btnLockAll.disabled = !hasUnlocked;
+
+                    if (manualItems.length > 0 && !hasUnlocked) {
+                        btnLockAll.style.backgroundColor = "#dcfce7";
+                        btnLockAll.style.color = "#166534";
+                        btnLockAll.style.borderColor = "#bbf7d0";
+                        btnLockAll.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>All Locked</span>';
+                    } else {
+                        btnLockAll.style.backgroundColor = "#dbeafe";
+                        btnLockAll.style.color = "#1162a3";
+                        btnLockAll.style.borderColor = "#cfe2f3";
+                        btnLockAll.innerHTML = '<i class="fa-solid fa-lock"></i><span>Lock All</span>';
+                    }
+                }
+
                 const broadcastItems = [];
                 let customerTotal = 0;
                 manualItems.forEach(item => {
@@ -1837,6 +1886,12 @@
 
             document.getElementById('modalReceiptNumber').textContent = tx.receiptNumber || '#REC-000000';
             document.getElementById('modalReceiptDate').textContent = tx.date || '';
+
+            const rStoreEl = document.getElementById('modalReceiptStore');
+            if (rStoreEl && (tx.retailName || tx.storeName)) {
+                rStoreEl.textContent = tx.retailName || tx.storeName;
+            }
+            
             document.getElementById('modalBarcodeNumber').textContent = `*${(tx.receiptNumber || '000000').replace(/[^0-9A-Z]/gi, '')}*`;
 
             const custRow = document.getElementById('modalCustomerRow');
@@ -1913,6 +1968,7 @@
             const compactData = {
                 r: tx.receiptNumber || "#REC-000000",
                 d: tx.date || "--",
+                st: tx.retailName || tx.storeName || "SmartScan Retail",
                 c: cashierName,
                 u: (tx.customerName && String(tx.customerName).trim() !== "") ? tx.customerName : "Walk-in Guest",
                 m: tx.paymentMethod || "Cash In Hand",
@@ -1931,9 +1987,10 @@
         }
 
         function buildModalPlainTextSummary(tx) {
+            const storeName = (tx.retailName || tx.storeName || "SmartScan Retail").toUpperCase();
             const totalNum = typeof tx.total === 'number' ? tx.total : parseFloat(tx.total || 0);
             const lines = [
-                "SMARTSCAN RETAIL",
+                storeName,
                 `Receipt: ${tx.receiptNumber || '#REC-000000'}`,
                 `Date: ${tx.date || '--'}`,
                 "------------------------"
@@ -2011,7 +2068,7 @@
                     qrContent: qrContent
                 }));
             }
-        }
+        };
 
         window.copyTxModalReceiptLink = function() {
             const input = document.getElementById('txModalPublicReceiptUrl');
@@ -2026,7 +2083,7 @@
                     }, 2200);
                 }
             });
-        }
+        };
 
         window.backToReceiptDetailsFromQr = function() {
             const receiptSection = document.getElementById('txReceiptViewSection');
@@ -2036,7 +2093,7 @@
             if (qrSection) qrSection.style.display = 'none';
             if (receiptSection) receiptSection.style.display = 'block';
             if (headerTitle) headerTitle.innerHTML = '<i class="fa-solid fa-receipt me-2"></i>Receipt Details';
-        }
+        };
 
         window.closeReceiptPreview = function() {
             const listSection = document.getElementById('txListViewSection');
@@ -2048,6 +2105,13 @@
             if (qrSection) qrSection.style.display = 'none';
             if (listSection) listSection.style.display = 'block';
             if (headerTitle) headerTitle.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-2"></i>Today\'s Completed Transactions';
-        }
+        };
+
+        // ================= PAY DEBT BUTTON TRIGGER =================
+        window.initiateDebtPayment = function() {
+            sessionStorage.setItem("verificationReason", "PayDebt");
+            sessionStorage.setItem("verificationRedirect", "DebtSettlement");
+            window.location.href = "/Home/CustomerVerification";
+        };
     </script>
 }

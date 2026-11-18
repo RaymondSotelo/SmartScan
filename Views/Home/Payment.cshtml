@@ -291,6 +291,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/pos-tab-guard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         let liveStoreCreditLimit = 0;
@@ -336,6 +337,9 @@
             storeCreditModalInstance = new bootstrap.Modal(document.getElementById('storeCreditModal'));
             ewalletModalInstance = new bootstrap.Modal(document.getElementById('ewalletModal'));
             gcashQRModalInstance = new bootstrap.Modal(document.getElementById('gcashQRModal'));
+
+            const canPay = window.SmartScanTabGuard.claimRegister();
+            if (!canPay) return;
 
             // DISABLE STORE CREDIT IF SETTLING DEBT
             const activeDebtIds = sessionStorage.getItem("activeDebtTransactionIds");
@@ -799,6 +803,12 @@
                 const result = await response.json();
 
                 if (result.success) {
+                    sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
+
+                    // Broadcast to ALL open/duplicated tabs to wipe smartScanCart & activeDebtTransactionIds
+                    window.SmartScanTabGuard.broadcastTransactionCompleted();
+                    window.location.href = "/Home/GenerateReceipt";
+
                     payload.date = new Date().toISOString();
                     payload.status = "Completed";
                     payload.receiptNumber = result.receiptNumber;
@@ -900,5 +910,16 @@
             const displayChange = change > 0 ? change : 0;
             document.getElementById('cashChange').value = "₱ " + displayChange.toFixed(2);
         }
+
+        // if a cashier switches back to an older duplicated tab after completing payment in another tab,
+        // it immediately detects the cleared cart and redirects to /Home/Checkout
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible" && window.SmartScanTabGuard.isPrimary()) {
+                const currentCart = JSON.parse(sessionStorage.getItem("smartScanCart") || "[]");
+                if (!Array.isArray(currentCart) || currentCart.length === 0) {
+                    window.location.replace("/Home/Checkout");
+                }
+            }
+        });
     </script>
 }

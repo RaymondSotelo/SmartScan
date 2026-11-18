@@ -23,9 +23,9 @@
         <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
              style="background-color: #1162a3;">
             <div class="d-flex align-items-center gap-2">
-                <h6 class="mb-0 fw-bold">
+                <h5 class="mb-0 fw-bold">
                     <i class="fa-solid fa-receipt me-2"></i>Digital Receipt
-                </h6>
+                </h5>
                 <!-- Dynamic Status Badge in Header -->
                 <span id="headerStatusBadge" class="badge rounded-pill px-3 py-1 fw-bold ms-1 shadow-sm" style="font-size: 11px;">
                     <i class="fa-solid fa-circle-check me-1"></i>Completed
@@ -85,8 +85,12 @@
                         <strong class="font-monospace text-dark" id="receiptNumberDisplay">#REC-000000</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-1">
-                        <span>Date & Time:</span>
+                        <span>Date &amp; Time:</span>
                         <span class="text-dark" id="receiptDateDisplay">--</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Retail Store:</span>
+                        <span class="text-dark fw-semibold" id="receiptStoreDisplay">SmartScan Retail</span>
                     </div>
                     <div class="d-flex justify-content-between mb-1">
                         <span>Cashier / POS:</span>
@@ -220,7 +224,7 @@
             try {
                 const data = JSON.parse(decodeURIComponent(atob(token)));
 
-                // 1. Status Badge Mapping (3 = Completed, 4 = Pending Settlement)
+                // Status Badge Mapping (3 = Completed, 4 = Pending Settlement)
                 const numericStatusId = parseInt(data.s ?? 3, 10);
                 const headerBadge = document.getElementById("headerStatusBadge");
                 const receiptBadge = document.getElementById("receiptStatusBadge");
@@ -262,15 +266,16 @@
                     }
                 }
 
-                // 2. Metadata
+                // Metadata
                 const receiptNum = data.r || "#REC-000000";
                 document.getElementById("receiptNumberDisplay").textContent = receiptNum;
                 document.getElementById("barcodeNumber").textContent = `*${receiptNum.replace(/[^0-9A-Z]/gi, '')}*`;
                 document.getElementById("receiptDateDisplay").textContent = data.d || "--";
+                document.getElementById("receiptStoreDisplay").textContent = data.st || "SmartScan Retail";
                 document.getElementById("receiptCashierDisplay").textContent = data.c || "Main Station";
                 document.getElementById("receiptCustomerDisplay").textContent = data.u || "Walk-in Guest";
 
-                // 3. Conditional Due Date (Strictly for Store Credits)
+                // Conditional Due Date (Strictly for Store Credits)
                 const method = data.m || "Cash In Hand";
                 const isStoreCredit = method.toLowerCase().includes("store");
                 const rawDueDate = data.due;
@@ -290,7 +295,7 @@
                     dueDateRow.style.setProperty("display", "none", "important");
                 }
 
-                // 4. Itemized Rows
+                // Itemized Rows
                 const itemsContainer = document.getElementById("receiptItemList");
                 itemsContainer.innerHTML = "";
                 let totalUnits = 0;
@@ -320,7 +325,7 @@
                     itemsContainer.innerHTML = `<div class="text-center text-muted small py-2">No individual items recorded.</div>`;
                 }
 
-                // 5. Totals & Tender Details
+                // Totals & Tender Details
                 const grandTotal = parseFloat(data.t ?? calculatedSubtotal);
                 document.getElementById("receiptTotalQty").textContent = `${totalUnits} units`;
                 document.getElementById("receiptSubtotal").textContent = `₱${calculatedSubtotal.toFixed(2)}`;
@@ -328,7 +333,7 @@
 
                 document.getElementById("receiptPaymentMethodBadge").innerHTML = getPaymentBadgeHtml(method);
 
-                // 6. Cash Tender Details
+                // Cash Tender Details
                 const cashSection = document.getElementById("cashDetailsSection");
                 if (method.toLowerCase().includes("cash") && data.p !== undefined && data.p !== "") {
                     cashSection.style.display = "block";

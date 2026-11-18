@@ -114,6 +114,10 @@
                     <span class="text-dark" id="receiptDateDisplay">--</span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
+                    <span>Retail Store:</span>
+                    <span class="text-dark fw-semibold" id="receiptStoreDisplay">SmartScan Retail</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
                     <span>Cashier / POS:</span>
                     <span class="text-dark" id="receiptCashierDisplay">@(User.Identity?.Name ?? "Main Station")</span>
                 </div>
@@ -204,60 +208,69 @@
 </div>
 
 <!-- VIEW C: Customer Digital Receipt QR Section (Inside Modal) -->
-<div id="txQrViewSection" class="text-center" style="display: none;">
-    <h4 class="fw-bold text-primary mb-1">Scan to Save Receipt on Phone</h4>
-    <p class="fw-medium small mb-3 text-secondary" style="font-size: 15px;">
-        Ask the customer to point their phone's camera or QR scanner at the code below.
-    </p>
+<div class="modal fade" id="customerQrModal" tabindex="-1" aria-labelledby="customerQrModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
+            <div class="modal-header text-white p-3 border-0" style="background-color: #1162a3;">
+                <h6 class="modal-title fw-bold mb-0 fs-5" id="customerQrModalLabel">
+                    <i class="fa-solid fa-qrcode me-2"></i>Customer Digital Receipt
+                </h6>
+                <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
 
-    <!-- Large Scannable QR Container -->
-    <div class="bg-white p-3 rounded-4 shadow-sm border d-inline-flex flex-column align-items-center mb-3">
-        <div id="txModalQrContainer" class="p-1"></div>
-        <span class="font-monospace fw-bold text-dark small mt-2" id="txModalQrReceiptNum">#REC-000000</span>
-    </div>
+            <div class="modal-body p-4 bg-light text-center" id="txQrViewSection">
+                <h5 class="fw-bold text-primary mb-1">Scan to Save Receipt on Phone</h5>
+                <p class="fw-medium small mb-3 text-secondary">
+                    Ask the customer to point their phone's camera or QR scanner at the code below.
+                </p>
 
-    <!-- Mode Switcher: Public Link vs Offline Text QR -->
-    <div class="d-flex justify-content-center gap-2 mb-3">
-        <input type="radio" class="btn-check" name="txModalQrMode" id="txQrModeWeb" autocomplete="off" checked onchange="renderTxModalQrByMode('web')">
-        <label class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" for="txQrModeWeb" style="font-size: 11px;">
-            <i class="fa-solid fa-globe me-1"></i>Web e-Receipt Link
-        </label>
+                <!-- Large Scannable QR Container -->
+                <div class="bg-white p-3 rounded-4 shadow-sm border d-inline-flex flex-column align-items-center mb-3">
+                    <div id="txModalQrContainer" class="p-1"></div>
+                    <span class="font-monospace fw-bold text-dark small mt-2" id="txModalQrReceiptNum">#REC-000000</span>
+                </div>
 
-        <input type="radio" class="btn-check" name="txModalQrMode" id="txQrModeText" autocomplete="off" onchange="renderTxModalQrByMode('text')">
-        <label class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" for="txQrModeText" style="font-size: 11px;">
-            <i class="fa-solid fa-file-lines me-1"></i>Offline Text Summary
-        </label>
-    </div>
+                <!-- Mode Switcher: Public Link vs Offline Text QR -->
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <input type="radio" class="btn-check" name="txModalQrMode" id="txQrModeWeb" autocomplete="off" checked onchange="renderQrByMode('web')">
+                    <label class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" for="txQrModeWeb" style="font-size: 11px;">
+                        <i class="fa-solid fa-globe me-1"></i>Web e-Receipt Link
+                    </label>
 
-    <!-- Copy Shareable Link -->
-    <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border bg-white">
-        <input type="text" id="txModalPublicReceiptUrl" class="form-control border-0 bg-white ps-3 text-secondary small" readonly />
-        <button class="btn btn-primary px-3 fw-semibold" type="button" onclick="copyTxModalReceiptLink()">
-            <i class="fa-regular fa-copy me-1"></i>Copy Link
-        </button>
-    </div>
-    <small id="txModalCopyToast" class="text-success fw-bold d-block mt-2" style="display: none !important; font-size: 11px;">
-        <i class="fa-solid fa-check me-1"></i>Link copied to clipboard!
-    </small>
+                    <input type="radio" class="btn-check" name="txModalQrMode" id="txQrModeText" autocomplete="off" onchange="renderQrByMode('text')">
+                    <label class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" for="txQrModeText" style="font-size: 11px;">
+                        <i class="fa-solid fa-file-lines me-1"></i>Offline Text Summary
+                    </label>
+                </div>
 
-    <!-- Footer Actions Matching Customer QR Modal -->
-    <div class="bg-white rounded-4 shadow-sm border p-3 mt-3 d-flex justify-content-between align-items-center">
-        <a id="txModalPreviewLinkBtn" href="#" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
-            <i class="fa-solid fa-up-right-from-square me-1"></i>Preview Customer View
-        </a>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" onclick="backToReceiptDetailsFromQr()">
-                <i class="fa-solid fa-arrow-left me-1"></i>Back
-            </button>
-            <button type="button" class="btn btn-sm btn-secondary rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">
-                Done
-            </button>
+                <!-- Copy Shareable Link -->
+                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border bg-white">
+                    <input type="text" id="txModalPublicReceiptUrl" class="form-control border-0 bg-white ps-3 text-secondary small" readonly />
+                    <button class="btn btn-primary px-3 fw-semibold" type="button" onclick="copyPublicReceiptLink()">
+                        <i class="fa-regular fa-copy me-1"></i>Copy Link
+                    </button>
+                </div>
+                <small id="txModalCopyToast" class="text-success fw-bold d-block mt-2" style="display: none !important; font-size: 11px;">
+                    <i class="fa-solid fa-check me-1"></i>Link copied to clipboard!
+                </small>
+
+                <!-- Footer Actions -->
+                <div class="bg-white rounded-4 shadow-sm border p-3 mt-3 d-flex justify-content-between align-items-center">
+                    <a id="txModalPreviewLinkBtn" href="#" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                        <i class="fa-solid fa-up-right-from-square me-1"></i>Preview Customer View
+                    </a>
+                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">
+                        Done
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <!-- Lightweight QRCode.js & html2canvas CDNs for instant client-side generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -282,38 +295,34 @@
                     <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
                           style="font-size: 11px; background-color: #fff3cd; color: #856404; border: 1.5px solid #ffeeba;">
                         <i class="fa-solid fa-coins me-1"></i>${safeName}
-                    </span>
-                `;
+                    </span>`;
             }
             if (lower.includes("gcash") || lower.includes("ewallet") || lower.includes("e-wallet")) {
                 return `
                     <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-success"
                           style="font-size: 11px; background-color: #dcfce7; border: 1.5px solid #bbf7d0;">
                         <i class="fa-solid fa-mobile-screen-button me-1"></i>${safeName}
-                    </span>
-                `;
+                    </span>`;
             }
             if (lower.includes("credit")) {
                 return `
                     <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm"
                           style="font-size: 11px; background-color: #f3e8ff; color: #6b21a8; border: 1.5px solid #e9d5ff;">
                         <i class="fa-solid fa-credit-card me-1"></i>${safeName}
-                    </span>
-                `;
+                    </span>`;
             }
             return `
                 <span class="badge rounded-pill fw-semibold px-2 py-1 shadow-sm text-primary"
                       style="font-size: 11px; background-color: #e0f2fe; border: 1.5px solid #bae6fd;">
                     <i class="fa-solid fa-money-bill-wave me-1"></i>${safeName}
-                </span>
-            `;
+                </span>`;
         }
 
-        // Encode receipt data into URL-safe Base64 so the public page requires ZERO database or login access
         function buildCustomerReceiptToken(tx, receiptNum, formattedDate, cashierName) {
             const compactData = {
                 r: receiptNum,
                 d: formattedDate,
+                st: tx.retailName || tx.storeName || "SmartScan Retail", // Retail Store
                 c: cashierName,
                 u: tx.customerName && tx.customerName !== "Guest" ? tx.customerName : "Walk-in Guest",
                 m: tx.paymentMethod || "Cash In Hand",
@@ -332,10 +341,10 @@
             return btoa(encodeURIComponent(jsonStr));
         }
 
-        // Plain-text fallback for 100% offline phone camera scanning
         function buildPlainTextSummary(tx, receiptNum, formattedDate) {
+            const storeName = tx.retailName || tx.storeName || "SmartScan Retail";
             const lines = [
-                "SMARTSCAN RETAIL",
+                storeName.toUpperCase(),
                 `Receipt: ${receiptNum}`,
                 `Date: ${formattedDate}`,
                 "------------------------"
@@ -358,10 +367,8 @@
         document.addEventListener("DOMContentLoaded", function () {
             onZoomSliderChange(1.25);
 
-            // Check if customer opened this page via a shared QR link (?d=...)
             const urlParams = new URLSearchParams(window.location.search);
             const sharedToken = urlParams.get("d");
-
             let rawData = sessionStorage.getItem("smartScanLastTransaction");
 
             if (sharedToken && !rawData) {
@@ -370,6 +377,7 @@
                     rawData = JSON.stringify({
                         receiptNumber: decoded.r,
                         date: decoded.d,
+                        retailName: decoded.st || "SmartScan Retail",
                         customerName: decoded.u,
                         paymentMethod: decoded.m,
                         statusId: decoded.s,
@@ -429,11 +437,16 @@
                     }
                 }
 
-                // Receipt & Date Metadata
+                // Receipt & Date Metadata (Fixed matching IDs)
                 const receiptNum = tx.receiptNumber || ("REC" + Date.now().toString().slice(-8));
-                document.getElementById("receiptNumberDisplay").textContent = receiptNum;
-                document.getElementById("modalQrReceiptNum").textContent = receiptNum;
-                document.getElementById("barcodeNumber").textContent = `*${receiptNum.replace(/[^0-9A-Z]/gi, '')}*`;
+                const receiptNumEl = document.getElementById("receiptNumberDisplay");
+                if (receiptNumEl) receiptNumEl.textContent = receiptNum;
+
+                const modalQrNumEl = document.getElementById("txModalQrReceiptNum");
+                if (modalQrNumEl) modalQrNumEl.textContent = receiptNum;
+
+                const barcodeEl = document.getElementById("barcodeNumber");
+                if (barcodeEl) barcodeEl.textContent = `*${receiptNum.replace(/[^0-9A-Z]/gi, '')}*`;
 
                 const parsedDate = tx.date ? new Date(tx.date) : new Date();
                 const formattedDate = isNaN(parsedDate.getTime())
@@ -446,13 +459,20 @@
                         minute: "2-digit",
                         hour12: true
                     });
-                document.getElementById("receiptDateDisplay").textContent = formattedDate;
+                const dateEl = document.getElementById("receiptDateDisplay");
+                if (dateEl) dateEl.textContent = formattedDate;
+
+                const storeDisplayEl = document.getElementById("receiptStoreDisplay");
+                if (storeDisplayEl) {
+                    storeDisplayEl.textContent = tx.retailName || tx.storeName || "SmartScan Retail";
+                }
 
                 // Customer Info
                 const custName = tx.customerName && tx.customerName !== "Guest" ? tx.customerName : "Walk-in Guest";
-                document.getElementById("receiptCustomerDisplay").textContent = custName;
+                const custEl = document.getElementById("receiptCustomerDisplay");
+                if (custEl) custEl.textContent = custName;
 
-                // Due Date Handling (Strict check: Only visible for Store Credits)
+                // Due Date Handling (Only visible for Store Credits)
                 const method = tx.paymentMethod || "Cash In Hand";
                 const isStoreCredit = method.toLowerCase().includes("store");
                 const rawDueDate = tx.dueDate;
@@ -507,7 +527,6 @@
                 document.getElementById("receiptSubtotal").textContent = `₱${calculatedSubtotal.toFixed(2)}`;
                 document.getElementById("receiptGrandTotal").textContent = `₱${grandTotal.toFixed(2)}`;
 
-                // Tender Badge
                 const methodBadge = document.getElementById("receiptPaymentMethodBadge");
                 if (methodBadge) {
                     methodBadge.innerHTML = getPaymentBadgeHtml(method);
@@ -529,23 +548,23 @@
                 publicReceiptUrl = `${window.location.origin}/Home/DigitalReceipt?d=${encodeURIComponent(token)}`;
                 plainTextReceiptSummary = buildPlainTextSummary(tx, receiptNum, formattedDate);
 
-                // Populate URL input & preview button
-                const urlInput = document.getElementById("publicReceiptUrlInput");
+                // Populate URL input & preview button (Fixed matching IDs)
+                const urlInput = document.getElementById("txModalPublicReceiptUrl");
                 if (urlInput) urlInput.value = publicReceiptUrl;
-                const previewBtn = document.getElementById("openPublicReceiptBtn");
+
+                const previewBtn = document.getElementById("txModalPreviewLinkBtn");
                 if (previewBtn) previewBtn.href = publicReceiptUrl;
 
-                // Generate inline QR on the receipt paper & modal QR
-                // If running on localhost, default inline QR to offline plain-text so any phone camera can read it immediately
                 const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
                 const defaultQrContent = isLocalhost ? plainTextReceiptSummary : publicReceiptUrl;
 
-                if (isLocalhost) {
-                    document.getElementById("qrModeText").checked = true;
+                const qrModeTextRadio = document.getElementById("txQrModeText");
+                if (isLocalhost && qrModeTextRadio) {
+                    qrModeTextRadio.checked = true;
                 }
 
                 generateQrIntoElement("inlineReceiptQr", defaultQrContent, 96);
-                generateQrIntoElement("modalQrContainer", defaultQrContent, 200);
+                generateQrIntoElement("txModalQrContainer", defaultQrContent, 200);
 
                 // Broadcast receipt state to Customer Display screen if active
                 localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({
@@ -576,7 +595,7 @@
 
         function renderQrByMode(mode) {
             const targetContent = mode === 'text' ? plainTextReceiptSummary : publicReceiptUrl;
-            generateQrIntoElement("modalQrContainer", targetContent, 200);
+            generateQrIntoElement("txModalQrContainer", targetContent, 200);
             generateQrIntoElement("inlineReceiptQr", targetContent, 96);
         }
 
@@ -588,8 +607,8 @@
         }
 
         function copyPublicReceiptLink() {
-            const input = document.getElementById("publicReceiptUrlInput");
-            const toast = document.getElementById("copyConfirmToast");
+            const input = document.getElementById("txModalPublicReceiptUrl");
+            const toast = document.getElementById("txModalCopyToast");
             if (!input) return;
 
             navigator.clipboard.writeText(input.value).then(() => {
@@ -602,7 +621,6 @@
             });
         }
 
-        // Download Receipt Card as a High-Res PNG Image
         async function downloadReceiptAsImage() {
             const receiptEl = document.getElementById("printableReceipt");
             const btn = document.getElementById("btnDownloadReceiptImg");
@@ -618,7 +636,6 @@
                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Saving...';
                 }
 
-                // Temporarily reset scale and scroll height so the full receipt captures cleanly
                 receiptEl.style.transform = "scale(1)";
                 if (itemList) itemList.style.maxHeight = "none";
 
@@ -655,7 +672,6 @@
             window.location.href = "/Home/Checkout";
         }
 
-        // ================= HORIZONTAL ZOOM CONTROLS =================
         function onZoomSliderChange(val) {
             const scale = parseFloat(val);
             const receipt = document.getElementById("printableReceipt");

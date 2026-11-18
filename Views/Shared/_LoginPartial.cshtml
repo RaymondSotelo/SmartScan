@@ -113,7 +113,8 @@
 
             <!-- User Profile Dropdown -->
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none" href="#" id="userProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="padding-top: 24px; padding-bottom: 10px;">
+                <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none py-0"
+                   href="#" id="userProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="me-2" style="padding-right: 8px; font-size: 18px;">@User.Identity?.Name</span>
                     <img src="@profilePfpPath" onerror="this.onerror=null; this.src='@fallbackAvatar';" asp-append-version="true" alt="Profile" class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white" style="width: 42px; height: 42px;" />
                 </a>
@@ -125,7 +126,7 @@
                         </a>
                     </li>
                     <li>
-                        <form id="logoutForm" class="d-block w-100 m-0" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })" method="post">
+                        <form id="logoutForm" class="d-block w-100 m-0" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post">
                             <button type="submit" class="dropdown-item py-2 fw-medium text-danger d-flex align-items-center w-100">
                                 <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger" style="width: 20px;"></i>Logout
                             </button>
@@ -135,12 +136,13 @@
             </li>
 
             <!-- Notification Bell Dropdown -->
-            <li class="nav-item dropdown me-3" style="padding-top: 14px;">
-                <a class="nav-link dropdown-toggle position-relative text-white" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <li class="nav-item dropdown me-3">
+                <a class="nav-link dropdown-toggle position-relative text-white py-0 d-flex align-items-center"
+                   href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fa-solid fa-bell fs-5"></i>
                     @if (topAlerts.Any())
                     {
-                        <span id="alertBadge" class="position-absolute top-25 start-75 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.65rem; padding: 0.25em 0.45em;">
+                        <span id="alertBadge" class="position-absolute top-0 start-75 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.65rem; padding: 0.25em 0.45em;">
                             <span id="alertCount">@(topAlerts.Count() > 9 ? "9+" : topAlerts.Count())</span>
                             <span class="visually-hidden">New alerts</span>
                         </span>
@@ -227,10 +229,20 @@
         }
         else
         {
-            <li class="nav-item d-flex align-items-center pt-4 pe-2">
-                <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
-                <span class="mx-2 fw-medium user-select-none" style="color: #387bd6;">|</span>
-                <a class="nav-link fw-semibold p-0 nav-auth-link" asp-area="Identity" asp-page="/Account/Register">Sign Up</a>
+            <li class="nav-item d-flex align-items-center gap-2 pt-0 pe-2">
+                <a class="btn btn-sm rounded-pill px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2"
+                   style="background-color: #dbeafe; color: #1162a3; border: 1px solid #cfe2f3;"
+                   asp-area="Identity" asp-page="/Account/Login">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Login</span>
+                </a>
+
+                <a class="btn btn-sm rounded-pill px-3 py-2 fw-semibold text-white shadow-sm d-inline-flex align-items-center gap-2"
+                   style="background-color:#387bd6; border: 1px solid none;"
+                   asp-area="Identity" asp-page="/Account/Register">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Sign Up</span>
+                </a>
             </li>
         }
     </ul>
@@ -243,6 +255,16 @@
         let alertInterval = null;
         let isLoggingOutOrUnloading = false;
         let activePollAbortController = null;
+        const ALERT_SYNC_KEY = "smartscan_alert_sync_event";
+
+        function broadcastAlertSync(count, readAlertId = null, markAll = false) {
+            localStorage.setItem(ALERT_SYNC_KEY, JSON.stringify({
+                count: count,
+                readAlertId: readAlertId,
+                markAll: markAll,
+                ts: Date.now()
+            }));
+        }
 
         function stopAlertPolling() {
             isLoggingOutOrUnloading = true;
@@ -297,8 +319,75 @@
                 });
             }
 
-            // Start polling every 15 seconds only for authenticated sessions
+            // Start polling every 15 seconds (fetchLiveAlerts checks document.visibilityState internally)
             alertInterval = setInterval(fetchLiveAlerts, 15000);
+
+            // Sync badge, dropdown, and open SecurityAlerts/Index tables across all open tabs
+            window.addEventListener("storage", function (e) {
+                if (e.key !== ALERT_SYNC_KEY || !e.newValue) return;
+
+                let payload;
+                try {
+                    payload = JSON.parse(e.newValue);
+                } catch {
+                    return;
+                }
+
+                const syncedCount = parseInt(payload.count, 10) || 0;
+                currentAlertCount = syncedCount;
+
+                // 1. Sync Navbar Badge & Dropdown List
+                const badge = document.getElementById("alertBadge");
+                const countEl = document.getElementById("alertCount");
+                const readAllBtn = document.getElementById("readAllBtn");
+                const listContainer = document.getElementById("alertListContainer");
+
+                if (payload.readAlertId) {
+                    const dropItem = document.getElementById(`alert-item-${payload.readAlertId}`);
+                    if (dropItem) dropItem.remove();
+                }
+
+                if (syncedCount === 0 || payload.markAll) {
+                    if (badge) badge.remove();
+                    if (readAllBtn) readAllBtn.style.display = "none";
+                    if (listContainer) {
+                        listContainer.innerHTML = `
+                            <div class="dropdown-item py-4 text-muted text-center">
+                                <i class="fa-solid fa-bell-slash fa-2x mb-2 text-secondary opacity-50"></i><br />
+                                No unread alerts.
+                            </div>`;
+                    }
+                } else if (countEl) {
+                    countEl.textContent = syncedCount > 9 ? "9+" : syncedCount;
+                }
+
+                // 2. Sync SecurityAlerts/Index Table & Counters (if open in this tab)
+                const unreadCountBtn = document.getElementById("unreadCountBtn");
+                const readCountBtn = document.getElementById("readCountBtn");
+
+                if (payload.markAll) {
+                    const tbodyUnread = document.getElementById("tbody-unread");
+                    if (tbodyUnread) {
+                        const rows = Array.from(tbodyUnread.querySelectorAll(".log-row"));
+                        if (rows.length > 0) {
+                            rows.forEach(r => transitionRowToReadTable(r));
+                            if (unreadCountBtn && readCountBtn) {
+                                readCountBtn.innerText = (parseInt(readCountBtn.innerText) || 0) + rows.length;
+                                unreadCountBtn.innerText = "0";
+                            }
+                        }
+                    }
+                } else if (payload.readAlertId) {
+                    const indexRow = document.getElementById("alert-row-" + payload.readAlertId);
+                    if (indexRow) {
+                        if (unreadCountBtn && readCountBtn) {
+                            unreadCountBtn.innerText = Math.max(0, (parseInt(unreadCountBtn.innerText) || 0) - 1);
+                            readCountBtn.innerText = (parseInt(readCountBtn.innerText) || 0) + 1;
+                        }
+                        transitionRowToReadTable(indexRow);
+                    }
+                }
+            });
         });
 
         // Stop polling and abort pending fetch requests when navigating away
@@ -403,6 +492,7 @@
                         countSpan.textContent = remainingAlerts > 9 ? "9+" : remainingAlerts;
                     }
                     currentAlertCount = remainingAlerts;
+                    broadcastAlertSync(currentAlertCount, alertId, false);
 
                     // 2. Sync with Index Page (Animate & Move)
                     const indexRow = document.getElementById('alert-row-' + alertId);
@@ -460,6 +550,7 @@
                             </div>`;
                     }
                     currentAlertCount = 0;
+                    broadcastAlertSync(0, null, true);
 
                     // Sync with Index Page (Bulk Move)
                     const tbodyUnread = document.getElementById('tbody-unread');
@@ -502,6 +593,7 @@
         }
 
         async function fetchLiveAlerts() {
+            if (document.visibilityState !== "visible") return;
             if (isLoggingOutOrUnloading) return;
 
             try {
@@ -534,6 +626,7 @@
 
                 if (data.count > currentAlertCount) {
                     currentAlertCount = data.count;
+                    broadcastAlertSync(currentAlertCount, null, false);
 
                     const readAllBtn = document.getElementById('readAllBtn');
                     if (readAllBtn) readAllBtn.style.display = 'block';

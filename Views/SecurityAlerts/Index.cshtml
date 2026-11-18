@@ -2,7 +2,10 @@
 
 @{
     ViewData["Title"] = "Security Alerts";
-    ViewData["HeaderTitle"] = "Retail Management";
+    if (ViewData["HeaderTitle"] == null)
+    {
+        ViewData["HeaderTitle"] = "Retail Management";
+    }
 
     var readAlertIds = ViewBag.ReadAlertIds as HashSet<int> ?? new HashSet<int>();
 
@@ -405,7 +408,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    // 1. Update Index Counters
+                    // Update Index Counters
                     let unreadCountBtn = document.getElementById('unreadCountBtn');
                     let readCountBtn = document.getElementById('readCountBtn');
                     if (unreadCountBtn && readCountBtn) {
@@ -413,7 +416,7 @@
                         readCountBtn.innerText = parseInt(readCountBtn.innerText) + 1;
                     }
 
-                    // 2. Live Sync Navbar Dropdown
+                    // Live Sync Navbar Dropdown
                     const dropdownItem = document.getElementById(`alert-item-${alertId}`);
                     if (dropdownItem) dropdownItem.remove();
 
@@ -439,7 +442,11 @@
 
                     if (typeof currentAlertCount !== 'undefined') currentAlertCount = remaining;
 
-                    // 3. Animate and MOVE row from Unread to Read table
+                    if (typeof broadcastAlertSync === "function") {
+                        broadcastAlertSync(remaining, alertId, false);
+                    }
+
+                    // Animate and MOVE row from Unread to Read table
                     row.style.opacity = '0';
                     row.style.transform = 'translateX(20px)';
 
@@ -468,6 +475,7 @@
         }
 
         async function fetchLiveIndexAlerts() {
+            if (document.visibilityState !== "visible") return;
             if (isIndexUnloading) return;
 
             try {

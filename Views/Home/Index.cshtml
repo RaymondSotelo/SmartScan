@@ -1,18 +1,783 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
-    if (ViewData["HeaderTitle"] == null)
-    {
-        ViewData["HeaderTitle"] = "Dashboard";
-    }
+    ViewData["Title"] = "Home";
+    ViewData["HeaderTitle"] = "A Vision-Based Automated Checkout For Retail Counters";
+
+    bool isAuthenticated = User.Identity != null && User.Identity.IsAuthenticated;
+    bool isAdmin = User.IsInRole("Admin");
+    bool isCashier = User.IsInRole("Cashier");
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-2 mt-md-3 bg-white p-4"
-     style="height: calc(100dvh - 130px); min-height: 540px;">
-    <div class="d-flex align-items-center gap-2 mb-3">
-        <i class="fa-solid fa-home fs-4 text-primary"></i>
-        <h4 class="mb-0 fw-bold text-primary">Dashboard</h4>
+<!-- Bounded Transparent Scroll Container -->
+<div id="homeScrollWrapper"
+     class="w-100 no-scrollbar pt-3 pb-4 px-1"
+     style="height: calc(100dvh - 125px); overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none;">
+
+    <!-- ========================================== -->
+    <!-- HERO BANNER SECTION                        -->
+    <!-- ========================================== -->
+    <div class="border-0 rounded-4 py-4 px-2 px-lg-3 mb-3 bg-transparent">
+        <div class="row align-items-center g-4">
+            <!-- Left Column: Hero Text & Actions -->
+            <div class="col-12 col-lg-7">
+                <h2 class="fw-bold mb-3" style="color: #387bd6; letter-spacing: -0.5px;">
+                    AI Computer Vision, Smart Retail POS &amp; Retail Management
+                </h2>
+
+                <p class="text-dark opacity-75 fw-medium mb-4" style="font-size: 0.98rem; line-height: 1.6; text-align: justify;">
+                    Designed for community-based retail operations for <strong>small and big retail business</strong>,
+                    SmartScan combines real-time <strong>YOLO object detection</strong>, automatic multi-item tray counting,
+                    an 80% confidence barcode fallback gate, facial biometric verification, PhilSys age compliance,
+                    and automated inventory deduction in one web-based platform.
+                </p>
+            </div>
+
+            <!-- Right Column: Image Placeholder -->
+            <div class="col-12 col-lg-5">
+                <div class="rounded-4 border w-100 overflow-hidden d-flex align-items-center justify-content-center shadow-sm"
+                     style="min-height: 280px; background-color: rgba(255, 255, 255, 0.45); border-color: #cfe2f3 !important;">
+                    <img src="#" class="w-100 h-100 object-fit-cover" /> <!-- Change later -->
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="alert alert-light border rounded-3 p-3">
-        <p class="mb-0 text-secondary">Welcome to SmartScan. Select a module from the navigation to begin.</p>
+
+    <!-- White container -->
+    <div class="card border-0 rounded-4 shadow-sm p-4 p-lg-5 mb-4 bg-white">
+
+        <!-- ========================================== -->
+        <!-- SYSTEM OVERVIEW & INTERFACE SHOWCASE       -->
+        <!-- ========================================== -->
+        <div class="mb-4 px-1">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1" style="color: #387bd6;">
+                        <i class="fa-solid fa-desktop me-2"></i>System Overview &amp; Workflow Showcase
+                    </h4>
+                    <p class="text-secondary fw-medium mb-0">
+                        Explore how SmartScan operates across front-counter cashier terminals and administrative portals.
+                    </p>
+                </div>
+
+                <!-- Animated Sliding Toggle Switch (Cashier Default vs Admin) -->
+                <div class="position-relative d-inline-flex align-items-center p-1 rounded-pill border shadow-sm user-select-none"
+                     style="background-color: #dbeafe; border-color: #cfe2f3 !important; width: 250px; height: 44px;">
+
+                    <!-- Sliding Pill Indicator -->
+                    <div id="overviewTogglePill"
+                         class="position-absolute rounded-pill shadow-sm"
+                         style="width: calc(50% - 4px); height: calc(100% - 8px); top: 4px; left: 4px; background-color: #1162a3; transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(0%);">
+                    </div>
+
+                    <!-- Cashier Button (Default Active) -->
+                    <button type="button"
+                            id="btnToggleCashier"
+                            onclick="switchOverviewRole('cashier')"
+                            class="btn btn-sm border-0 rounded-pill fw-bold w-50 h-100 position-relative z-1 d-flex align-items-center justify-content-center gap-1 shadow-none"
+                            style="color: #ffffff; transition: color 0.25s ease; font-size: 13px;">
+                        <i class="fa-solid fa-cash-register"></i>
+                        <span>Cashier</span>
+                    </button>
+
+                    <!-- Admin Button -->
+                    <button type="button"
+                            id="btnToggleAdmin"
+                            onclick="switchOverviewRole('admin')"
+                            class="btn btn-sm border-0 rounded-pill fw-bold w-50 h-100 position-relative z-1 d-flex align-items-center justify-content-center gap-1 shadow-none"
+                            style="color: #1162a3; transition: color 0.25s ease; font-size: 13px;">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>Admin</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: CASHIER WORKFLOW SHOWCASE (DEFAULT) -->
+        <!-- ========================================== -->
+        <div id="showcaseCashierSection" class="d-flex flex-column gap-4">
+
+            <!-- FIRST IMAGE: Fade Slide Right -->
+            <div class="card border rounded-4 shadow-sm p-4 anim-hidden overview-anim-item"
+                 data-anim="anim-fade-right"
+                 data-delay="0"
+                 style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                <div class="row align-items-center g-4">
+                    <div class="col-12 col-lg-5 text-start">
+                        <h5 class="fw-bold mb-2" style="color: #1162a3;">
+                            Real-Time YOLO Product Detection &amp; Live Receipt Queue
+                        </h5>
+                        <p class="text-secondary small mb-0" style="font-size: 0.92rem; line-height: 1.65; text-align: justify;">
+                            At the front counter, the cashier enables the overhead scanner to detect multiple retail items simultaneously in real time using the <strong>YOLO object detection engine</strong>. Recognized items—such as sachets, snacks, and beverages—are highlighted with live bounding boxes and confidence scores, then automatically locked into the <strong>Receipt Queue</strong> with unit prices and running subtotals. Cashiers can also scan barcodes or search products manually, broadcast live totals to the secondary <strong>Customer Display</strong>, review recent transactions, or proceed directly to payment.
+                        </p>
+                    </div>
+
+                    <div class="col-12 col-lg-7 text-end">
+                        <div class="rounded-4 border overflow-hidden shadow-sm bg-white d-inline-block w-100">
+                            <img src="~/images/showcase/Showcase 1.jpg"
+                                 alt="Automated Checkout Counter Interface"
+                                 asp-append-version="true"
+                                 class="img-fluid w-100 object-fit-cover" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECOND IMAGE: Fade Slide Left -->
+            <div class="card border rounded-4 shadow-sm p-4 anim-hidden overview-anim-item"
+                 data-anim="anim-fade-left"
+                 data-delay="180"
+                 style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                <div class="row align-items-center g-4">
+                    <div class="col-12 col-lg-7 text-start order-2 order-lg-1">
+                        <div class="rounded-4 border overflow-hidden shadow-sm bg-white d-inline-block w-100">
+                            <img src="~/images/showcase/Showcase 2.png"
+                                 alt="Payment Processing Interface"
+                                 asp-append-version="true"
+                                 class="img-fluid w-100 object-fit-cover" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-5 text-end order-1 order-lg-2">
+                        <h5 class="fw-bold mb-2" style="color: #1162a3;">
+                            Order Verification &amp; Multi-Channel Settlement
+                        </h5>
+                        <p class="text-secondary small mb-0" style="font-size: 0.92rem; line-height: 1.65; text-align: justify;">
+                            Once items are confirmed, the <strong>Payment Processing</strong> screen presents a clear itemized <strong>Order Summary</strong> alongside the total amount due. Cashiers can settle purchases across four flexible payment channels: instant <strong>Cash in Hand</strong> with automatic change calculation, digital <strong>Credit Card</strong> and <strong>E-Wallet (GCash API)</strong> checkouts powered by Xendit, or biometric-authenticated <strong>Store Credits</strong> that record customer balances with automated due-date tracking.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THIRD IMAGE: Fade Slide Right -->
+            <div class="card border rounded-4 shadow-sm p-4 anim-hidden overview-anim-item"
+                 data-anim="anim-fade-right"
+                 data-delay="360"
+                 style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                <div class="row align-items-center g-4">
+                    <div class="col-12 col-lg-5 text-start">
+                        <h5 class="fw-bold mb-2" style="color: #1162a3;">
+                            Official Digital e-Receipt &amp; Customer QR Copy
+                        </h5>
+                        <p class="text-secondary small mb-0" style="font-size: 0.92rem; line-height: 1.65; text-align: justify;">
+                            Immediately after settlement, SmartScan deducts sold quantities from the store's SQL inventory and generates an <strong>Official Transaction Receipt</strong> complete with a unique receipt number, timestamp, retail branch name, cashier details, and itemized breakdown. Cashiers can inspect the receipt using the interactive zoom slider, save it as a high-resolution PNG image, or display a scannable <strong>Customer QR Copy</strong> so shoppers can save their digital receipt directly to their phone.
+                        </p>
+                    </div>
+
+                    <div class="col-12 col-lg-7 text-end">
+                        <div class="rounded-4 border overflow-hidden shadow-sm bg-white d-inline-block w-100">
+                            <img src="~/images/showcase/Showcase 3.png"
+                                 alt="Transaction Receipt Interface"
+                                 asp-append-version="true"
+                                 class="img-fluid w-100 object-fit-cover" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: ADMIN WORKFLOW SHOWCASE             -->
+        <!-- ========================================== -->
+        <div id="showcaseAdminSection" class="d-none flex-column gap-4">
+
+            <!-- FIRST IMAGE: Fade Slide Right -->
+            <div class="card border rounded-4 shadow-sm p-4 anim-hidden overview-anim-item"
+                 data-anim="anim-fade-right"
+                 data-delay="0"
+                 style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                <div class="row align-items-center g-4">
+                    <div class="col-12 col-lg-5 text-start">
+                        <h5 class="fw-bold mb-2" style="color: #1162a3;">
+                            Real-Time KPI Monitoring &amp; Credit Watchlist
+                        </h5>
+                        <p class="text-secondary small mb-0" style="font-size: 0.92rem; line-height: 1.65; text-align: justify;">
+                            Upon logging in, administrators are greeted by a centralized <strong>Executive Dashboard</strong> displaying live performance tiles for total <strong>Receivables</strong>, <strong>Today's Sales</strong>, <strong>Verified Shoppers</strong>, and active <strong>Store Outlets</strong>. Directly below, the <strong>Overdue Credit Watchlist</strong> flags past-due store credit balances with customer contact details and overdue timelines, alongside a real-time feed of newly enrolled biometric customer profiles.
+                        </p>
+                    </div>
+
+                    <div class="col-12 col-lg-7 text-end">
+                        <div class="rounded-4 border overflow-hidden shadow-sm bg-white d-inline-block w-100">
+                            <img src="~/images/showcase/Showcase 4.png"
+                                 alt="Admin Executive Dashboard Interface"
+                                 asp-append-version="true"
+                                 class="img-fluid w-100 object-fit-cover" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECOND IMAGE: Fade Slide Left -->
+            <div class="card border rounded-4 shadow-sm p-4 anim-hidden overview-anim-item"
+                 data-anim="anim-fade-left"
+                 data-delay="180"
+                 style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                <div class="row align-items-center g-4">
+                    <div class="col-12 col-lg-7 text-start order-2 order-lg-1">
+                        <div class="rounded-4 border overflow-hidden shadow-sm bg-white d-inline-block w-100">
+                            <img src="~/images/showcase/Showcase 5.png"
+                                 alt="Product Catalog Management Interface"
+                                 asp-append-version="true"
+                                 class="img-fluid w-100 object-fit-cover" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-5 text-end order-1 order-lg-2">
+                        <h5 class="fw-bold mb-2" style="color: #1162a3;">
+                            Master Product Catalog &amp; AI Training Readiness
+                        </h5>
+                        <p class="text-secondary small mb-0" style="font-size: 0.92rem; line-height: 1.65; text-align: justify;">
+                            Through the <strong>Product Catalog</strong> module, administrators register, update, and organize retail merchandise with product photos, categories, base market prices, and active availability statuses. Each item also features an <strong>AI Ready (Trained)</strong> indicator, allowing store owners to verify at a glance which products are trained in the YOLO vision model for automated tray recognition.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THIRD IMAGE: Fade Slide Right -->
+            <div class="card border rounded-4 shadow-sm p-4 anim-hidden overview-anim-item"
+                 data-anim="anim-fade-right"
+                 data-delay="360"
+                 style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                <div class="row align-items-center g-4">
+                    <div class="col-12 col-lg-5 text-start">
+                        <h5 class="fw-bold mb-2" style="color: #1162a3;">
+                            Branch-Level Inventory, Pricing &amp; Store Operations
+                        </h5>
+                        <p class="text-secondary small mb-0" style="font-size: 0.92rem; line-height: 1.65; text-align: justify;">
+                            Inside each registered retail branch, administrators can manage store-specific <strong>Inventory</strong> stock levels, set customized <strong>Local Prices</strong>, assign authorized <strong>Staff Members</strong>, inspect <strong>Sales Analysis</strong> reports, and audit complete <strong>Transaction History</strong> logs—giving multi-branch owners full operational control from a single workspace.
+                        </p>
+                    </div>
+
+                    <div class="col-12 col-lg-7 text-end">
+                        <div class="rounded-4 border overflow-hidden shadow-sm bg-white d-inline-block w-100">
+                            <img src="~/images/showcase/Showcase 6.png"
+                                 alt="Retail Branch Inventory Management Interface"
+                                 asp-append-version="true"
+                                 class="img-fluid w-100 object-fit-cover" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <hr class="my-5" style="border-color: #cfe2f3;" />
+
+        <!-- ========================================== -->
+        <!-- CORE SYSTEM CAPABILITIES (INVERSE POP)     -->
+        <!-- Sequence: 1 -> (2 & 4) -> (3 & 5) -> 6     -->
+        <!-- ========================================== -->
+        <div class="mb-2 px-1">
+            <h4 class="fw-bold mb-1" style="color: #387bd6;">
+                <i class="fa-solid fa-layer-group me-2"></i>Core System Capabilities
+            </h4>
+            <p class="text-secondary mb-3 fw-medium">Key modules engineered for automated vision-based retail checkout and store management.</p>
+        </div>
+
+        <div id="coreCapabilitiesGrid" class="row g-3 mb-4">
+            <!-- 1. Wave 0 (0ms) -->
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white anim-hidden core-pop-card"
+                     data-delay="0"
+                     style="background-color: #387bd6;">
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                         style="width: 64px; height: 64px; color: #387bd6;">
+                        <i class="fa-solid fa-camera fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2 text-white text-center">YOLO Vision &amp; Customer Display</h6>
+                    <p class="small mb-0 text-white opacity-75" style="line-height: 1.5; text-align: justify;">
+                        Identifies and counts multiple tray items via overhead camera, syncing live bills to a secondary Customer Display.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 2. Wave 1 (260ms - Halfway shrink of Card 1) -->
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white anim-hidden core-pop-card"
+                     data-delay="260"
+                     style="background-color: #387bd6;">
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                         style="width: 64px; height: 64px; color: #387bd6;">
+                        <i class="fa-solid fa-barcode fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2 text-white text-center">Confidence &amp; Barcode Fallback</h6>
+                    <p class="small mb-0 text-white opacity-75" style="line-height: 1.5; text-align: justify;">
+                        Evaluates AI detection confidence in real time and triggers barcode scanning or manual correction when below 80%.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3. Wave 2 (520ms - Halfway shrink of Cards 2 & 4) -->
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white anim-hidden core-pop-card"
+                     data-delay="520"
+                     style="background-color: #387bd6;">
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                         style="width: 64px; height: 64px; color: #387bd6;">
+                        <i class="fa-solid fa-id-card-clip fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2 text-white text-center">Biometrics &amp; PhilSys Age Gate</h6>
+                    <p class="small mb-0 text-white opacity-75" style="line-height: 1.5; text-align: justify;">
+                        Authenticates credit shoppers via 128-D facial embeddings and validates 16-digit PhilSys IDs in-memory for 18+ goods.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 4. Wave 1 (260ms - Halfway shrink of Card 1) -->
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white anim-hidden core-pop-card"
+                     data-delay="260"
+                     style="background-color: #387bd6;">
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                         style="width: 64px; height: 64px; color: #387bd6;">
+                        <i class="fa-solid fa-hand-holding-dollar fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2 text-white text-center">Multi-Payment &amp; Store Credits</h6>
+                    <p class="small mb-0 text-white opacity-75" style="line-height: 1.5; text-align: justify;">
+                        Accepts Cash, GCash/Maya E-Wallets, Credit Cards, and biometric Store Credit tabs with automated due-date tracking.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 5. Wave 2 (520ms - Halfway shrink of Cards 2 & 4) -->
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white anim-hidden core-pop-card"
+                     data-delay="520"
+                     style="background-color: #387bd6;">
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                         style="width: 64px; height: 64px; color: #387bd6;">
+                        <i class="fa-solid fa-qrcode fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2 text-white text-center">Digital QR Receipts &amp; Reports</h6>
+                    <p class="small mb-0 text-white opacity-75" style="line-height: 1.5; text-align: justify;">
+                        Issues itemized e-Receipts with scannable QR codes and exports sales and inventory analytics to PDF or Excel.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 6. Wave 3 (780ms - Halfway shrink of Cards 3 & 5) -->
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 border-0 rounded-4 shadow-sm p-4 text-white anim-hidden core-pop-card"
+                     data-delay="780"
+                     style="background-color: #387bd6;">
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                         style="width: 64px; height: 64px; color: #387bd6;">
+                        <i class="fa-solid fa-bell fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2 text-white text-center">Anomaly &amp; Low-Stock Alerts</h6>
+                    <p class="small mb-0 text-white opacity-75" style="line-height: 1.5; text-align: justify;">
+                        Automatically deducts sold stock, flags low inventory thresholds, and logs checkout anomalies for loss prevention.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-5" style="border-color: #cfe2f3;" />
+
+        <!-- ========================================== -->
+        <!-- MANUSCRIPT SECTION: AI VISION PIPELINE     -->
+        <!-- Sequence: Step 1 -> Step 2 -> Step 3 -> 4  -->
+        <!-- ========================================== -->
+        <div class="mb-2 px-1">
+            <h4 class="fw-bold mb-1" style="color: #387bd6;">
+                <i class="fa-solid fa-microchip me-2"></i>AI System Architecture &amp; Operational Pipeline
+            </h4>
+            <p class="text-secondary fw-medium mb-3">End-to-end computer vision and transaction workflow from tray capture to database synchronization.</p>
+        </div>
+
+        <div id="aiPipelineGrid" class="row g-3 mb-4">
+            <!-- Step 1 -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="p-3 rounded-4 h-100 border anim-hidden ai-step-card"
+                     data-delay="0"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="badge rounded-pill px-3 py-1 fw-bold text-white" style="background-color: #387bd6;">Step 01</span>
+                        <i class="fa-solid fa-video fs-5" style="color: #387bd6;"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 14px;">ROI Tray Capture</h6>
+                    <p class="text-secondary small mb-0" style="font-size: 12.5px; line-height: 1.45;">
+                        Overhead HD camera isolates the designated scanning tray Region of Interest (ROI) under stable counter lighting.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="p-3 rounded-4 h-100 border anim-hidden ai-step-card"
+                     data-delay="180"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="badge rounded-pill px-3 py-1 fw-bold text-white" style="background-color: #387bd6;">Step 02</span>
+                        <i class="fa-solid fa-brain fs-5" style="color: #387bd6;"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 14px;">FastAPI &amp; YOLO Engine</h6>
+                    <p class="text-secondary small mb-0" style="font-size: 12.5px; line-height: 1.45;">
+                        Streams frames to the FastAPI backend where the custom-trained YOLO model classifies items and counts quantities.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="p-3 rounded-4 h-100 border anim-hidden ai-step-card"
+                     data-delay="360"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="badge rounded-pill px-3 py-1 fw-bold text-white" style="background-color: #387bd6;">Step 03</span>
+                        <i class="fa-solid fa-shield-halved fs-5" style="color: #387bd6;"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 14px;">80% Confidence Gate</h6>
+                    <p class="text-secondary small mb-0" style="font-size: 12.5px; line-height: 1.45;">
+                        Validates detection scores; items below 80% confidence or occluded packaging prompt barcode fallback or manual edit.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="p-3 rounded-4 h-100 border anim-hidden ai-step-card"
+                     data-delay="540"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="badge rounded-pill px-3 py-1 fw-bold text-white" style="background-color: #387bd6;">Step 04</span>
+                        <i class="fa-solid fa-database fs-5" style="color: #387bd6;"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 14px;">SQL Sync &amp; Billing</h6>
+                    <p class="text-secondary small mb-0" style="font-size: 12.5px; line-height: 1.45;">
+                        Finalizes payment, deducts SQL Server stock, logs security events, and generates digital QR receipts &amp; reports.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-5" style="border-color: #cfe2f3;" />
+
+        <!-- ========================================== -->
+        <!-- ROLE-BASED WORKFLOWS (HOVER COLOR SHIFT)   -->
+        <!-- ========================================== -->
+        <div class="mb-2 px-1">
+            <h4 class="fw-bold mb-1" style="color: #387bd6;">
+                <i class="fa-solid fa-users-gear me-2"></i>Role-Based Workflows &amp; Access Control
+            </h4>
+            <p class="text-secondary fw-medium mb-3">
+                Dedicated operational workspaces engineered for multi-branch administrators and front-counter cashiers.
+            </p>
+        </div>
+
+        <div class="row g-3">
+            <!-- Admin Portal Capabilities -->
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 border rounded-4 shadow-sm p-4 role-workflow-card">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge rounded-pill px-3 py-1 fw-bold text-white" style="background-color: #387bd6;">Admin Role</span>
+                        <h6 class="fw-bold mb-0 text-dark">Multi-Branch Executive Control</h6>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Built for store owners and administrators to oversee operations, datasets, and staff across retail outlets:
+                    </p>
+                    <ul class="list-unstyled small text-dark mb-0 d-flex flex-column gap-2">
+                        <li><i class="fa-solid fa-circle-check text-primary me-2"></i><strong>Sales &amp; KPI Dashboard:</strong> Monitor receivables, daily revenue, verified shoppers, and exportable PDF/Excel reports.</li>
+                        <li><i class="fa-solid fa-circle-check text-primary me-2"></i><strong>Catalog &amp; Dataset Supervision:</strong> Manage product records, local inventory levels, and product training requests.</li>
+                        <li><i class="fa-solid fa-circle-check text-primary me-2"></i><strong>Account &amp; Security Auditing:</strong> Approve pending admin applications, assign cashiers, and review flagged security alerts.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Cashier Terminal Capabilities -->
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 border rounded-4 shadow-sm p-4 role-workflow-card">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge rounded-pill px-3 py-1 fw-bold" style="background-color: #387bd6; color: #ffffff;">Cashier Role</span>
+                        <h6 class="fw-bold mb-0 text-dark">Vision Counter &amp; Session Guard</h6>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Streamlined for rapid front-counter execution with built-in station assignment and session protection:
+                    </p>
+                    <ul class="list-unstyled small text-dark mb-0 d-flex flex-column gap-2">
+                        <li><i class="fa-solid fa-circle-check text-primary me-2"></i><strong>Automated Tray Scanning:</strong> Scan multiple items simultaneously, hold transactions, or adjust cart quantities manually.</li>
+                        <li><i class="fa-solid fa-circle-check text-primary me-2"></i><strong>Single-Session Enforcement:</strong> SignalR &amp; security stamp guards prevent concurrent account sharing across terminals.</li>
+                        <li><i class="fa-solid fa-circle-check text-primary me-2"></i><strong>End-to-End Settlement:</strong> Seamlessly transition from camera detection to customer verification, payment, and e-Receipt QR sharing.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-5" style="border-color: #cfe2f3;" />
+
+        <!-- ========================================== -->
+        <!-- CAPSTONE DEVELOPMENT TEAM (FADE SLIDE DOWN)-->
+        <!-- Sequence: Project Manager -> Tester        -->
+        <!-- ========================================== -->
+        <div class="mb-2 px-1">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div>
+                    <h4 class="fw-bold mb-1" style="color: #387bd6;">
+                        <i class="fa-solid fa-people-group me-2"></i>Capstone Research &amp; Development Team
+                    </h4>
+                    <p class="text-secondary fw-medium mb-0">
+                        Meet the team behind the production of SmartScan: A Vision Based Automated Checkout For Retail Counters
+                    </p>
+                </div>
+
+                <!-- Placed at the end (right side) of the flex row -->
+                <img src="~/images/Mahatma.png"
+                     alt="Institution or Department Logo"
+                     asp-append-version="true"
+                     class="object-fit-contain flex-shrink-0"
+                     style="height: 126px; width: auto;" />
+            </div>
+        </div>
+
+        <div class="mb-4 text-center">
+            <h3 class="text-primary fw-bolder mb-4">Team MAHATMA</h3>
+        </div>
+
+        <div id="teamGrid" class="row g-3">
+            <!-- Member 1: Project Manager -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border rounded-4 shadow-sm p-4 text-center anim-hidden team-down-card"
+                     data-delay="0"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="rounded-circle border mx-auto mb-3 shadow-sm overflow-hidden d-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                        <img src="~/images/Project Manager.png" alt="Kiervy A. Hernani" class="w-100 h-100 object-fit-cover" />
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Kiervy A. Hernani</h6>
+                    <span class="badge rounded-pill mx-auto mb-2 px-3 py-1 fw-semibold"
+                          style="background-color: #dbeafe; color: #1162a3; font-size: 11px;">
+                        Project Manager
+                    </span>
+                    <p class="text-secondary small mb-0" style="font-size: 12px; line-height: 1.45;">
+                        Oversees Agile sprint planning, milestone tracking, team coordination, and end-to-end capstone delivery.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Member 2: Hacker -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border rounded-4 shadow-sm p-4 text-center anim-hidden team-down-card"
+                     data-delay="180"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="rounded-circle border mx-auto mb-3 shadow-sm overflow-hidden d-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                        <img src="~/images/Hacker.png" alt="Raymond John Y. Sotelo Jr." class="w-100 h-100 object-fit-cover" />
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Raymond John Y. Sotelo Jr.</h6>
+                    <span class="badge rounded-pill mx-auto mb-2 px-3 py-1 fw-semibold"
+                          style="background-color: #dbeafe; color: #1162a3; font-size: 11px;">
+                        Hacker
+                    </span>
+                    <p class="text-secondary small mb-0" style="font-size: 12px; line-height: 1.45;">
+                        Architects the ASP.NET Core backend, SQL Server database, YOLO object detection pipeline, and biometric security logic.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Member 3: Hipster -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border rounded-4 shadow-sm p-4 text-center anim-hidden team-down-card"
+                     data-delay="360"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="rounded-circle border mx-auto mb-3 shadow-sm overflow-hidden d-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                        <img src="~/images/Hipster.png" alt="Jhandy T. Selencio" class="w-100 h-100 object-fit-cover" />
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Jhandy T. Selencio</h6>
+                    <span class="badge rounded-pill mx-auto mb-2 px-3 py-1 fw-semibold"
+                          style="background-color: #dbeafe; color: #1162a3; font-size: 11px;">
+                        Hipster
+                    </span>
+                    <p class="text-secondary small mb-0" style="font-size: 12px; line-height: 1.45;">
+                        Crafts the UI/UX design system, responsive POS checkout layouts, dual-screen customer displays, and visual branding.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Member 4: Tester / QA -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card h-100 border rounded-4 shadow-sm p-4 text-center anim-hidden team-down-card"
+                     data-delay="540"
+                     style="background-color: #f8fafc; border-color: #cfe2f3 !important;">
+                    <div class="rounded-circle border mx-auto mb-3 shadow-sm overflow-hidden d-flex align-items-center justify-content-center"
+                         style="width: 80px; height: 80px; background-color: #dbeafe; border-color: #cfe2f3 !important;">
+                        <img src="~/images/Tester.png" alt="Carlo Cruz" class="w-100 h-100 object-fit-cover" />
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Carlo Cruz</h6>
+                    <span class="badge rounded-pill mx-auto mb-2 px-3 py-1 fw-semibold"
+                          style="background-color: #dbeafe; color: #1162a3; font-size: 11px;">
+                        Tester / QA
+                    </span>
+                    <p class="text-secondary small mb-0" style="font-size: 12px; line-height: 1.45;">
+                        Executes functional, integration, and edge-case testing, AI detection accuracy validation, and user acceptance evaluation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
     </div>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM TIDBITS: SUMMARY & CONTACT US       -->
+    <!-- ========================================== -->
+    <div class="card border-0 rounded-4 shadow-sm p-4 mb-2 bg-white">
+        <div class="row align-items-start g-3">
+            <!-- Small Summary of the System (text-start) -->
+            <div class="col-12 col-md-7 text-start">
+                <h6 class="fw-bold mb-1" style="color: #1162a3; font-size: 13.5px;">
+                    <i class="fa-solid fa-circle-info me-1" style="color: #387bd6;"></i>About SmartScan
+                </h6>
+                <p class="text-secondary small mb-2" style="font-size: 12px; line-height: 1.55;">
+                    <strong>SmartScan: A Vision-Based Automated Checkout System for Retail Counters</strong> is a web-based AI point-of-sale and inventory management platform developed at the University of Cebu – Lapu-Lapu and Mandaue (College of Computer Studies) to modernize community retail operations.
+                </p>
+                <small class="text-muted d-block" style="font-size: 11px;">
+                    <i class="fa-solid fa-location-dot me-1" style="color: #387bd6;"></i>Lapu-Lapu City, Cebu, Philippines
+                </small>
+            </div>
+
+            <!-- Contact Us -->
+            <div class="col-12 col-md-5 text-start text-md-end">
+                <div class="d-inline-flex flex-column align-items-start align-items-md-end gap-1">
+                    <span class="fw-bold text-uppercase mb-1" style="color: #1162a3; font-size: 11px; letter-spacing: 0.5px;">
+                        Contact Us
+                    </span>
+                    <a href="mailto:kiervyhernani99@gmail.com" class="text-decoration-none fw-semibold small d-inline-flex align-items-center gap-2" style="color: #387bd6; font-size: 12px;">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>kiervyhernani99@gmail.com</span>
+                    </a>
+                    <a href="mailto:raymondsotelo75@gmail.com" class="text-decoration-none fw-semibold small d-inline-flex align-items-center gap-2" style="color: #387bd6; font-size: 12px;">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>raymondsotelo75@gmail.com</span>
+                    </a>
+                    <a href="mailto:jhandyselencio1@gmail.com" class="text-decoration-none fw-semibold small d-inline-flex align-items-center gap-2" style="color: #387bd6; font-size: 12px;">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>jhandyselencio1@gmail.com</span>
+                    </a>
+                    <a href="mailto:patalingjugcarlo163@gmail.com" class="text-decoration-none fw-semibold small d-inline-flex align-items-center gap-2" style="color: #387bd6; font-size: 12px;">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>patalingjugcarlo163@gmail.com</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+@section Scripts {
+    <script>
+        let overviewPlayedOnce = false;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const wrapper = document.getElementById("homeScrollWrapper");
+            if (wrapper && wrapper.parentElement) {
+                wrapper.parentElement.style.overflow = "hidden";
+                wrapper.parentElement.style.minHeight = "0";
+            }
+
+            // Scroll-reveal observer scoped to #homeScrollWrapper (plays once per section)
+            const observerOptions = {
+                root: wrapper,
+                threshold: 0.15
+            };
+
+            const sectionObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+
+                    const target = entry.target;
+
+                    // 1. System Overview (Plays ONCE on initial page access; switching tabs won't replay)
+                    if (target.id === "showcaseCashierSection" && !overviewPlayedOnce) {
+                        overviewPlayedOnce = true;
+                        target.querySelectorAll(".overview-anim-item").forEach(card => {
+                            const animClass = card.dataset.anim;
+                            const delay = parseInt(card.dataset.delay || "0", 10);
+                            setTimeout(() => {
+                                card.classList.remove("anim-hidden");
+                                card.classList.add(animClass);
+                            }, delay);
+                        });
+                        // Immediately reveal Admin tab items without animation so switching tabs is instant
+                        document.querySelectorAll("#showcaseAdminSection .overview-anim-item").forEach(card => {
+                            card.classList.remove("anim-hidden");
+                        });
+                    }
+
+                    // 2. Core System Capabilities (Inverse Pop: 1 -> 2&4 -> 3&5 -> 6 at halfway shrink)
+                    if (target.id === "coreCapabilitiesGrid") {
+                        target.querySelectorAll(".core-pop-card").forEach(card => {
+                            const delay = parseInt(card.dataset.delay || "0", 10);
+                            setTimeout(() => {
+                                card.classList.remove("anim-hidden");
+                                card.classList.add("anim-inverse-pop");
+                            }, delay);
+                        });
+                    }
+
+                    // 3. AI Pipeline (Fade Slide Right: Step 1 -> 2 -> 3 -> 4)
+                    if (target.id === "aiPipelineGrid") {
+                        target.querySelectorAll(".ai-step-card").forEach(card => {
+                            const delay = parseInt(card.dataset.delay || "0", 10);
+                            setTimeout(() => {
+                                card.classList.remove("anim-hidden");
+                                card.classList.add("anim-fade-right");
+                            }, delay);
+                        });
+                    }
+
+                    // 4. Capstone Team (Fade Slide Down: Project Manager -> Tester)
+                    if (target.id === "teamGrid") {
+                        target.querySelectorAll(".team-down-card").forEach(card => {
+                            const delay = parseInt(card.dataset.delay || "0", 10);
+                            setTimeout(() => {
+                                card.classList.remove("anim-hidden");
+                                card.classList.add("anim-fade-down");
+                            }, delay);
+                        });
+                    }
+
+                    observer.unobserve(target);
+                });
+            }, observerOptions);
+
+            ["showcaseCashierSection", "coreCapabilitiesGrid", "aiPipelineGrid", "teamGrid"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) sectionObserver.observe(el);
+            });
+        });
+
+        // Tab Section Switcher 
+        function switchOverviewRole(role) {
+            const pill = document.getElementById("overviewTogglePill");
+            const btnCashier = document.getElementById("btnToggleCashier");
+            const btnAdmin = document.getElementById("btnToggleAdmin");
+            const cashierSection = document.getElementById("showcaseCashierSection");
+            const adminSection = document.getElementById("showcaseAdminSection");
+
+            if (!pill || !btnCashier || !btnAdmin || !cashierSection || !adminSection) return;
+
+            if (role === "admin") {
+                pill.style.transform = "translateX(100%)";
+                btnCashier.style.color = "#1162a3";
+                btnAdmin.style.color = "#ffffff";
+
+                cashierSection.classList.remove("d-flex");
+                cashierSection.classList.add("d-none");
+
+                adminSection.classList.remove("d-none");
+                adminSection.classList.add("d-flex");
+            } else {
+                pill.style.transform = "translateX(0%)";
+                btnCashier.style.color = "#ffffff";
+                btnAdmin.style.color = "#1162a3";
+
+                adminSection.classList.remove("d-flex");
+                adminSection.classList.add("d-none");
+
+                cashierSection.classList.remove("d-none");
+                cashierSection.classList.add("d-flex");
+            }
+        }
+    </script>
+}

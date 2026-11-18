@@ -84,8 +84,12 @@
             window.close();
             // Fallback if browser security blocks window.close() on redirected tabs
             setTimeout(() => {
-                window.location.replace("about:blank");
-            }, 300);
+                if (window.opener && !window.opener.closed) {
+                    window.close();
+                } else {
+                    window.location.replace("/Home/Checkout");
+                }
+            }, 3000);
         }
 
         const countdown = setInterval(() => {

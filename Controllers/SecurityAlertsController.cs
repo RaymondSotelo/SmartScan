@@ -31,6 +31,21 @@ namespace SmartScan.Controllers
                 .ToHashSetAsync();
 
             bool isCashierOnly = isCashier && !isAdmin;
+
+            if (isCashierOnly)
+            {
+                var staffAssignment = await _context.RetailStaffs
+                    .AsNoTracking()
+                    .Include(rs => rs.Retail)
+                    .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+
+                ViewData["HeaderTitle"] = staffAssignment?.Retail?.RetailName ?? "Cashier";
+            }
+            else
+            {
+                ViewData["HeaderTitle"] = "Retail Management";
+            }
+
             var userRetailIds = await GetPermittedRetailIdsAsync(currentUserId!, isCashierOnly);
 
             var alertsQuery = _context.SecurityAlerts
@@ -44,7 +59,7 @@ namespace SmartScan.Controllers
             }
 
             // Restrict Cashiers to Low Stock (4), Depleted (5), and Anomaly (6)
-            if (isCashier && !isAdmin)
+            if (isCashierOnly)
             {
                 var allowedTypes = new List<int> { 4, 5, 6 };
                 alertsQuery = alertsQuery.Where(a => allowedTypes.Contains(a.AlertTypeId));

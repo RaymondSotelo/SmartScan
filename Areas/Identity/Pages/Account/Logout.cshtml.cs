@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace SmartScan.Areas.Identity.Pages.Account;
 
 [IgnoreAntiforgeryToken]
+[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 public class LogoutModel : PageModel
 {
     private readonly SignInManager<IdentityUser> _signInManager;

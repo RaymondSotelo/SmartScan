@@ -34,18 +34,19 @@ namespace SmartScan.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
+            ViewData["HeaderTitle"] = "Welcome to SmartScan";
+
+            // Allow unauthenticated visitors to view the Home Page directly
             if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
-                return RedirectToPage("/Account/Login", new { area = "Identity" });
+                return View();
             }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (User.IsInRole("Cashier"))
             {
-                bool isAssigned = await _context.RetailStaffs
-                    .AnyAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
-
+                bool isAssigned = await _context.RetailStaffs.AnyAsync(rs => rs.StaffId == currentUserId);
                 if (isAssigned)
                     return RedirectToAction("Checkout", "Home");
 
@@ -210,43 +211,59 @@ namespace SmartScan.Controllers
         public async Task<IActionResult> GetProductDetails(string productName)
         {
             if (string.IsNullOrWhiteSpace(productName))
-            {
-                return Json(new { success = false, message = "Product identifier required." });
-            }
-
-            productName = productName.Trim();
+                return Json(new { success = false, message = "Empty query." });
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+            var staffAssignment = await _context.RetailStaffs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
+
             int currentRetailId = staffAssignment?.RetailId ?? 0;
+            if (currentRetailId == 0)
+                return Json(new { success = false, message = "Cashier is not assigned to a retail store." });
 
-            var product = await _context.Products
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p =>
-                    (!string.IsNullOrEmpty(p.Barcode) && p.Barcode == productName) ||
-                    p.ProductName.ToLower() == productName.ToLower());
+            string cleanQuery = productName.Trim().ToLower();
 
-            if (product == null)
+            // Try EXACT match on ProductName or Barcode within this store's inventory first
+            var matchingInventories = await _context.Inventories
+                .AsNoTracking()
+                .Include(i => i.Product)
+                .Where(i => i.RetailId == currentRetailId &&
+                            i.Product != null &&
+                            (i.Product.ProductName.ToLower() == cleanQuery ||
+                             (i.Product.Barcode != null && i.Product.Barcode.ToLower() == cleanQuery)))
+                .ToListAsync();
+
+            // Fallback to partial match ONLY if no exact match exists
+            if (!matchingInventories.Any())
             {
-                return Json(new { success = false, message = "Product not found." });
+                matchingInventories = await _context.Inventories
+                    .AsNoTracking()
+                    .Include(i => i.Product)
+                    .Where(i => i.RetailId == currentRetailId &&
+                                i.Product != null &&
+                                (i.Product.ProductName.ToLower().Contains(cleanQuery) ||
+                                 (i.Product.Barcode != null && i.Product.Barcode.ToLower().Contains(cleanQuery))))
+                    .ToListAsync();
             }
 
-            var inventoryItem = await _context.Inventories
-                .FirstOrDefaultAsync(i => i.ProductId == product.ProductId && i.RetailId == currentRetailId);
+            if (!matchingInventories.Any())
+                return Json(new { success = false, message = "Product not found in this store's inventory." });
 
-            decimal price = inventoryItem?.LocalPrice ?? product.Price;
-            int stock = inventoryItem?.Stock ?? 0;
+            var targetProductId = matchingInventories.First().ProductId;
+            var productRows = matchingInventories.Where(i => i.ProductId == targetProductId).ToList();
+            var primary = productRows.First();
+
 
             return Json(new
             {
                 success = true,
-                productId = product.ProductId,
-                name = product.ProductName,
-                barcode = product.Barcode,
-                price = price,
-                stock = stock,
-                isAgeRestricted = product.IsAgeRestricted,
-                imageUrl = product.ProductImage ?? "/images/default-product.png"
+                productId = primary.ProductId,
+                name = primary.Product!.ProductName,
+                barcode = primary.Product.Barcode,
+                price = primary.LocalPrice > 0 ? primary.LocalPrice : primary.Product.Price,
+                stock = productRows.Sum(r => r.Stock),
+                isAgeRestricted = primary.Product.IsAgeRestricted
             });
         }
 
@@ -255,33 +272,50 @@ namespace SmartScan.Controllers
         public async Task<IActionResult> SearchProducts(string term)
         {
             if (string.IsNullOrWhiteSpace(term))
-            {
                 return Json(new List<object>());
-            }
 
-            term = term.Trim().ToLower();
-
-            // Resolve logged-in Cashier's assigned store
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var staffAssignment = await _context.RetailStaffs.FirstOrDefaultAsync(rs => rs.StaffId == currentUserId);
-            int currentRetailId = staffAssignment?.RetailId ?? 0;
+            var staffAssignment = await _context.RetailStaffs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(rs => rs.StaffId == currentUserId && rs.StatusId == 1);
 
-            // Query Inventories for this specific store, joining the Product data
-            var suggestions = await _context.Inventories
+            int currentRetailId = staffAssignment?.RetailId ?? 0;
+            if (currentRetailId == 0)
+                return Json(new List<object>());
+
+            string cleanTerm = term.Trim().ToLower();
+
+            // Query strictly from THIS retail store's Inventories table
+            var storeInventories = await _context.Inventories
+                .AsNoTracking()
                 .Include(i => i.Product)
-                .Where(i => i.RetailId == currentRetailId && i.Product != null)
-                .Where(i => i.Product.ProductName.ToLower().Contains(term) ||
-                           (!string.IsNullOrEmpty(i.Product.Barcode) && i.Product.Barcode.Contains(term)))
-                .Select(i => new
-                {
-                    name = i.Product.ProductName,
-                    barcode = i.Product.Barcode ?? "",
-                    stock = i.Stock
-                })
-                .Take(5)
+                .Where(i => i.RetailId == currentRetailId &&
+                            i.Product != null &&
+                            (i.Product.ProductName.ToLower().Contains(cleanTerm) ||
+                             (i.Product.Barcode != null && i.Product.Barcode.ToLower().Contains(cleanTerm))))
                 .ToListAsync();
 
-            return Json(suggestions);
+            // Group by ProductId so duplicate inventory rows for the same product sum accurately
+            var results = storeInventories
+                .GroupBy(i => i.ProductId)
+                .Select(g =>
+                {
+                    var first = g.First();
+                    return new
+                    {
+                        productId = first.ProductId,
+                        name = first.Product!.ProductName,
+                        barcode = first.Product.Barcode,
+                        price = first.LocalPrice > 0 ? first.LocalPrice : first.Product.Price,
+                        stock = g.Sum(x => x.Stock)
+                    };
+                })
+                .OrderByDescending(x => x.name.ToLower() == cleanTerm || (x.barcode != null && x.barcode.ToLower() == cleanTerm))
+                .ThenBy(x => x.name)
+                .Take(10)
+                .ToList();
+
+            return Json(results);
         }
 
         [AllowAnonymous]
@@ -452,12 +486,12 @@ namespace SmartScan.Controllers
             return Json(new { success = false, message = "Face not recognized. This person is not enrolled in the customer registry." });
         }
 
-        // NationalIDVerification | Verifies age in-memory without database storage
+        // NationalIDVerification | Verifies PhilSys QR structure & age in-memory without database storage
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult NationalIDVerification([FromBody] GovIdVerifyRequest req)
         {
-            if (string.IsNullOrWhiteSpace(req.RawPayload) || string.IsNullOrWhiteSpace(req.ManualDob))
+            if (req == null || string.IsNullOrWhiteSpace(req.RawPayload) || string.IsNullOrWhiteSpace(req.ManualDob))
                 return Json(new { isValid = false, message = "PCN and Date of Birth are required." });
 
             string digitsOnly = new string(req.RawPayload.Where(char.IsDigit).ToArray());
@@ -466,6 +500,77 @@ namespace SmartScan.Controllers
 
             if (!DateTime.TryParse(req.ManualDob, out DateTime dob))
                 return Json(new { isValid = false, message = "Invalid Date of Birth format." });
+
+            // If submitted via QR Scan (Camera or Image), enforce authentic PhilSys JWT structure & claims
+            if (req.IsFromQrScan)
+            {
+                if (string.IsNullOrWhiteSpace(req.RawQrToken))
+                    return Json(new { isValid = false, message = "Missing PhilSys QR cryptographic token." });
+
+                var parts = req.RawQrToken.Trim().Split('.');
+                if (parts.Length != 3 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1]) || string.IsNullOrWhiteSpace(parts[2]))
+                    return Json(new { isValid = false, message = "Invalid or forged QR format: Not a valid signed PhilSys JWS token." });
+
+                try
+                {
+                    // Validate JWT Header
+                    string headerJson = DecodeBase64Url(parts[0]);
+                    using var headerDoc = JsonDocument.Parse(headerJson);
+                    var headerRoot = headerDoc.RootElement;
+
+                    string alg = headerRoot.TryGetProperty("alg", out var algProp) ? (algProp.GetString() ?? "") : "";
+                    if (string.IsNullOrWhiteSpace(alg) || alg.Equals("none", StringComparison.OrdinalIgnoreCase))
+                        return Json(new { isValid = false, message = "Security Alert: Unsigned or tampered QR token rejected." });
+
+                    // Validate JWT Payload & PSA Schema
+                    string payloadJson = DecodeBase64Url(parts[1]);
+                    using var payloadDoc = JsonDocument.Parse(payloadJson);
+                    var root = payloadDoc.RootElement;
+
+                    // Check Issuer ("PSA" or official PhilSys issuer URL)
+                    string issuer = root.TryGetProperty("iss", out var issProp) ? (issProp.GetString() ?? "") :
+                                    root.TryGetProperty("Issuer", out var issuerProp) ? (issuerProp.GetString() ?? "") : "";
+
+                    if (!string.IsNullOrWhiteSpace(issuer) &&
+                        !issuer.Contains("PSA", StringComparison.OrdinalIgnoreCase) &&
+                        !issuer.Contains("philsys", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Json(new { isValid = false, message = $"Invalid QR Issuer ('{issuer}'). Only official PSA PhilSys IDs are accepted." });
+                    }
+
+                    // Extract subject object (PhilSys v1/v2 nests claims inside "subject")
+                    JsonElement subject = root.TryGetProperty("subject", out var subjProp) ? subjProp : root;
+
+                    // Verify PCN inside token matches submitted PCN
+                    string tokenPcnRaw = GetFirstStringProperty(subject, "pcn", "PCN");
+                    string tokenPcnDigits = new string(tokenPcnRaw.Where(char.IsDigit).ToArray());
+
+                    if (tokenPcnDigits.Length != 16 || tokenPcnDigits != digitsOnly)
+                        return Json(new { isValid = false, message = "PCN mismatch or missing 16-digit PCN inside PhilSys QR token." });
+
+                    // Verify Date of Birth inside token matches submitted DOB
+                    string tokenDobRaw = GetFirstStringProperty(subject, "bd", "DOB", "dob", "DateOfBirth", "birthDate");
+                    if (string.IsNullOrWhiteSpace(tokenDobRaw) || !DateTime.TryParse(tokenDobRaw, out DateTime tokenDob))
+                        return Json(new { isValid = false, message = "Missing or invalid Date of Birth inside PhilSys QR token." });
+
+                    if (tokenDob.Date != dob.Date)
+                        return Json(new { isValid = false, message = "Date of Birth mismatch: Input DOB does not match the PhilSys QR record." });
+
+                    // Verify required PhilSys identity name fields exist in subject
+                    string fName = GetFirstStringProperty(subject, "fName", "fname", "n_f");
+                    string lName = GetFirstStringProperty(subject, "lName", "lname", "n_l");
+                    if (string.IsNullOrWhiteSpace(fName) || string.IsNullOrWhiteSpace(lName))
+                        return Json(new { isValid = false, message = "Incomplete PhilSys QR identity claims (missing holder name)." });
+                }
+                catch (JsonException)
+                {
+                    return Json(new { isValid = false, message = "Corrupted or unreadable PhilSys QR payload." });
+                }
+                catch (FormatException)
+                {
+                    return Json(new { isValid = false, message = "Malformed Base64 encoding in PhilSys QR token." });
+                }
+            }
 
             int age = PhilippineNow.Year - dob.Year;
             if (PhilippineNow.Date < dob.Date.AddYears(age)) age--;
@@ -482,6 +587,31 @@ namespace SmartScan.Controllers
                 age = age,
                 isUnderage = isUnderage
             });
+        }
+
+        private static string DecodeBase64Url(string base64Url)
+        {
+            string base64 = base64Url.Replace('-', '+').Replace('_', '/');
+            switch (base64.Length % 4)
+            {
+                case 2: base64 += "=="; break;
+                case 3: base64 += "="; break;
+            }
+            byte[] bytes = Convert.FromBase64String(base64);
+            return Encoding.UTF8.GetString(bytes);
+        }
+
+        private static string GetFirstStringProperty(JsonElement element, params string[] propertyNames)
+        {
+            foreach (var propName in propertyNames)
+            {
+                if (element.TryGetProperty(propName, out var prop) && prop.ValueKind == JsonValueKind.String)
+                {
+                    var val = prop.GetString();
+                    if (!string.IsNullOrWhiteSpace(val)) return val.Trim();
+                }
+            }
+            return string.Empty;
         }
 
         // CreateXenditCheckout | Dynamic invoice generation for GCash & Credit Card
@@ -755,6 +885,7 @@ namespace SmartScan.Controllers
             var todayLocal = PhilippineNow.Date;
 
             var transactions = await _context.Transactions
+                .Include(t => t.Retail) 
                 .Include(t => t.PaymentMethod)
                 .Include(t => t.Status)
                 .Include(t => t.Customer)
@@ -767,6 +898,7 @@ namespace SmartScan.Controllers
                     transactionId = t.TransactionId,
                     receiptNumber = t.ReceiptNumber,
                     date = t.CreatedAt.ToString("MMM dd, yyyy h:mm tt"),
+                    retailName = t.Retail != null ? t.Retail.RetailName : "SmartScan Retail", // <-- 2. Add this property
                     total = t.TotalAmount,
                     paymentMethodId = t.PaymentMethodId,
                     paymentMethod = t.PaymentMethod != null ? t.PaymentMethod.PaymentMethodName : "Cash In Hand",
@@ -1102,6 +1234,8 @@ namespace SmartScan.Controllers
     {
         public string? RawPayload { get; set; }
         public string? ManualDob { get; set; }
+        public string? RawQrToken { get; set; }
+        public bool IsFromQrScan { get; set; }
     }
 
     public class FaceAuthRequest

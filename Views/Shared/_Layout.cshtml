@@ -11,117 +11,120 @@
     <link rel="stylesheet" href="~/SmartScan.styles.css" asp-append-version="true" />
     <link rel="icon" type="image/png" href="~/images/SmartScanLogo.png" asp-append-version="true" />
     <link rel="shortcut icon" type="image/png" href="~/images/SmartScanLogo.png" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" /></head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
 <body>
+    @{
+        var currentPath = Context.Request.Path.Value ?? "";
+        bool isAuthPage = currentPath.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase) ||
+        currentPath.Contains("/Account/Register", StringComparison.OrdinalIgnoreCase) ||
+        currentPath.Contains("/Account/ForgotPassword", StringComparison.OrdinalIgnoreCase);
+
+        bool showAuthenticatedShell = (User.Identity?.IsAuthenticated ?? false) && !isAuthPage;
+    }
     <div class="d-flex" id="wrapper">
-    @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
-    {
+        @if (showAuthenticatedShell && User.IsInRole("Admin"))
+        {
             <nav id="sidebar" class="collapsed" style="background-color:#1665a0;">
                 <div class="sidebar-header d-flex align-items-center p-3" style="min-height: 60px;">
                     <i class="fa-solid fa-bars menu-toggle-icon me-3" id="menuToggle" style="cursor: pointer; font-size: 1.3rem; color:white"></i>
                     <a class="navbar-brand fw-semibold project-name text-truncate" asp-area="" asp-controller="Users" asp-action="Index" style="font-size: 22px; color:white; font-family:Tahoma; text-decoration: none;">
                         SmartScan
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <span style="font-size:16px; width:40px; background-color:white; padding-left:4px; padding-right:4px; color:#1665a0"
-                              class="rounded-1">Admin</span> <!--[Admin tag]-->
-                        }
+                        <span style="font-size:16px; width:40px; background-color:white; padding-left:4px; padding-right:4px; color:#1665a0"
+                              class="rounded-1">Admin</span>
                     </a>
                 </div>
                 <ul class="list-unstyled components px-2">
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <li style="padding-bottom:6px"> <!-- [HOME Header] -->
-                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">HOME</span>
-                        </li>
-                        <li class="mb-2"> <!-- [DASHBOARD BUTTON] -->
-                            <a asp-area="" asp-controller="Users" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-border-all sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Dashboard</span>
-                            </a>
-                        </li>
-                        <hr />
-                        <li style="padding-bottom:6px"> <!-- [ACCOUNT MAMANGERMENT Header] -->
-                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">ACCOUNT MANAGEMENT</span>
-                        </li>
-                        <li class="mb-2"> <!-- [ADMIN APPROVAL Button] -->
-                            <a asp-area="" asp-controller="Users" asp-action="AdminApproval" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-user-tie sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Admin Approval</span>
-                            </a>
-                        </li>
-                        <li class="mb-2"> <!-- [USER MANAGER Button] -->
-                            <a asp-area="" asp-controller="Users" asp-action="UserManagement" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-users-gear sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">User Account Manager</span>
-                            </a>
-                        </li>
-                        <hr />
-                        <li style="padding-bottom:6px"> <!-- [PRODUCT MAMANGERMENT Header] -->
-                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">PRODUCT MANAGEMENT</span>
-                        </li>
-                        <li class="mb-2"> <!-- [CATEGORIES Button] -->
-                            <a asp-area="" asp-controller="Categories" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-tag sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Categories</span>
-                            </a>
-                        </li>
-                        <li class="mb-2"> <!-- [PRODUCTS Button] -->
-                            <a asp-area="" asp-controller="Products" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-cart-flatbed sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Products</span>
-                            </a>
-                        </li>
-                        <hr />
-                        <li style="padding-bottom:6px"> <!-- [RETAIL MAMANGERMENT Header] -->
-                            <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">RETAIL MANAGEMENT</span>
-                        </li>
-                        <li class="mb-2"> <!-- [RETAIL Button] -->
-                            <a asp-area="" asp-controller="Retails" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-shop sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Retail</span>
-                            </a>
-                        </li>
-                        <li class="mb-2"> <!-- [TRANSACTION LOGS Button] -->
-                            <a asp-area="" asp-controller="Transactions" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-receipt sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Transaction</span>
-                            </a>
-                        </li>
-                        <li class="mb-2"> <!-- [CUSTOMERS Button] -->
-                            <a asp-area="" asp-controller="Customers" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-id-badge sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Customer</span>
-                            </a>
-                        </li>
-                        <li class="mb-2"> <!-- [SECURITY LOGS Button] -->
-                            <a asp-area="" asp-controller="SecurityAlerts" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
-                                <i class="fa-solid fa-clipboard-check sidebar-icon fs-5 text-center"></i>
-                                <span class="menu-text ms-3">Security Logs</span>
-                            </a>
-                        </li>
-                    }          
+                    <li style="padding-bottom:6px">
+                        <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">HOME</span>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Users" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-border-all sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Dashboard</span>
+                        </a>
+                    </li>
+                    <hr />
+                    <li style="padding-bottom:6px">
+                        <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">ACCOUNT MANAGEMENT</span>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Users" asp-action="AdminApproval" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-user-tie sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Admin Approval</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Users" asp-action="UserManagement" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-users-gear sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">User Account Manager</span>
+                        </a>
+                    </li>
+                    <hr />
+                    <li style="padding-bottom:6px">
+                        <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">PRODUCT MANAGEMENT</span>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Categories" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-tag sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Categories</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Products" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-cart-flatbed sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Products</span>
+                        </a>
+                    </li>
+                    <hr />
+                    <li style="padding-bottom:6px">
+                        <span class="menu-text ms-3 text-white fw-semibold text-center" style="font-size:18px">RETAIL MANAGEMENT</span>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Retails" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-shop sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Retail</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Transactions" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-receipt sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Transaction</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="Customers" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-id-badge sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Customer</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a asp-area="" asp-controller="SecurityAlerts" asp-action="Index" class="nav-link d-flex align-items-center p-2 rounded fw-medium" style="color:white">
+                            <i class="fa-solid fa-clipboard-check sidebar-icon fs-5 text-center"></i>
+                            <span class="menu-text ms-3">Security Logs</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         }
-        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column">
-            <header> 
-                <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-0 mb-0" style="min-height: 60px; height:60px; background-color:@(User.Identity != null && User.Identity.IsAuthenticated ? "#1162a3" : "transparent");">
-                    <div class="container-fluid">
-                        @if (User.Identity == null || !User.Identity.IsAuthenticated)
-                        {
-                            <a class="navbar-brand d-inline-flex align-items-center gap-1 me-auto py-1 pt-4" 
-                               asp-area="" asp-controller="Home" asp-action="Index" 
-                               style="font-family: 'Microsoft Sans Serif', sans-serif; text-decoration: none; color: #387bd6;">
-   
-                                <!-- Scaled Logo Image -->
-                                <img src="~/images/SmartScanLogo.png" 
-                                     alt="Smart Scan Logo" 
-                                     width="75" 
-                                     height="75" 
-                                     class="object-fit-contain flex-shrink-0"/>
 
-                                <!-- Brand & Tagline Block -->
+        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column">
+            <header>
+                <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-0 mb-0 @(showAuthenticatedShell ? "py-0" : "py-2")"
+                     style="@(showAuthenticatedShell ? "min-height: 60px; height: 60px; background-color: #1162a3;" : "min-height: 60px; background-color: transparent;")">
+                    <div class="container-fluid">
+                        @if (!showAuthenticatedShell)
+                        {
+                            <a class="navbar-brand d-inline-flex align-items-center gap-1 me-auto py-0"
+                               asp-area="" asp-controller="Home" asp-action="Index"
+                               style="font-family: 'Microsoft Sans Serif', sans-serif; text-decoration: none; color: #387bd6;">
+
+                                <img src="~/images/SmartScanLogo.png"
+                                     alt="Smart Scan Logo"
+                                     width="75"
+                                     height="75"
+                                     class="object-fit-contain flex-shrink-0" />
+
                                 <div class="d-flex flex-column justify-content-center lh-1">
                                     <span class="fw-bold" style="font-size: 32px; line-height: 1.1;">SmartScan</span>
                                     <span class="fw-bold mt-1" style="font-size: 14px; letter-spacing: 0.3px;">
@@ -132,13 +135,14 @@
                         }
                         else if (User.IsInRole("Cashier"))
                         {
-                            <span class="navbar-brand fw-semibold project-name text-truncate text-white mb-0" 
-                                    style="font-size: 22px; font-family: Tahoma;">
+                            <span class="navbar-brand fw-semibold project-name text-truncate text-white mb-0"
+                                  style="font-size: 22px; font-family: Tahoma;">
                                 SmartScan <span class="fw-normal">|</span> @(ViewData["HeaderTitle"] ?? ViewData["Title"] ?? "Cashier")
                             </span>
-                        } else if (User.IsInRole("Admin"))
+                        }
+                        else if (User.IsInRole("Admin"))
                         {
-                            <span class="navbar-brand fw-semibold project-name text-truncate text-white mb-0" 
+                            <span class="navbar-brand fw-semibold project-name text-truncate text-white mb-0"
                                   style="font-size: 22px; font-family: Tahoma;">
                                 @(ViewData["HeaderTitle"] ?? ViewData["Title"] ?? "Admin Portal")
                             </span>
@@ -148,10 +152,13 @@
                                 aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
                         </button>
-                        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between pb-3">
+                        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between @(showAuthenticatedShell ? "" : "pb-3")">
                             <ul class="navbar-nav flex-grow-1">
                             </ul>
-                            <partial name="_LoginPartial" />
+                            @if (!isAuthPage)
+                            {
+                                <partial name="_LoginPartial" />
+                            }
                         </div>
                     </div>
                 </nav>
@@ -172,14 +179,22 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @if (User.Identity != null && User.Identity.IsAuthenticated)
+    <script type="text/javascript">
+        window.addEventListener("pageshow", function (event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+
+    @if (showAuthenticatedShell)
     {
         <!-- Hidden Form to Perform Clean POST Logout -->
-        <form id="signalRForceLogoutForm" 
-              asp-area="Identity" 
-              asp-page="/Account/Logout" 
-              asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })" 
-              method="post" 
+        <form id="signalRForceLogoutForm"
+              asp-area="Identity"
+              asp-page="/Account/Logout"
+              asp-route-returnUrl="@Url.Page("/Account/Login", new { area = "Identity" })"
+              method="post"
               style="display:none;">
             @Html.AntiForgeryToken()
         </form>
@@ -190,7 +205,6 @@
 
         <script type="text/javascript">
             document.addEventListener("DOMContentLoaded", function () {
-                // Sidebar Toggle
                 const menuToggle = document.getElementById("menuToggle");
                 const sidebar = document.getElementById("sidebar");
 
@@ -200,7 +214,6 @@
                     });
                 }
 
-                // SignalR Session Kick-out Listener
                 const sessionConnection = new signalR.HubConnectionBuilder()
                     .withUrl("/hubs/userSession")
                     .withAutomaticReconnect()

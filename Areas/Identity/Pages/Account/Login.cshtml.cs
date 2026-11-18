@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SmartScan.Areas.Identity.Pages.Account
 {
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public class LoginModel : PageModel
     {
         private readonly SignInManager<IdentityUser> _signInManager;
