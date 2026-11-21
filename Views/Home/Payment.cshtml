@@ -275,20 +275,27 @@
     </div>
 </div>
 
-<!-- Xendit Simulation Waiting Modal -->
-<div class="modal fade" id="gcashQRModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-        <div class="modal-content gcash-modal-content position-relative border-0 shadow-lg p-4 text-center">
-            <img id="waitingModalIcon" src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="Payment Logo" height="40" class="mb-3 mx-auto" style="filter: brightness(0) invert(1);">
+<!-- Payment Waiting Modal (Auto-Polling) -->
+<div class="modal fade" id="paymentWaitingModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 p-4 text-center">
+            <h4 class="fw-bold text-primary mb-3">Awaiting Payment</h4>
 
-            <h4 id="waitingModalTitle" class="text-white fw-bold mb-3">Awaiting Payment</h4>
-            <p id="waitingModalDesc" class="text-white text-opacity-75 small mb-4">A new tab has opened for the Xendit simulation. Please complete the test payment there.</p>
+            <!-- Loading Spinner -->
+            <div class="spinner-border text-primary mx-auto mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
 
-            <button id="waitingModalConfirmBtn" type="button" class="btn btn-light fw-bold text-primary w-100 rounded-pill mb-2">Confirm Payment Received</button>
-            <button type="button" class="btn btn-link text-white text-opacity-75 text-decoration-none w-100" data-bs-dismiss="modal">Cancel Transaction</button>
+            <p class="text-muted fw-medium" id="paymentStatusMessage">
+                A new tab has opened for Xendit.<br>
+                Please complete your payment there. This page will automatically update when the payment is successful.
+            </p>
+
+            <button type="button" class="btn btn-outline-danger mt-3 rounded-pill fw-semibold px-4" onclick="cancelPolling()">
+                Cancel Transaction
+            </button>
         </div>
     </div>
 </div>
+
 
 @section Scripts {
     <script src="~/js/pos-tab-guard.js"></script>
@@ -297,6 +304,7 @@
         let liveStoreCreditLimit = 0;
         let liveAvailableBalance = 0;
         let liveCustomerId = 0;
+        let paymentPollingTimer; // Timer for auto-polling
 
         (function checkCartStatus() {
             const savedCart = sessionStorage.getItem("smartScanCart");
@@ -325,7 +333,7 @@
 
         let cart = [];
         let total = 0;
-        let cashModalInstance, creditModalInstance, storeCreditModalInstance, ewalletModalInstance, gcashQRModalInstance;
+        let cashModalInstance, creditModalInstance, storeCreditModalInstance, ewalletModalInstance, paymentWaitingModalInstance;
 
         const urlParams = new URLSearchParams(window.location.search);
         const verifiedCustomerName = urlParams.get('search') || sessionStorage.getItem("verifiedCustomerName") || "";
@@ -336,7 +344,7 @@
             creditModalInstance = new bootstrap.Modal(document.getElementById('creditModal'));
             storeCreditModalInstance = new bootstrap.Modal(document.getElementById('storeCreditModal'));
             ewalletModalInstance = new bootstrap.Modal(document.getElementById('ewalletModal'));
-            gcashQRModalInstance = new bootstrap.Modal(document.getElementById('gcashQRModal'));
+            paymentWaitingModalInstance = new bootstrap.Modal(document.getElementById('paymentWaitingModal')); // Initialize polling modal
 
             const canPay = window.SmartScanTabGuard.claimRegister();
             if (!canPay) return;
@@ -636,6 +644,7 @@
             }
         }
 
+        // --- UPDATED XENDIT POLLING FUNCTIONS ---
         async function proceedCreditCard() {
             creditModalInstance.hide();
 
@@ -660,20 +669,8 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    window.open(result.checkoutUrl, '_blank');
-
-                    document.getElementById('waitingModalIcon').style.display = 'none';
-                    document.getElementById('waitingModalTitle').innerText = "Awaiting Credit Card";
-                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit Credit Card simulation. Complete payment there.";
-
-                    document.getElementById('waitingModalConfirmBtn').onclick = function() {
-                        gcashQRModalInstance.hide();
-                        finalizeTransaction("Credit Card", total, 0);
-                    };
-
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    gcashQRModalInstance.show();
+                    // Open Xendit and start polling
+                    startXenditPayment(result.invoiceId, result.checkoutUrl, "Credit Card");
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -720,20 +717,8 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    window.open(result.checkoutUrl, '_blank');
-
-                    document.getElementById('waitingModalIcon').style.display = 'block';
-                    document.getElementById('waitingModalTitle').innerText = "Awaiting Payment";
-                    document.getElementById('waitingModalDesc').innerText = "A new tab has opened for the Xendit GCash simulation. Complete payment there.";
-
-                    document.getElementById('waitingModalConfirmBtn').onclick = function() {
-                        gcashQRModalInstance.hide();
-                        finalizeTransaction("GCash API", total, 0);
-                    };
-
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    gcashQRModalInstance.show();
+                    // Open Xendit and start polling
+                    startXenditPayment(result.invoiceId, result.checkoutUrl, "GCash API");
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -754,6 +739,59 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
+        }
+
+        function startXenditPayment(xenditInvoiceId, xenditCheckoutUrl, paymentMethod) {
+            // 1. Open Xendit in a new tab
+            window.open(xenditCheckoutUrl, '_blank');
+
+            // 2. Show the waiting modal
+            paymentWaitingModalInstance.show();
+
+            // 3. Ping the backend every 3 seconds to check if Xendit says it is paid
+            paymentPollingTimer = setInterval(() => checkXenditStatus(xenditInvoiceId, paymentMethod), 3000);
+
+            // Reset buttons if they were loading
+            const creditBtn = document.getElementById("btnCreditTrigger");
+            if (creditBtn) {
+                creditBtn.innerHTML = 'Open Secure Checkout';
+                creditBtn.disabled = false;
+            }
+            const gcashBtn = document.getElementById("btnGCashTrigger");
+            if (gcashBtn) {
+                gcashBtn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="24" class="me-3"><span class="fs-5">GCash App</span><i class="fa-solid fa-chevron-right ms-auto text-muted"></i>';
+                gcashBtn.disabled = false;
+            }
+        }
+
+        async function checkXenditStatus(invoiceId, paymentMethod) {
+            try {
+                const response = await fetch(`/Home/VerifyXenditPayment?invoiceId=${encodeURIComponent(invoiceId)}`);
+                const result = await response.json();
+
+                if (result.status === "PAID" || result.status === "SETTLED") {
+                    clearInterval(paymentPollingTimer);
+
+                    paymentWaitingModalInstance.hide();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Payment Received!',
+                        text: 'The transaction was successful.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        finalizeTransaction(paymentMethod, total, 0);
+                    });
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+            }
+        }
+
+        function cancelPolling() {
+            clearInterval(paymentPollingTimer);
+            paymentWaitingModalInstance.hide();
         }
 
         async function finalizeTransaction(method, amountPaid, changeAmount) {
@@ -803,6 +841,13 @@
                 const result = await response.json();
 
                 if (result.success) {
+
+
+                    sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
+
+                    // Broadcast to ALL open/duplicated tabs to wipe smartScanCart & activeDebtTransactionIds
+                    window.SmartScanTabGuard.broadcastTransactionCompleted();
+
                     payload.date = new Date().toISOString();
                     payload.status = "Completed";
                     payload.receiptNumber = result.receiptNumber;
