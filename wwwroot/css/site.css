@@ -22,6 +22,18 @@ html, body {
     background-size: cover;
 }
 
+html, body, .content-scroll-container, .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    .content-scroll-container::-webkit-scrollbar,
+    .no-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+
 /* ==========================================================================
    2. APP LAYOUT & SIDEBAR
    ========================================================================== */

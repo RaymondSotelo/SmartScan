@@ -144,10 +144,17 @@ namespace SmartScan.Areas.Identity.Pages.Account
                         await _signInManager.SignOutAsync(); // Clean stale cookie header
                         await _signInManager.SignInAsync(user, isPersistent: Input.RememberMe); // Issue fresh cookie with new stamp
 
-                        // ----[ 2. ROLE & ASSIGNMENT-AWARE ROUTING ]----
+                        // ----[ 2. SANITIZE RETURN URL (BLOCK LOGOUT/LOGIN LOOPS) ]----
+                        bool isValidReturnUrl = !string.IsNullOrEmpty(returnUrl)
+                            && Url.IsLocalUrl(returnUrl)
+                            && returnUrl != Url.Content("~/")
+                            && !returnUrl.Contains("/Account/Logout", StringComparison.OrdinalIgnoreCase)
+                            && !returnUrl.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase);
+
+                        // ----[ 3. ROLE & ASSIGNMENT-AWARE ROUTING ]----
                         if (await _userManager.IsInRoleAsync(user, "Admin"))
                         {
-                            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
+                            if (isValidReturnUrl)
                             {
                                 return LocalRedirect(returnUrl);
                             }
@@ -161,8 +168,10 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
                             if (isAssigned)
                             {
-                                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl != Url.Content("~/"))
+                                if (isValidReturnUrl)
+                                {
                                     return LocalRedirect(returnUrl);
+                                }
 
                                 return RedirectToAction("Checkout", "Home", new { area = "" });
                             }
@@ -171,9 +180,14 @@ namespace SmartScan.Areas.Identity.Pages.Account
                                 return RedirectToAction("Unassigned", "Home", new { area = "" });
                             }
                         }
+
+                        if (isValidReturnUrl)
+                        {
+                            return LocalRedirect(returnUrl);
+                        }
                     }
 
-                    return LocalRedirect(returnUrl);
+                    return RedirectToAction("Index", "Home", new { area = "" });
                 }
 
                 if (result.RequiresTwoFactor)

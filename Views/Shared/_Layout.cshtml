@@ -155,16 +155,17 @@
                         <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between @(showAuthenticatedShell ? "" : "pb-3")">
                             <ul class="navbar-nav flex-grow-1">
                             </ul>
-                            @if (!isAuthPage)
-                            {
+                            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between @(showAuthenticatedShell ? "" : "pb-3")">
+                                <ul class="navbar-nav flex-grow-1">
+                                </ul>
                                 <partial name="_LoginPartial" />
-                            }
+                            </div>
                         </div>
                     </div>
                 </nav>
             </header>
 
-            <div class="content-scroll-container">
+            <div class="content-scroll-container no-scrollbar">
                 <div class="container-fluid px-4">
                     <main role="main" class="pb-3">
                         @RenderBody()
@@ -219,24 +220,19 @@
                     .withAutomaticReconnect()
                     .build();
 
-                sessionConnection.on("ForceLogout", function (message) {
-                    Swal.fire({
-                        title: "Session Terminated",
-                        text: message,
-                        icon: "warning",
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        confirmButtonColor: "#1162a3",
-                        confirmButtonText: "Log In Again"
-                    }).then(() => {
-                        const logoutForm = document.getElementById("signalRForceLogoutForm");
-                        if (logoutForm) {
-                            logoutForm.submit();
-                        } else {
-                            window.location.href = "/Identity/Account/Login";
-                        }
-                    });
+            sessionConnection.on("ForceLogout", function (message) {
+                Swal.fire({
+                    title: "Session Terminated",
+                    text: message,
+                    icon: "warning",
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonColor: "#1162a3",
+                    confirmButtonText: "Log In Again"
+                }).then(() => {
+                    window.location.href = "/Identity/Account/Login";
                 });
+            });
 
                 sessionConnection.start().catch(err => console.error("SignalR Session error:", err));
             });

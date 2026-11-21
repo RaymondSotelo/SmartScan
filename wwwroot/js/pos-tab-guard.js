@@ -11,26 +11,51 @@ window.SmartScanTabGuard = (function () {
 
     let isPrimaryRegister = false;
     let onRevokeCallback = null;
+    let transactionCompletedInThisTab = false;
 
     function claimRegister(onRevoked) {
         onRevokeCallback = onRevoked;
 
-        // Ask existing tabs if an active register is already open
-        if (channel) {
-            channel.postMessage({ type: "PING_REGISTER", sender: tabId });
-        }
-
-        // Check if another tab wrote a fresh heartbeat within the last 3 seconds
         const existingLock = JSON.parse(localStorage.getItem(LOCK_KEY) || "null");
         const now = Date.now();
 
-        if (existingLock && existingLock.tabId !== tabId && (now - existingLock.timestamp) < 3000) {
-            blockDuplicateTab();
-            return false;
+        // If no recent lock exists, claim immediately
+        if (!existingLock || existingLock.tabId === tabId || (now - existingLock.timestamp) >= 3000) {
+            activateAsPrimary();
+            return true;
         }
 
-        activateAsPrimary();
-        return true;
+        // A recent lock exists—verify via BroadcastChannel if that tab is actually still open
+        if (channel) {
+            let activeTabConfirmed = false;
+
+            const verifyListener = function (event) {
+                if (event.data && event.data.type === "REGISTER_CLAIMED" && event.data.sender !== tabId) {
+                    activeTabConfirmed = true;
+                }
+            };
+
+            channel.addEventListener("message", verifyListener);
+            channel.postMessage({ type: "PING_REGISTER", sender: tabId });
+
+            // Wait 150ms for an open tab to respond; if none replies, the old tab was closed/killed
+            setTimeout(() => {
+                channel.removeEventListener("message", verifyListener);
+                if (activeTabConfirmed) {
+                    blockDuplicateTab();
+                } else {
+                    // Re-initialize if needed or simply remove any stale lock
+                    const overlay = document.getElementById("posDuplicateTabOverlay");
+                    if (overlay) overlay.remove();
+                    activateAsPrimary();
+                }
+            }, 150);
+
+            return true;
+        }
+
+        blockDuplicateTab();
+        return false;
     }
 
     function activateAsPrimary() {
@@ -94,7 +119,8 @@ window.SmartScanTabGuard = (function () {
     }
 
     function broadcastTransactionCompleted() {
-        // Purge sessionStorage in this tab AND notify all other tabs to clear cloned carts
+        transactionCompletedInThisTab = true;
+
         const keysToClear = [
             "smartScanCart",
             "verifiedCustomerId",
@@ -159,6 +185,7 @@ window.SmartScanTabGuard = (function () {
     return {
         claimRegister,
         isPrimary: () => isPrimaryRegister,
-        broadcastTransactionCompleted
+        broadcastTransactionCompleted,
+        isTransactionCompleted: () => transactionCompletedInThisTab
     };
 })();
