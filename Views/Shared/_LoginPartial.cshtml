@@ -30,8 +30,13 @@
 }
 
 @{
+    var currentPath = Context.Request.Path.Value ?? "";
+    bool isAuthPage = currentPath.Contains("/Account/Login", StringComparison.OrdinalIgnoreCase) ||
+                      currentPath.Contains("/Account/Register", StringComparison.OrdinalIgnoreCase) ||
+                      currentPath.Contains("/Account/ForgotPassword", StringComparison.OrdinalIgnoreCase);
+
     bool isCustomerDisplay = Context.Request.Path.StartsWithSegments("/Home/CustomerDisplay", StringComparison.OrdinalIgnoreCase);
-    bool isSignedIn = SignInManager.IsSignedIn(User);
+    bool isSignedIn = SignInManager.IsSignedIn(User) && !isAuthPage;
 
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
     var currentUserName = User.Identity?.Name;

@@ -850,6 +850,8 @@
                 const result = await response.json();
 
                 if (result.success) {
+
+
                     sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
 
                     // Broadcast to ALL open/duplicated tabs to wipe smartScanCart & activeDebtTransactionIds
@@ -861,6 +863,9 @@
                     payload.amountPaid = amountPaid;
                     payload.change = changeAmount;
                     payload.dueDate = result.dueDate || null;
+
+                    // Broadcast to ALL open/duplicated tabs to wipe smartScanCart & activeDebtTransactionIds
+                    window.SmartScanTabGuard.broadcastTransactionCompleted();
 
                     // Reset In-Memory Variables
                     liveCustomerId = 0;
@@ -890,7 +895,7 @@
                     }));
                     localStorage.removeItem("smartScanCustomerDisplay");
 
-                    // Check if we were settling a debt
+                    // Check if we were settling a debt[cite: 3]
                     if (activeDebtIds) {
                         const customerDisplayName = verifiedCustomerName && verifiedCustomerName.trim() !== ""
                             ? `${verifiedCustomerName}'s`
@@ -903,7 +908,7 @@
                             confirmButtonColor: '#1162a3',
                             allowOutsideClick: false
                         }).then(() => {
-                            // Redirect using replace to prevent back-navigation to the paid session
+                            // Redirect using replace to prevent back-navigation to the paid session[cite: 3]
                             window.location.replace("/Home/Checkout");
                         });
                     } else {
@@ -962,7 +967,11 @@
         // if a cashier switches back to an older duplicated tab after completing payment in another tab,
         // it immediately detects the cleared cart and redirects to /Home/Checkout
         document.addEventListener("visibilitychange", function () {
-            if (document.visibilityState === "visible" && window.SmartScanTabGuard.isPrimary()) {
+            if (
+                document.visibilityState === "visible" &&
+                window.SmartScanTabGuard.isPrimary() &&
+                !window.SmartScanTabGuard.isTransactionCompleted()
+            ) {
                 const currentCart = JSON.parse(sessionStorage.getItem("smartScanCart") || "[]");
                 if (!Array.isArray(currentCart) || currentCart.length === 0) {
                     window.location.replace("/Home/Checkout");
