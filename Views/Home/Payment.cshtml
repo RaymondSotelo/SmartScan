@@ -296,7 +296,6 @@
     </div>
 </div>
 
-
 @section Scripts {
     <script src="~/js/pos-tab-guard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -305,6 +304,14 @@
         let liveAvailableBalance = 0;
         let liveCustomerId = 0;
         let paymentPollingTimer; // Timer for auto-polling
+        let xenditTab = null;    // Reference to the opened Xendit tab
+
+        function closeXenditTab() {
+            if (xenditTab && !xenditTab.closed) {
+                xenditTab.close();
+                xenditTab = null;
+            }
+        }
 
         (function checkCartStatus() {
             const savedCart = sessionStorage.getItem("smartScanCart");
@@ -742,8 +749,9 @@
         }
 
         function startXenditPayment(xenditInvoiceId, xenditCheckoutUrl, paymentMethod) {
-            // 1. Open Xendit in a new tab
-            window.open(xenditCheckoutUrl, '_blank');
+            // 1. Close any previous Xendit tab and open the new one, keeping its reference
+            closeXenditTab();
+            xenditTab = window.open(xenditCheckoutUrl, '_blank');
 
             // 2. Show the waiting modal
             paymentWaitingModalInstance.show();
@@ -771,7 +779,7 @@
 
                 if (result.status === "PAID" || result.status === "SETTLED") {
                     clearInterval(paymentPollingTimer);
-
+                    closeXenditTab();
                     paymentWaitingModalInstance.hide();
 
                     Swal.fire({
@@ -791,6 +799,7 @@
 
         function cancelPolling() {
             clearInterval(paymentPollingTimer);
+            closeXenditTab();
             paymentWaitingModalInstance.hide();
         }
 
@@ -922,6 +931,8 @@
         }
 
         function cancelAndReturn() {
+            clearInterval(paymentPollingTimer);
+            closeXenditTab();
             sessionStorage.removeItem("verifiedCustomerId");
             sessionStorage.removeItem("verifiedCustomerName");
             sessionStorage.removeItem("verificationRedirect");

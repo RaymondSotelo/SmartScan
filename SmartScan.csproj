@@ -33,6 +33,9 @@
     <None Update="PythonScanner\my_model_v2\my_model.onnx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="PythonScanner\my_model_v3\my_model.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -14,8 +14,8 @@ namespace SmartScan.Services
     {
         private readonly InferenceSession _session;
 
-        // Dropped to 15% to ensure the severe glare on the plastic sachets doesn't cause them to be deleted
-        private const float CONFIDENCE_THRESHOLD = 0.15f;
+        // 50% threshold blocks low-confidence ghost detections while keeping real items
+        private const float CONFIDENCE_THRESHOLD = 0.50f;
         private const int MODEL_INPUT_SIZE = 640;
 
         // Fallback array
@@ -33,7 +33,9 @@ namespace SmartScan.Services
         {
             var options = new Microsoft.ML.OnnxRuntime.SessionOptions();
             options.AppendExecutionProvider_CPU();
-            _session = new InferenceSession(@"PythonScanner\my_model_v2\my_model.onnx", options);
+
+            // Update this path if you save your retrained model in a new folder (e.g., my_model_v4)
+            _session = new InferenceSession(@"PythonScanner\my_model_v3\my_model.onnx", options);
 
             try
             {
@@ -56,10 +58,11 @@ namespace SmartScan.Services
             }
             catch { }
 
-            // Restored: Forcefully correct the YOLO label to include "Twinpack"
+            // Only rename the original Kopiko Brown (skip "Kopiko Brown single")
             for (int i = 0; i < _classes.Length; i++)
             {
-                if (_classes[i].IndexOf("brown", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (_classes[i].IndexOf("brown", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    _classes[i].IndexOf("single", StringComparison.OrdinalIgnoreCase) < 0)
                 {
                     _classes[i] = "Kopiko Brown Twinpack";
                 }
@@ -68,6 +71,8 @@ namespace SmartScan.Services
                     _classes[i] = "Kopiko Blanca Twinpack";
                 }
             }
+
+            Debug.WriteLine($"YOLO loaded {_classes.Length} classes: {string.Join(", ", _classes)}");
         }
 
         public object DetectObjects(string base64Image, List<string> storeInventory)
@@ -160,15 +165,10 @@ namespace SmartScan.Services
                         float w = output[0, 2, i];
                         float h = output[0, 3, i];
 
-                        float x1 = ((cx - w / 2f) - padX) / r;
-                        float y1 = ((cy - h / 2f) - padY) / r;
-                        float x2 = ((cx + w / 2f) - padX) / r;
-                        float y2 = ((cy + h / 2f) - padY) / r;
-
-                        x1 = Math.Clamp(x1, 0, origW);
-                        y1 = Math.Clamp(y1, 0, origH);
-                        x2 = Math.Clamp(x2, 0, origW);
-                        y2 = Math.Clamp(y2, 0, origH);
+                        float x1 = Math.Clamp(((cx - w / 2f) - padX) / r, 0, origW);
+                        float y1 = Math.Clamp(((cy - h / 2f) - padY) / r, 0, origH);
+                        float x2 = Math.Clamp(((cx + w / 2f) - padX) / r, 0, origW);
+                        float y2 = Math.Clamp(((cy + h / 2f) - padY) / r, 0, origH);
 
                         candidates.Add(new DetectionCandidate
                         {
