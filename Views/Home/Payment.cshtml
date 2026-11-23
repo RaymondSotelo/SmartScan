@@ -345,6 +345,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const verifiedCustomerName = urlParams.get('search') || sessionStorage.getItem("verifiedCustomerName") || "";
         const sessionCustomerId = parseInt(sessionStorage.getItem("verifiedCustomerId") || "0");
+        const currentStoreName = @Html.Raw(Json.Serialize(ViewData["HeaderTitle"]?.ToString() ?? "SmartScan Retail"));
 
         document.addEventListener("DOMContentLoaded", function () {
             cashModalInstance = new bootstrap.Modal(document.getElementById('cashModal'));
@@ -825,6 +826,7 @@
             }
 
             const payload = {
+                retailName: currentStoreName,
                 items: finalItems,
                 total: parseFloat(total),
                 paymentMethod: method,
@@ -850,13 +852,6 @@
                 const result = await response.json();
 
                 if (result.success) {
-
-
-                    sessionStorage.setItem("smartScanLastTransaction", JSON.stringify(payload));
-
-                    // Broadcast to ALL open/duplicated tabs to wipe smartScanCart & activeDebtTransactionIds
-                    window.SmartScanTabGuard.broadcastTransactionCompleted();
-
                     payload.date = new Date().toISOString();
                     payload.status = "Completed";
                     payload.receiptNumber = result.receiptNumber;
@@ -895,7 +890,7 @@
                     }));
                     localStorage.removeItem("smartScanCustomerDisplay");
 
-                    // Check if we were settling a debt[cite: 3]
+                    // Check if we were settling a debt
                     if (activeDebtIds) {
                         const customerDisplayName = verifiedCustomerName && verifiedCustomerName.trim() !== ""
                             ? `${verifiedCustomerName}'s`
