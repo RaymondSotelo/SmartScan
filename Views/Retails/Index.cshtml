@@ -18,7 +18,7 @@
         .ToDictionary(up => up.UserId, up => up.ProfilePicture);
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white pos-viewport-card"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
      style="min-height: max(520px, calc(100dvh - 130px)); height: auto;">
 
     <!-- Top Card Header -->
@@ -27,16 +27,16 @@
     </div>
 
     <!-- Header Info -->
-    <div class="px-3 px-md-4 pt-3 pt-md-4 pb-3">
+    <div class="px-4 pt-4 pb-3">
         <h4 class="mb-0 fw-bold" style="color: #1162a3;">Retail Directory</h4>
         <p class="fw-medium pt-1 text-secondary mb-0">Manage partner retail outlets, branch locations, store branding, and operational statuses.</p>
     </div>
 
     <!-- Action Bar & Search -->
-    <div class="px-3 px-md-4 pb-3 pb-md-4 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0 mb-3">
+    <div class="px-4 pb-4 pt-0 d-flex flex-wrap justify-content-between align-items-center gap-3 flex-shrink-0 mb-3">
 
         <!-- Add Button -->
-        <a asp-action="Create" class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap"
+        <a asp-action="Create" class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
            style="background-color: #1162a3; border-color: #1162a3;">
             <i class="fa-solid fa-plus"></i>
             <span>Add New Retail</span>
@@ -68,7 +68,7 @@
     <!-- Overhead TempData Alert -->
     @if (TempData["RetailMessage"] != null)
     {
-        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-3 mx-md-4 mb-3 flex-shrink-0" role="alert">
+        <div id="autoCloseAlert" class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center mx-4 mb-3 flex-shrink-0" role="alert">
             <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
             <div>
                 @TempData["RetailMessage"]
@@ -90,7 +90,7 @@
 
     @if (!Model.Any())
     {
-        <div class="p-3 p-md-4">
+        <div class="p-4">
             <div class="alert alert-warning text-center my-2 fw-semibold" role="alert">
                 <i class="fa-solid fa-circle-exclamation me-2"></i>No retail found matching "<strong>@ViewData["CurrentFilter"]</strong>".
             </div>
@@ -98,14 +98,14 @@
     }
     else
     {
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 g-md-4 p-2 p-md-3 pt-0 mx-0 overflow-y-auto no-scrollbar">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 p-3 pt-0 overflow-y-auto no-scrollbar">
             @foreach (var item in Model)
             {
                 // Resolve avatar path for the store owner
                 profileMap.TryGetValue(item.AdminOwner, out var customPic);
                 var avatarPath = string.IsNullOrWhiteSpace(customPic)
-                ? "/images/default-pfp.jpg"
-                : customPic;
+                    ? "/images/default-pfp.jpg"
+                    : customPic;
 
                 <div class="col">
                     <div class="card h-100 shadow-sm border retail-card position-relative overflow-hidden">
@@ -155,14 +155,14 @@
                             <div class="mt-auto d-flex align-items-center small text-muted pt-2">
 
                                 <!-- Owner Section -->
-                                <div class="d-flex align-items-center text-truncate me-2 position-relative" style="z-index: 2; min-width: 0;" title="Store Owner">
+                                <div class="d-flex align-items-center text-truncate me-2 position-relative" style="z-index: 2;" title="Store Owner">
                                     <img src="@avatarPath"
                                          onerror="this.onerror=null; this.src='/images/default-profile-pic.png';"
                                          alt="@(item.AdminOwnerNavigation?.UserName ?? "Owner")"
                                          class="rounded-circle border border-1 object-fit-cover shadow-sm bg-white me-2 flex-shrink-0"
                                          style="width: 38px; height: 38px;" />
 
-                                    <div class="d-flex flex-column text-truncate" style="line-height: 1.1; min-width: 0;">
+                                    <div class="d-flex flex-column text-truncate" style="line-height: 1.1;">
                                         <span class="text-muted text-uppercase fw-medium" style="font-size: 9px; letter-spacing: 0.5px;">Owner</span>
                                         <span class="fw-semibold text-primary text-truncate" style="font-size: 12px;">
                                             @(item.AdminOwnerNavigation?.UserName ?? "Unknown")
@@ -171,7 +171,7 @@
                                 </div>
 
                                 <!-- 3-Dot Actions Dropdown -->
-                                <div class="dropdown ms-auto position-relative flex-shrink-0" style="z-index: 2;">
+                                <div class="dropdown ms-auto position-relative" style="z-index: 2;">
                                     <button class="btn btn-sm btn-link text-muted p-1 text-decoration-none shadow-none"
                                             type="button"
                                             id="retailDropdown-@item.RetailId"
@@ -224,6 +224,23 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            @if (TempData["NoEntryMessage"] != null)
+            {
+                <text>
+                const noEntryMsg = @Html.Raw(Json.Serialize(TempData["NoEntryMessage"]));
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Access Denied',
+                        text: noEntryMsg,
+                        confirmButtonColor: '#1162a3'
+                    });
+                } else {
+                    alert(noEntryMsg);
+                }
+                </text>
+            }
+
             // Handle retail delete clicks
             document.querySelectorAll('.btn-delete-retail').forEach(button => {
                 button.addEventListener('click', function (e) {
