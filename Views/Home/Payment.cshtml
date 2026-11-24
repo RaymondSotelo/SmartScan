@@ -6,84 +6,126 @@
     }
 }
 
+@section Styles {
+    <style>
+        /* Mobile & Tablet Stacking Adjustments (Desktop >= 992px stays untouched) */
+        @@media (max-width: 991.98px) {
+            .payment-workspace-body,
+            .payment-workspace-row,
+            .payment-col,
+            .payment-panel-card {
+                height: auto !important;
+                overflow: visible !important;
+            }
+
+            .payment-summary-scroll {
+                max-height: 280px;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            #grandTotalDisplay {
+                font-size: 1.65rem !important;
+            }
+
+            .pay-btn-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.75rem !important;
+            }
+
+            .pay-btn-modern {
+                padding: 1rem 0.75rem !important;
+                min-height: 108px;
+                font-size: 0.9rem !important;
+            }
+
+            .pay-btn-modern i {
+                font-size: 1.5rem !important;
+            }
+        }
+    </style>
+}
+
 <!-- Viewport-Locked Outer Container -->
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white mx-auto"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white mx-auto pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 540px; max-width: 1200px;">
 
     <!-- Top Navigation Header -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
          style="background-color: #1162a3;">
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
             <h5 class="mb-0 fw-bold">
                 <i class="fa-solid fa-money-check-dollar me-2"></i>Payment Processing
             </h5>
             @if (ViewData["CustomerName"] != null)
             {
-                <span class="badge bg-light text-primary border rounded-pill px-3 ms-2">
+                <span class="badge bg-light text-primary border rounded-pill px-3">
                     <i class="fa-solid fa-user me-1"></i> @ViewData["CustomerName"]
                 </span>
             }
         </div>
 
-        <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+        <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary text-nowrap"
                 style="background-color: #dbeafe; border-color: #cfe2f3 !important;"
                 onclick="cancelAndReturn()">
-            <i class="fa-solid fa-arrow-left me-1"></i>Cancel & Return
+            <i class="fa-solid fa-arrow-left me-1"></i>Cancel &amp; Return
         </button>
     </div>
 
     <!-- Interior Workspace Split -->
-    <div class="card-body p-3 px-lg-4 pb-lg-4 pt-3 flex-grow-1 d-flex flex-column bg-light bg-opacity-50 overflow-hidden" style="min-height: 0;">
-        <div class="row gx-4 gy-3 flex-grow-1 h-100">
+    <div class="card-body p-3 px-lg-4 pb-lg-4 pt-3 flex-grow-1 d-flex flex-column bg-light bg-opacity-50 overflow-hidden payment-workspace-body" style="min-height: 0;">
+        <div class="row gx-0 gx-lg-4 gy-3 flex-grow-1 h-100 payment-workspace-row">
 
             <!-- Hidden field tracking currently bound customer -->
             <input type="hidden" id="savedCustomerId" name="savedCustomerId" value="" />
 
             <!-- ================= LEFT COLUMN | Transaction Summary ================= -->
-            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-2 pb-3">
-                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden flex-grow-1 d-flex flex-column h-100">
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-2 pb-2 pb-lg-3 payment-col">
+                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden flex-grow-1 d-flex flex-column h-100 payment-panel-card">
 
                     <!-- Header -->
-                    <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center flex-shrink-0">
+                    <div class="card-header bg-transparent border-0 pt-3 pt-md-4 px-3 px-md-4 pb-2 d-flex justify-content-between align-items-center flex-shrink-0">
                         <h4 class="fw-bold mb-0" style="color: #1162a3;">
                             <i class="fa-solid fa-receipt me-2"></i>Order Summary
                         </h4>
                     </div>
 
                     <!-- Table Container -->
-                    <div class="card-body p-0 flex-grow-1 overflow-y-auto no-scrollbar">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light sticky-top shadow-sm">
-                                <tr>
-                                    <th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 12px;">Product</th>
-                                    <th class="py-3 text-center text-secondary text-uppercase fw-bold" style="font-size: 12px; width: 80px;">Qty</th>
-                                    <th class="py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 12px; width: 120px;">Price</th>
-                                    <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold" style="font-size: 12px; width: 140px;">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody id="summaryList">
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-5">Loading items...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="card-body p-0 flex-grow-1 overflow-y-auto no-scrollbar payment-summary-scroll">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="min-width: 380px;">
+                                <thead class="table-light sticky-top shadow-sm">
+                                    <tr>
+                                        <th class="ps-3 ps-md-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 12px;">Product</th>
+                                        <th class="py-3 text-center text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 12px; width: 70px;">Qty</th>
+                                        <th class="py-3 text-end text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 12px; width: 100px;">Price</th>
+                                        <th class="pe-3 pe-md-4 py-3 text-end text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 12px; width: 115px;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="summaryList">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-5">Loading items...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Grand Total Footer -->
-                    <div class="card-footer bg-white border-top p-4 flex-shrink-0">
+                    <div class="card-footer bg-white border-top p-3 p-md-4 flex-shrink-0">
 
                         <!-- Penalty Indicator -->
-                        <div id="penaltyNoticeRow" class="alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex justify-content-between align-items-center" style="display: none !important;">
+                        <div id="penaltyNoticeRow" class="alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex flex-wrap justify-content-between align-items-center gap-2" style="display: none !important;">
                             <div>
                                 <i class="fa-solid fa-clock-rotate-left me-1 text-danger"></i>
                                 <span class="fw-bold">Includes 5% Overdue Penalty:</span>
                                 <span id="penaltyDueDateInfo" class="text-muted ms-1"></span>
                             </div>
-                            <span id="penaltyAmountDisplay" class="fw-bold font-monospace text-danger">+₱0.00</span>
+                            <span id="penaltyAmountDisplay" class="fw-bold font-monospace text-danger text-nowrap">+₱0.00</span>
                         </div>
 
                         <!-- Total Amount -->
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <div>
                                 <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 13px; letter-spacing: 1px;">Amount Due</span>
                             </div>
@@ -99,38 +141,38 @@
             </div>
 
             <!-- ================= RIGHT COLUMN | Payment Methods ================= -->
-            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-3">
-                <div class="card border-0 shadow-sm rounded-4 bg-white flex-grow-1 d-flex flex-column p-4 h-100">
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-2 pb-lg-3 payment-col">
+                <div class="card border-0 shadow-sm rounded-4 bg-white flex-grow-1 d-flex flex-column p-3 p-md-4 h-100 payment-panel-card">
 
-                    <h5 class="fw-bold text-dark mb-4 text-center">How would you like to pay?</h5>
+                    <h5 class="fw-bold text-dark mb-3 mb-md-4 text-center">How would you like to pay?</h5>
 
                     <div class="pay-btn-grid mb-auto">
                         <!-- Cash In Hand -->
-                        <button class="pay-btn-modern btn-cash" onclick="openModal('cashModal')">
+                        <button type="button" class="pay-btn-modern btn-cash" onclick="openModal('cashModal')">
                             <i class="fa-solid fa-money-bill-wave"></i>
                             <span>Cash in Hand</span>
                         </button>
 
                         <!-- Credit Card -->
-                        <button class="pay-btn-modern btn-credit" onclick="openModal('creditModal')">
+                        <button type="button" class="pay-btn-modern btn-credit" onclick="openModal('creditModal')">
                             <i class="fa-solid fa-credit-card"></i>
                             <span>Credit Card</span>
                         </button>
 
                         <!-- E-Wallet -->
-                        <button class="pay-btn-modern btn-ewallet" onclick="openModal('ewalletModal')">
+                        <button type="button" class="pay-btn-modern btn-ewallet" onclick="openModal('ewalletModal')">
                             <i class="fa-solid fa-mobile-screen-button"></i>
                             <span>E-Wallet</span>
                         </button>
 
                         <!-- Store Credits -->
-                        <button class="pay-btn-modern btn-store" onclick="openModal('storeCreditModal')">
+                        <button type="button" class="pay-btn-modern btn-store" onclick="openModal('storeCreditModal')">
                             <i class="fa-solid fa-coins"></i>
                             <span>Store Credits</span>
                         </button>
                     </div>
 
-                    <div class="alert alert-light border small text-muted mt-4 mb-0 py-3 text-center rounded-3">
+                    <div class="alert alert-light border small text-muted mt-3 mt-md-4 mb-0 py-3 text-center rounded-3">
                         <i class="fa-solid fa-shield-check text-success me-1"></i> All transactions are secure and encrypted.
                     </div>
 
@@ -143,10 +185,10 @@
 <!-- ================= MODALS ================= -->
 <!-- Cash In Hand Modal -->
 <div class="modal fade" id="cashModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 420px;">
         <div class="modal-content position-relative p-2">
             <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
-            <div class="modal-body text-center p-4">
+            <div class="modal-body text-center p-3 p-sm-4">
                 <h3 class="modal-title-custom">Cash Payment</h3>
                 <p class="modal-subtitle fw-medium mb-4">Enter the amount received from the customer.</p>
 
@@ -156,7 +198,7 @@
                 </div>
 
                 <div class="row g-2 mb-4">
-                    <div class="col-6 text-start">
+                    <div class="col-12 col-sm-6 text-start">
                         <label class="custom-input-label">Amount Received</label>
                         <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white cash-focus-group">
                             <span class="input-group-text bg-white border-0 fw-bold text-secondary ps-3 py-2 fs-6">₱</span>
@@ -165,6 +207,7 @@
                                    type="number"
                                    step="0.01"
                                    min="0.01"
+                                   inputmode="decimal"
                                    onwheel="this.blur()"
                                    onkeydown="if(['-', '+', 'e', 'E'].includes(event.key)) event.preventDefault();"
                                    placeholder="0.00"
@@ -172,7 +215,7 @@
                         </div>
                     </div>
 
-                    <div class="col-6 text-start">
+                    <div class="col-12 col-sm-6 text-start">
                         <label class="custom-input-label text-secondary">Exact Change</label>
                         <input type="text"
                                class="form-control custom-input fs-5 text-success fw-bold text-end font-monospace py-2"
@@ -190,10 +233,10 @@
 
 <!-- Online Credit Card Modal -->
 <div class="modal fade" id="creditModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 400px;">
         <div class="modal-content position-relative p-2">
             <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
-            <div class="modal-body text-center p-4">
+            <div class="modal-body text-center p-3 p-sm-4">
                 <h3 class="modal-title-custom">Credit/Debit Card</h3>
                 <p class="modal-subtitle mb-4 fw-medium">Generate a secure payment link for Visa, Mastercard, or JCB.</p>
                 <div class="alert alert-light border small text-muted text-start mb-4">
@@ -209,28 +252,28 @@
 
 <!-- Store Credits Modal -->
 <div class="modal fade" id="storeCreditModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 420px;">
         <div class="modal-content position-relative p-2">
             <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
-            <div class="modal-body text-center p-4">
+            <div class="modal-body text-center p-3 p-sm-4">
                 <h3 class="modal-title-custom">Store Credits</h3>
                 <p class="modal-subtitle mb-4 fw-medium">Charge to authenticated customer account credit.</p>
 
                 <!-- Store Balance -->
                 <div class="text-start mb-3 p-3 bg-light rounded-3 border">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
                         <span class="text-muted fw-bold small text-uppercase">Available Balance</span>
-                        <span class="badge bg-danger" id="storeCreditBadge">Loading...</span>
+                        <span class="badge bg-danger text-nowrap" id="storeCreditBadge">Loading...</span>
                     </div>
                     <h4 class="mb-0 fw-bold text-dark font-monospace" id="storeBalance">₱0.00</h4>
 
                     <!-- Due Date & Overdue Indicator -->
-                    <div class="mt-2 pt-2 border-top text-muted small fw-medium d-flex justify-content-between align-items-center">
+                    <div class="mt-2 pt-2 border-top text-muted small fw-medium d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div>
                             <i class="fa-regular fa-calendar me-1"></i> Next Due:
                             <span id="storeDueDate" class="fw-bold text-dark">N/A</span>
                         </div>
-                        <span id="storeOverdueBadge" class="badge bg-danger rounded-pill px-2 py-1" style="display: none;">
+                        <span id="storeOverdueBadge" class="badge bg-danger rounded-pill px-2 py-1 text-nowrap" style="display: none;">
                             <i class="fa-solid fa-triangle-exclamation me-1"></i>OVERDUE
                         </span>
                     </div>
@@ -258,14 +301,14 @@
 
 <!-- E-Wallet Selection Modal -->
 <div class="modal fade" id="ewalletModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 380px;">
         <div class="modal-content position-relative p-2">
             <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
-            <div class="modal-body text-center p-4">
+            <div class="modal-body text-center p-3 p-sm-4">
                 <h3 class="modal-title-custom">E-Wallet</h3>
                 <p class="modal-subtitle mb-4 fw-medium">Select an e-wallet provider to generate a checkout link.</p>
 
-                <button id="btnGCashTrigger" class="w-100 ewallet-option-btn d-flex align-items-center shadow-sm" onclick="openGCashQR()">
+                <button type="button" id="btnGCashTrigger" class="w-100 ewallet-option-btn d-flex align-items-center shadow-sm" onclick="openGCashQR()">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg" alt="GCash" height="24" class="me-3">
                     <span class="fs-5">GCash App</span>
                     <i class="fa-solid fa-chevron-right ms-auto text-muted"></i>
@@ -275,23 +318,35 @@
     </div>
 </div>
 
-<!-- Payment Waiting Modal (Auto-Polling) -->
+<!-- Payment Waiting Modal (Auto-Polling + Mobile Fallback Link) -->
 <div class="modal fade" id="paymentWaitingModal" data-bs-backdrop="static" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 p-4 text-center">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4 p-3 p-sm-4 text-center">
             <h4 class="fw-bold text-primary mb-3">Awaiting Payment</h4>
 
             <!-- Loading Spinner -->
             <div class="spinner-border text-primary mx-auto mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
 
-            <p class="text-muted fw-medium" id="paymentStatusMessage">
+            <p class="text-muted fw-medium mb-3" id="paymentStatusMessage">
                 A new tab has opened for Xendit.<br>
                 Please complete your payment there. This page will automatically update when the payment is successful.
             </p>
 
-            <button type="button" class="btn btn-outline-danger mt-3 rounded-pill fw-semibold px-4" onclick="cancelPolling()">
-                Cancel Transaction
-            </button>
+            <!-- Mobile Popup-Blocker Fallback Button -->
+            <div class="d-flex flex-column align-items-center gap-2">
+                <a id="manualXenditLink"
+                   href="#"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="btn btn-primary rounded-pill fw-semibold px-4 shadow-sm"
+                   style="background-color: #1162a3; border-color: #1162a3; display: none;">
+                    <i class="fa-solid fa-up-right-from-square me-1"></i>Open Payment Page
+                </a>
+
+                <button type="button" class="btn btn-outline-danger rounded-pill fw-semibold px-4" onclick="cancelPolling()">
+                    Cancel Transaction
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -303,14 +358,35 @@
         let liveStoreCreditLimit = 0;
         let liveAvailableBalance = 0;
         let liveCustomerId = 0;
-        let paymentPollingTimer; // Timer for auto-polling
-        let xenditTab = null;    // Reference to the opened Xendit tab
+        let paymentPollingTimer = null;
+        let xenditTab = null;
+        let activeXenditInvoiceId = null;
+        let activeXenditMethod = null;
+        let isCheckingXendit = false;
 
         function closeXenditTab() {
             if (xenditTab && !xenditTab.closed) {
-                xenditTab.close();
-                xenditTab = null;
+                try { xenditTab.close(); } catch (e) { }
             }
+            xenditTab = null;
+        }
+
+        // Open tab synchronously inside the click gesture so mobile browsers do not block it
+        function openPendingXenditTab() {
+            closeXenditTab();
+            const tab = window.open('', '_blank');
+            if (tab) {
+                try {
+                    tab.document.title = 'Redirecting to Xendit...';
+                    tab.document.body.innerHTML =
+                        '<div style="font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;color:#1162a3;text-align:center;padding:24px;">' +
+                        '<h3 style="margin:0 0 8px;">Connecting to Xendit...</h3>' +
+                        '<p style="margin:0;color:#64748b;font-size:14px;">Please wait while we open your secure checkout page.</p>' +
+                        '</div>';
+                } catch (e) { }
+            }
+            xenditTab = tab;
+            return tab;
         }
 
         (function checkCartStatus() {
@@ -352,7 +428,7 @@
             creditModalInstance = new bootstrap.Modal(document.getElementById('creditModal'));
             storeCreditModalInstance = new bootstrap.Modal(document.getElementById('storeCreditModal'));
             ewalletModalInstance = new bootstrap.Modal(document.getElementById('ewalletModal'));
-            paymentWaitingModalInstance = new bootstrap.Modal(document.getElementById('paymentWaitingModal')); // Initialize polling modal
+            paymentWaitingModalInstance = new bootstrap.Modal(document.getElementById('paymentWaitingModal'));
 
             const canPay = window.SmartScanTabGuard.claimRegister();
             if (!canPay) return;
@@ -390,10 +466,10 @@
 
                     html += `
                         <tr>
-                            <td class="ps-4 py-3"><span class="fw-bold text-dark">${escapeHtml(item.name)}</span></td>
-                            <td class="text-center py-3"><span class="badge bg-light text-dark border px-2 py-1">${qty}</span></td>
-                            <td class="text-end text-secondary py-3">₱${price.toFixed(2)}</td>
-                            <td class="pe-4 text-end fw-bold text-dark py-3">₱${subtotal.toFixed(2)}</td>
+                            <td class="ps-3 ps-md-4 py-3"><span class="fw-bold text-dark">${escapeHtml(item.name)}</span></td>
+                            <td class="text-center py-3 text-nowrap"><span class="badge bg-light text-dark border px-2 py-1">${qty}</span></td>
+                            <td class="text-end text-secondary py-3 text-nowrap">₱${price.toFixed(2)}</td>
+                            <td class="pe-3 pe-md-4 text-end fw-bold text-dark py-3 text-nowrap">₱${subtotal.toFixed(2)}</td>
                         </tr>`;
                 });
 
@@ -505,7 +581,6 @@
             }
 
             if (modalId === 'storeCreditModal') {
-                // Require both verified name AND a resolved customer ID > 0
                 if (!verifiedCustomerName || verifiedCustomerName.trim() === '' || liveCustomerId <= 0) {
                     Swal.fire({
                         title: 'Customer Verification Required',
@@ -563,8 +638,6 @@
             }
 
             const changeAmount = amountReceived - cashTotalDue;
-
-            // Pass cashTotalDue as the recorded total for this cash transaction
             total = cashTotalDue;
             finalizeTransaction("Cash In Hand", amountReceived, changeAmount);
         }
@@ -652,8 +725,10 @@
             }
         }
 
-        // --- UPDATED XENDIT POLLING FUNCTIONS ---
+        // --- MOBILE-SAFE XENDIT CHECKOUT & POLLING ---
         async function proceedCreditCard() {
+            // Open tab immediately inside click gesture to bypass mobile popup blockers
+            openPendingXenditTab();
             creditModalInstance.hide();
 
             const btn = document.getElementById("btnCreditTrigger");
@@ -677,9 +752,9 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Open Xendit and start polling
                     startXenditPayment(result.invoiceId, result.checkoutUrl, "Credit Card");
                 } else {
+                    closeXenditTab();
                     Swal.fire({
                         icon: 'error',
                         title: 'Xendit Error',
@@ -690,6 +765,7 @@
                     btn.disabled = false;
                 }
             } catch (error) {
+                closeXenditTab();
                 Swal.fire({
                     icon: 'error',
                     title: 'Network Error',
@@ -702,6 +778,8 @@
         }
 
         async function openGCashQR() {
+            // Open tab immediately inside click gesture to bypass mobile popup blockers
+            openPendingXenditTab();
             ewalletModalInstance.hide();
 
             const btn = document.getElementById("btnGCashTrigger");
@@ -725,9 +803,9 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Open Xendit and start polling
                     startXenditPayment(result.invoiceId, result.checkoutUrl, "GCash API");
                 } else {
+                    closeXenditTab();
                     Swal.fire({
                         icon: 'error',
                         title: 'Xendit Error',
@@ -738,6 +816,7 @@
                     btn.disabled = false;
                 }
             } catch (error) {
+                closeXenditTab();
                 Swal.fire({
                     icon: 'error',
                     title: 'Network Error',
@@ -750,14 +829,43 @@
         }
 
         function startXenditPayment(xenditInvoiceId, xenditCheckoutUrl, paymentMethod) {
-            // 1. Close any previous Xendit tab and open the new one, keeping its reference
-            closeXenditTab();
-            xenditTab = window.open(xenditCheckoutUrl, '_blank');
+            if (paymentPollingTimer) {
+                clearInterval(paymentPollingTimer);
+                paymentPollingTimer = null;
+            }
 
-            // 2. Show the waiting modal
+            activeXenditInvoiceId = xenditInvoiceId;
+            activeXenditMethod = paymentMethod;
+            isCheckingXendit = false;
+
+            // Navigate the already-opened tab (or fall back to manual button if blocked)
+            const statusMsg = document.getElementById("paymentStatusMessage");
+            const manualLink = document.getElementById("manualXenditLink");
+            let popupOpened = false;
+
+            if (xenditTab && !xenditTab.closed) {
+                try {
+                    xenditTab.location.href = xenditCheckoutUrl;
+                    popupOpened = true;
+                } catch (e) {
+                    popupOpened = false;
+                }
+            }
+
+            if (manualLink) {
+                manualLink.href = xenditCheckoutUrl;
+                manualLink.style.display = "inline-block";
+            }
+
+            if (statusMsg) {
+                statusMsg.innerHTML = popupOpened
+                    ? 'A new tab has opened for Xendit.<br>Please complete your payment there. If it did not open, tap <strong>Open Payment Page</strong> below.'
+                    : 'Your browser blocked the automatic popup.<br>Tap <strong>Open Payment Page</strong> below to complete your Xendit payment.';
+            }
+
             paymentWaitingModalInstance.show();
 
-            // 3. Ping the backend every 3 seconds to check if Xendit says it is paid
+            // Poll backend every 3 seconds to check if Xendit says it is paid
             paymentPollingTimer = setInterval(() => checkXenditStatus(xenditInvoiceId, paymentMethod), 3000);
 
             // Reset buttons if they were loading
@@ -774,12 +882,23 @@
         }
 
         async function checkXenditStatus(invoiceId, paymentMethod) {
+            if (isCheckingXendit || !activeXenditInvoiceId || activeXenditInvoiceId !== invoiceId) return;
+            isCheckingXendit = true;
+
             try {
-                const response = await fetch(`/Home/VerifyXenditPayment?invoiceId=${encodeURIComponent(invoiceId)}`);
+                const response = await fetch(`/Home/VerifyXenditPayment?invoiceId=${encodeURIComponent(invoiceId)}`, {
+                    cache: 'no-store'
+                });
                 const result = await response.json();
 
                 if (result.status === "PAID" || result.status === "SETTLED") {
-                    clearInterval(paymentPollingTimer);
+                    activeXenditInvoiceId = null;
+                    activeXenditMethod = null;
+                    if (paymentPollingTimer) {
+                        clearInterval(paymentPollingTimer);
+                        paymentPollingTimer = null;
+                    }
+
                     closeXenditTab();
                     paymentWaitingModalInstance.hide();
 
@@ -795,11 +914,24 @@
                 }
             } catch (error) {
                 console.error("Polling error:", error);
+            } finally {
+                isCheckingXendit = false;
             }
         }
 
         function cancelPolling() {
-            clearInterval(paymentPollingTimer);
+            activeXenditInvoiceId = null;
+            activeXenditMethod = null;
+            isCheckingXendit = false;
+            if (paymentPollingTimer) {
+                clearInterval(paymentPollingTimer);
+                paymentPollingTimer = null;
+            }
+            const manualLink = document.getElementById("manualXenditLink");
+            if (manualLink) {
+                manualLink.href = "#";
+                manualLink.style.display = "none";
+            }
             closeXenditTab();
             paymentWaitingModalInstance.hide();
         }
@@ -809,14 +941,12 @@
             const activeDebtIds = sessionStorage.getItem("activeDebtTransactionIds");
             const debtPenalty = parseFloat(sessionStorage.getItem("activeDebtPenalty") || "0");
 
-            // Build items list
             const finalItems = cart.map(i => ({
                 name: i.name,
                 qty: parseInt(i.qty),
                 price: parseFloat(i.price)
             }));
 
-            // If there's an overdue penalty on debt settlement, append as a receipt line item
             if (debtPenalty > 0) {
                 finalItems.push({
                     name: "Overdue Late Fee (5%)",
@@ -859,19 +989,15 @@
                     payload.change = changeAmount;
                     payload.dueDate = result.dueDate || null;
 
-                    // Broadcast to ALL open/duplicated tabs to wipe smartScanCart & activeDebtTransactionIds
                     window.SmartScanTabGuard.broadcastTransactionCompleted();
 
-                    // Reset In-Memory Variables
                     liveCustomerId = 0;
                     liveStoreCreditLimit = 0;
                     liveAvailableBalance = 0;
 
-                    // Clear Hidden Input
                     const hiddenCustInput = document.getElementById("savedCustomerId");
                     if (hiddenCustInput) hiddenCustInput.value = "";
 
-                    // Clear Storage Keys
                     sessionStorage.removeItem("smartScanCart");
                     sessionStorage.removeItem("activeDebtTransactionIds");
                     sessionStorage.removeItem("activeDebtPenalty");
@@ -882,7 +1008,6 @@
                     sessionStorage.removeItem("verificationReason");
                     sessionStorage.removeItem("customerAgeVerified");
 
-                    // Force Reset Customer Facing Display to Empty State
                     localStorage.setItem("smartScanCustomerDisplay", JSON.stringify({
                         customerName: "",
                         items: [],
@@ -890,7 +1015,10 @@
                     }));
                     localStorage.removeItem("smartScanCustomerDisplay");
 
+<<<<<<< HEAD
                     // Check if we were settling a debt
+=======
+>>>>>>> 9c97590 (Added lock feature)
                     if (activeDebtIds) {
                         const customerDisplayName = verifiedCustomerName && verifiedCustomerName.trim() !== ""
                             ? `${verifiedCustomerName}'s`
@@ -903,7 +1031,6 @@
                             confirmButtonColor: '#1162a3',
                             allowOutsideClick: false
                         }).then(() => {
-                            // Redirect using replace to prevent back-navigation to the paid session[cite: 3]
                             window.location.replace("/Home/Checkout");
                         });
                     } else {
@@ -931,8 +1058,7 @@
         }
 
         function cancelAndReturn() {
-            clearInterval(paymentPollingTimer);
-            closeXenditTab();
+            cancelPolling();
             sessionStorage.removeItem("verifiedCustomerId");
             sessionStorage.removeItem("verifiedCustomerName");
             sessionStorage.removeItem("verificationRedirect");
@@ -946,7 +1072,6 @@
 
         function calculateChange() {
             const amountInput = document.getElementById('cashAmountReceived');
-            // Strip '-', '+', or any non-digit/decimal characters if pasted
             if (amountInput && /[^0-9.]/.test(amountInput.value)) {
                 amountInput.value = amountInput.value.replace(/[^0-9.]/g, '');
             }
@@ -959,8 +1084,7 @@
             document.getElementById('cashChange').value = "₱ " + displayChange.toFixed(2);
         }
 
-        // if a cashier switches back to an older duplicated tab after completing payment in another tab,
-        // it immediately detects the cleared cart and redirects to /Home/Checkout
+        // Immediately check Xendit status or cleared cart when returning to this tab on mobile
         document.addEventListener("visibilitychange", function () {
             if (
                 document.visibilityState === "visible" &&
@@ -970,6 +1094,11 @@
                 const currentCart = JSON.parse(sessionStorage.getItem("smartScanCart") || "[]");
                 if (!Array.isArray(currentCart) || currentCart.length === 0) {
                     window.location.replace("/Home/Checkout");
+                    return;
+                }
+
+                if (activeXenditInvoiceId && activeXenditMethod) {
+                    checkXenditStatus(activeXenditInvoiceId, activeXenditMethod);
                 }
             }
         });

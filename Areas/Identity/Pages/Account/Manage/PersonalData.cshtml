@@ -5,7 +5,25 @@
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
 }
 
-<div class="d-flex justify-content-center align-items-center w-100 py-4" style="min-height: 75vh;">
+<style>
+    /* Mobile Adjustments (Desktop >= 768px stays untouched) */
+    @@media (max-width: 767.98px) {
+        .manage-form-wrapper {
+            min-height: auto !important;
+            align-items: flex-start !important;
+            padding-top: 0.75rem !important;
+            padding-bottom: 1rem !important;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .manage-submit-btn {
+            width: 100% !important;
+        }
+    }
+</style>
+
+<div class="d-flex justify-content-center align-items-center w-100 py-4 manage-form-wrapper" style="min-height: 75vh;">
     <div style="width: 100%; max-width: 580px;">
         <h3 style="color:#1162a3">@ViewData["Title"]</h3>
 
@@ -14,14 +32,14 @@
         <p class="fw-medium text-secondary text-justify">
             Your account contains personal data that you have given us. This page allows you to have the option to close your account.
             If your account was currently assigned to a retail store, then your account will temporarily be disabled.
-            </p>
+        </p>
         <p class="text-danger">
             <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
         </p>
-        
+
         <!-- Delete Button -->
-        <div class="text-center mb-4">
-            <a id="delete" asp-page="DeletePersonalData" class="btn btn-lg btn-danger fw-medium" style="font-size: 18px;">Delete Account</a>
+        <div class="text-center mt-4 mb-4">
+            <a id="delete" asp-page="DeletePersonalData" class="btn btn-lg btn-danger fw-medium manage-submit-btn" style="font-size: 18px;">Delete Account</a>
         </div>
     </div>
 </div>

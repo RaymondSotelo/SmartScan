@@ -16,36 +16,36 @@
 <body class="d-flex flex-column justify-content-center align-items-center p-2 p-sm-3">
 
     <!-- Viewport-Locked Outer Container matching GenerateReceipt -->
-    <div class="card shadow border-0 rounded-4 d-flex flex-column bg-white w-100 mx-auto"
+    <div class="card shadow border-0 rounded-4 d-flex flex-column bg-white w-100 mx-auto pos-viewport-card"
          style="height: calc(100dvh - 32px); max-height: 860px; max-width: 560px;">
 
         <!-- Top Navigation Header -->
-        <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+        <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
              style="background-color: #1162a3;">
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex flex-wrap align-items-center gap-2">
                 <h5 class="mb-0 fw-bold">
                     <i class="fa-solid fa-receipt me-2"></i>Digital Receipt
                 </h5>
                 <!-- Dynamic Status Badge in Header -->
-                <span id="headerStatusBadge" class="badge rounded-pill px-3 py-1 fw-bold ms-1 shadow-sm" style="font-size: 11px;">
+                <span id="headerStatusBadge" class="badge rounded-pill px-3 py-1 fw-bold shadow-sm" style="font-size: 11px;">
                     <i class="fa-solid fa-circle-check me-1"></i>Completed
                 </span>
             </div>
 
             <!-- Save to Phone Button -->
             <button type="button" id="savePhoneBtn"
-                    class="btn btn-sm btn-light rounded-pill px-3 fw-semibold text-primary shadow-sm d-flex align-items-center"
-                    style="background-color: #dbeafe; border-color: #cfe2f3 !important; height: 36px;"
+                    class="btn btn-sm btn-light rounded-pill px-3 fw-semibold text-primary shadow-sm d-flex align-items-center text-nowrap"
+                    style="background-color: #dbeafe; border-color: #cfe2f3 !important; min-height: 36px;"
                     onclick="saveToPhoneGallery()">
                 <i class="fa-solid fa-download me-1"></i>Save Image
             </button>
         </div>
 
         <!-- Interior Scrollable Workspace -->
-        <div class="card-body p-3 p-sm-4 flex-grow-1 d-flex flex-column align-items-center bg-light bg-opacity-50 overflow-y-auto no-scrollbar" style="min-height: 0;">
+        <div class="card-body p-2 p-sm-4 flex-grow-1 d-flex flex-column align-items-center bg-light bg-opacity-50 overflow-y-auto overflow-x-hidden no-scrollbar" style="min-height: 0;">
 
             <!-- Thermal POS Paper Card (Identical to GenerateReceipt) -->
-            <div id="printableReceipt" class="receipt-paper w-100 p-4 border bg-white rounded-4 shadow-sm mx-auto my-auto"
+            <div id="printableReceipt" class="receipt-paper w-100 p-3 p-sm-4 border bg-white rounded-4 shadow-sm mx-auto my-auto"
                  style="max-width: 440px;">
 
                 <!-- Top Status Indicator -->
@@ -80,30 +80,30 @@
 
                 <!-- Metadata -->
                 <div class="small text-secondary mb-2" style="font-size: 12px;">
-                    <div class="d-flex justify-content-between mb-1">
+                    <div class="d-flex justify-content-between gap-2 mb-1">
                         <span>Receipt #:</span>
-                        <strong class="font-monospace text-dark" id="receiptNumberDisplay">#REC-000000</strong>
+                        <strong class="font-monospace text-dark text-end" id="receiptNumberDisplay">#REC-000000</strong>
                     </div>
-                    <div class="d-flex justify-content-between mb-1">
+                    <div class="d-flex justify-content-between gap-2 mb-1">
                         <span>Date &amp; Time:</span>
-                        <span class="text-dark" id="receiptDateDisplay">--</span>
+                        <span class="text-dark text-end" id="receiptDateDisplay">--</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-1">
+                    <div class="d-flex justify-content-between gap-2 mb-1">
                         <span>Retail Store:</span>
-                        <span class="text-dark fw-semibold" id="receiptStoreDisplay">SmartScan Retail</span>
+                        <span class="text-dark fw-semibold text-end" id="receiptStoreDisplay">SmartScan Retail</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-1">
+                    <div class="d-flex justify-content-between gap-2 mb-1">
                         <span>Cashier / POS:</span>
-                        <span class="text-dark" id="receiptCashierDisplay">Main Station</span>
+                        <span class="text-dark text-end" id="receiptCashierDisplay">Main Station</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-1" id="receiptCustomerRow">
+                    <div class="d-flex justify-content-between gap-2 mb-1" id="receiptCustomerRow">
                         <span>Customer:</span>
-                        <span class="text-dark fw-semibold" id="receiptCustomerDisplay">Walk-in Guest</span>
+                        <span class="text-dark fw-semibold text-end" id="receiptCustomerDisplay">Walk-in Guest</span>
                     </div>
                     <!-- Due Date Row (Strictly for Store Credits) -->
-                    <div class="justify-content-between" id="receiptDueDateRow" style="display: none !important;">
+                    <div class="justify-content-between gap-2" id="receiptDueDateRow" style="display: none !important;">
                         <span class="text-danger fw-bold">Due Date:</span>
-                        <span class="text-danger fw-bold font-monospace" id="receiptDueDateDisplay"></span>
+                        <span class="text-danger fw-bold font-monospace text-end" id="receiptDueDateDisplay"></span>
                     </div>
                 </div>
 
@@ -236,7 +236,7 @@
                     const pendingStyle = "font-size: 11px; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba;";
 
                     if (headerBadge) {
-                        headerBadge.className = "badge rounded-pill px-3 py-1 fw-bold ms-1 shadow-sm";
+                        headerBadge.className = "badge rounded-pill px-3 py-1 fw-bold shadow-sm";
                         headerBadge.style = pendingStyle;
                         headerBadge.innerHTML = pendingHtml;
                     }
@@ -255,7 +255,7 @@
                     const completedClass = "badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-bold shadow-sm";
 
                     if (headerBadge) {
-                        headerBadge.className = completedClass + " ms-1";
+                        headerBadge.className = completedClass;
                         headerBadge.style = "font-size: 11px;";
                         headerBadge.innerHTML = completedHtml;
                     }
@@ -361,7 +361,6 @@
                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Saving...';
                 }
 
-                // Expand scrollable item list so long receipts capture completely
                 if (itemList) itemList.style.maxHeight = "none";
 
                 const canvas = await html2canvas(receiptEl, {

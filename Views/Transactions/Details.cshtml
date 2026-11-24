@@ -43,12 +43,23 @@
         : "bg-light text-primary border border-primary-subtle";
 }
 
+@section Styles {
+    <style>
+        /* Mobile & Tablet Stacking Adjustments (Desktop >= 992px stays untouched) */
+        @@media (max-width: 991.98px) {
+            .receipt-details-row {
+                height: auto !important;
+            }
+        }
+    </style>
+}
+
 <!-- Viewport-Locked Card Container -->
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 520px;">
 
     <!-- Top Navigation Header -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
          style="background-color: #1162a3;">
         <div class="d-flex align-items-center gap-2">
             <h5 class="mb-0 fw-bold">
@@ -57,19 +68,19 @@
         </div>
 
         <!-- Return Link -->
-        <a href="javascript:history.back()" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+        <a href="javascript:history.back()" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary text-nowrap"
            style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
             <i class="fa-solid fa-arrow-left me-1"></i>Return
         </a>
     </div>
 
     <!-- Scrollable Workspace (Split Panel Layout) -->
-    <div class="card-body p-4 flex-grow-1 overflow-y-auto overflow-x-hidden no-scrollbar bg-light bg-opacity-50">
-        <div class="row g-4 justify-content-center h-100">
+    <div class="card-body p-3 p-md-4 flex-grow-1 overflow-y-auto overflow-x-hidden no-scrollbar bg-light bg-opacity-50">
+        <div class="row g-3 g-md-4 justify-content-center h-100 receipt-details-row">
 
             <!-- LEFT COLUMN: Realistic Thermal POS Receipt -->
-            <div class="col-xl-5 col-lg-6 col-md-10 d-flex flex-column align-items-center">
-                <div id="printableReceipt" class="receipt-paper w-100 p-4 border border-bottom-0 pb-5 mb-4 bg-white rounded-4 shadow-sm" style="max-width: 440px;">
+            <div class="col-12 col-xl-5 col-lg-6 col-md-10 d-flex flex-column align-items-center">
+                <div id="printableReceipt" class="receipt-paper w-100 p-3 p-sm-4 border border-bottom-0 pb-5 mb-2 mb-lg-4 bg-white rounded-4 shadow-sm" style="max-width: 440px;">
 
                     <!-- Store Branding & Meta -->
                     <div class="text-center mb-3">
@@ -81,10 +92,10 @@
                                  class="object-fit-contain flex-shrink-0"
                                  onerror="this.style.display='none'" />
                         </div>
-                        <h5 class="fw-bold text-uppercase mb-0 text-dark" style="letter-spacing: 0.5px;">
+                        <h5 class="fw-bold text-uppercase mb-0 text-dark text-break" style="letter-spacing: 0.5px;">
                             @(Model.Retail?.RetailName ?? "SmartScan Retail")
                         </h5>
-                        <p class="text-muted small mb-1">
+                        <p class="text-muted small mb-1 text-break">
                             @(Model.Retail?.Address ?? "Automated Vision Checkout System")
                         </p>
                         <span class="badge rounded-pill bg-light text-secondary border fw-medium px-3 py-1" style="font-size: 10px;">
@@ -96,33 +107,33 @@
 
                     <!-- Receipt Sub-Header Data -->
                     <div class="small text-secondary mb-2" style="font-size: 12px;">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Receipt #:</span>
-                            <strong class="font-monospace text-dark">@Model.ReceiptNumber</strong>
+                        <div class="d-flex justify-content-between gap-2 mb-1">
+                            <span class="flex-shrink-0">Receipt #:</span>
+                            <strong class="font-monospace text-dark text-end text-break">@Model.ReceiptNumber</strong>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Date &amp; Time:</span>
-                            <span class="text-dark">@Model.CreatedAt.ToString("yyyy-MM-dd hh:mm tt")</span>
+                        <div class="d-flex justify-content-between gap-2 mb-1">
+                            <span class="flex-shrink-0">Date &amp; Time:</span>
+                            <span class="text-dark text-end">@Model.CreatedAt.ToString("yyyy-MM-dd hh:mm tt")</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Retail Store:</span>
-                            <span class="text-dark fw-semibold">@(Model.Retail?.RetailName ?? "SmartScan Retail")</span>
+                        <div class="d-flex justify-content-between gap-2 mb-1">
+                            <span class="flex-shrink-0">Retail Store:</span>
+                            <span class="text-dark fw-semibold text-end text-break">@(Model.Retail?.RetailName ?? "SmartScan Retail")</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Cashier / POS:</span>
-                            <span class="text-dark">@staffDisplayName</span>
+                        <div class="d-flex justify-content-between gap-2 mb-1">
+                            <span class="flex-shrink-0">Cashier / POS:</span>
+                            <span class="text-dark text-end text-break">@staffDisplayName</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Customer:</span>
-                            <span class="text-dark fw-semibold">@(Model.Customer?.FullName ?? "Walk-in Guest")</span>
+                        <div class="d-flex justify-content-between gap-2 mb-1">
+                            <span class="flex-shrink-0">Customer:</span>
+                            <span class="text-dark fw-semibold text-end text-break">@(Model.Customer?.FullName ?? "Walk-in Guest")</span>
                         </div>
 
                         <!-- Conditional Due Date Row (Shown ONLY for Store Credit / PaymentMethodId == 4) -->
                         @if (Model.PaymentMethodId == 4 && Model.DueDate.HasValue)
                         {
-                            <div class="d-flex justify-content-between">
-                                <span class="text-danger fw-bold">Due Date:</span>
-                                <span class="text-danger fw-bold font-monospace">@Model.DueDate.Value.ToString("MMM dd, yyyy")</span>
+                            <div class="d-flex justify-content-between gap-2">
+                                <span class="text-danger fw-bold flex-shrink-0">Due Date:</span>
+                                <span class="text-danger fw-bold font-monospace text-end">@Model.DueDate.Value.ToString("MMM dd, yyyy")</span>
                             </div>
                         }
                     </div>
@@ -140,12 +151,12 @@
                             @foreach (var item in itemList)
                             {
                                 decimal rowTotal = (decimal)item.UnitPrice * (int)item.Quantity;
-                                <div class="d-flex justify-content-between align-items-center" style="font-size: 12px;">
-                                    <div class="text-truncate pe-2" style="max-width: 240px;">
+                                <div class="d-flex justify-content-between align-items-center gap-2" style="font-size: 12px;">
+                                    <div class="text-truncate pe-2" style="min-width: 0; flex: 1;">
                                         <span class="fw-bold text-dark d-block text-truncate">@item.Product.ProductName</span>
                                         <small class="text-muted">@item.Quantity x ₱@(((decimal)item.UnitPrice).ToString("N2"))</small>
                                     </div>
-                                    <span class="font-monospace fw-semibold text-dark text-nowrap">₱@rowTotal.ToString("N2")</span>
+                                    <span class="font-monospace fw-semibold text-dark text-nowrap flex-shrink-0">₱@rowTotal.ToString("N2")</span>
                                 </div>
                             }
                         </div>
@@ -165,7 +176,7 @@
                         </div>
 
                         <!-- Total Row (Adapts to Paid vs Unpaid) -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                             @if (Model.StatusId == 4)
                             {
                                 <span class="fs-6 fw-bold text-dark">TOTAL DUE:</span>
@@ -178,9 +189,9 @@
                             }
                         </div>
 
-                        <div class="d-flex justify-content-between text-secondary pt-1">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 text-secondary pt-1">
                             <span>Payment Tender:</span>
-                            <span class="badge rounded-pill @paymentBadgeClass fw-semibold px-2 py-1">
+                            <span class="badge rounded-pill @paymentBadgeClass fw-semibold px-2 py-1 text-nowrap">
                                 <i class="fa-solid @paymentIcon me-1"></i>@paymentName
                             </span>
                         </div>
@@ -191,7 +202,7 @@
                     <!-- Barcode Stamp & Footer Thank You -->
                     <div class="text-center pt-2">
                         <div class="barcode-strip mb-2"></div>
-                        <span class="font-monospace small text-muted d-block mb-2" style="letter-spacing: 2px;">
+                        <span class="font-monospace small text-muted d-block mb-2 text-break" style="letter-spacing: 2px;">
                             *@cleanBarcode*
                         </span>
                         <p class="small text-muted mb-0 fst-italic" style="font-size: 11px;">
@@ -204,32 +215,32 @@
             </div>
 
             <!-- RIGHT COLUMN: Metadata & Product Image Preview -->
-            <div class="col-xl-7 col-lg-6 col-md-10">
+            <div class="col-12 col-xl-7 col-lg-6 col-md-10" style="min-width: 0;">
                 <div class="d-flex flex-column gap-3">
 
                     <!-- Status & System Integrity Card (Updated for StatusId 3 = Paid & 4 = Unpaid/Pending Credit) -->
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <div>
-                                <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Payment & Verification Status</span>
+                                <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Payment &amp; Verification Status</span>
                                 <h6 class="fw-bold mb-0 text-dark">SmartScan Cloud Record</h6>
                             </div>
-                            <div>
+                            <div class="flex-shrink-0">
                                 @if (Model.StatusId == 3)
                                 {
-                                    <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                    <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 12px;">
                                         <i class="fa-solid fa-circle-check me-1"></i>Paid
                                     </span>
                                 }
                                 else if (Model.StatusId == 4)
                                 {
-                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 12px;">
                                         <i class="fa-solid fa-clock me-1"></i>Pending Credit
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                    <span class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 12px;">
                                         @(Model.Status?.StatusName ?? "Recorded")
                                     </span>
                                 }
@@ -239,25 +250,25 @@
 
                     <!-- Visual Inventory Checklist -->
                     <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden flex-grow-1">
-                        <div class="card-header bg-transparent border-0 pt-3 px-3 pb-0 d-flex justify-content-between align-items-center">
+                        <div class="card-header bg-transparent border-0 pt-3 px-3 pb-0 d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <h6 class="fw-bold mb-0" style="color: #1162a3;">
                                 <i class="fa-solid fa-images me-1"></i>Purchased Item Previews
                             </h6>
-                            <span class="badge bg-light text-secondary border rounded-pill px-3 py-1 small">
+                            <span class="badge bg-light text-secondary border rounded-pill px-3 py-1 small text-nowrap">
                                 @itemList.Count() catalog items
                             </span>
                         </div>
 
                         <div class="card-body p-3">
                             <div class="table-responsive no-scrollbar" style="max-height: 380px;">
-                                <table class="table table-hover align-middle mb-0">
+                                <table class="table table-hover align-middle mb-0" style="min-width: 500px;">
                                     <thead class="table-light sticky-top">
                                         <tr>
-                                            <th class="ps-3 py-2 text-secondary text-uppercase fw-bold" style="font-size: 11px;">Image</th>
-                                            <th class="py-2 text-secondary text-uppercase fw-bold" style="font-size: 11px;">Product</th>
-                                            <th class="py-2 text-center text-secondary text-uppercase fw-bold" style="font-size: 11px;">Qty</th>
-                                            <th class="py-2 text-end text-secondary text-uppercase fw-bold" style="font-size: 11px;">Unit Price</th>
-                                            <th class="pe-3 py-2 text-end text-secondary text-uppercase fw-bold" style="font-size: 11px;">Subtotal</th>
+                                            <th class="ps-3 py-2 text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 11px;">Image</th>
+                                            <th class="py-2 text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 11px;">Product</th>
+                                            <th class="py-2 text-center text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 11px;">Qty</th>
+                                            <th class="py-2 text-end text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 11px;">Unit Price</th>
+                                            <th class="pe-3 py-2 text-end text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 11px;">Subtotal</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -268,7 +279,7 @@
 
                                             <tr>
                                                 <td class="ps-3">
-                                                    <div class="rounded-3 border overflow-hidden bg-light shadow-sm d-flex align-items-center justify-content-center"
+                                                    <div class="rounded-3 border overflow-hidden bg-light shadow-sm d-flex align-items-center justify-content-center flex-shrink-0"
                                                          style="width: 48px; height: 48px;">
                                                         @if (!string.IsNullOrEmpty(productImg))
                                                         {
@@ -286,15 +297,15 @@
                                                 </td>
                                                 <td>
                                                     <span class="fw-semibold text-dark d-block">@item.Product.ProductName</span>
-                                                    <small class="text-muted">Item ID: #@item.Product.ProductId</small>
+                                                    <small class="text-muted text-nowrap">Item ID: #@item.Product.ProductId</small>
                                                 </td>
-                                                <td class="text-center">
+                                                <td class="text-center text-nowrap">
                                                     <span class="badge bg-light text-dark border px-2 py-1">@item.Quantity</span>
                                                 </td>
-                                                <td class="text-end text-secondary small">
+                                                <td class="text-end text-secondary small text-nowrap">
                                                     ₱@(((decimal)item.UnitPrice).ToString("N2"))
                                                 </td>
-                                                <td class="pe-3 text-end fw-bold text-dark">
+                                                <td class="pe-3 text-end fw-bold text-dark text-nowrap">
                                                     ₱@lineTotal.ToString("N2")
                                                 </td>
                                             </tr>
@@ -306,24 +317,24 @@
                     </div>
 
                     <!-- Audit Bottom Action Bar -->
-                    <div class="d-flex justify-content-between align-items-center pt-2">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2">
                         <span class="text-muted small">
                             <i class="fa-solid fa-fingerprint me-1"></i>Internal Reference: #@Model.TransactionId
                         </span>
 
-                        <div class="d-flex gap-2">
+                        <div class="d-flex flex-wrap gap-2">
                             @if (retailIdParam != null && retailIdParam > 0)
                             {
                                 <a asp-controller="Retails"
                                    asp-action="TransactionLogs"
                                    asp-route-retailId="@retailIdParam"
-                                   class="btn btn-outline-secondary rounded-pill px-4 fw-medium shadow-sm"
+                                   class="btn btn-outline-secondary rounded-pill px-4 fw-medium shadow-sm text-nowrap"
                                    style="font-size: 13px;">
                                     <i class="fa-solid fa-store me-1"></i>Store Logs
                                 </a>
                             }
                             <a asp-action="Index"
-                               class="btn btn-primary rounded-pill px-4 fw-medium shadow-sm"
+                               class="btn btn-primary rounded-pill px-4 fw-medium shadow-sm text-nowrap"
                                style="background-color: #1162a3; border-color: #1162a3; font-size: 13px;">
                                 <i class="fa-solid fa-list me-1"></i>All Logs
                             </a>

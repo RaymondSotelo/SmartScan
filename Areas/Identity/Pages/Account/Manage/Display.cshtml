@@ -1,11 +1,38 @@
 ﻿@page
 @model SmartScan.Areas.Identity.Pages.Account.Manage.DisplayModel
 @{
-	ViewData["Title"] = "Display";
-	ViewData["ActivePage"] = ManageNavPages.Display;
+    ViewData["Title"] = "Display";
+    ViewData["ActivePage"] = ManageNavPages.Display;
 }
 
-<div class="d-flex justify-content-center align-items-center w-100 py-4" style="min-height: 75vh;">
+<style>
+    /* Mobile Adjustments (Desktop >= 768px stays untouched) */
+    @@media (max-width: 767.98px) {
+        .manage-form-wrapper {
+            min-height: auto !important;
+            align-items: flex-start !important;
+            padding-top: 0.75rem !important;
+            padding-bottom: 1rem !important;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .manage-avatar-preview {
+            width: 140px !important;
+            height: 140px !important;
+        }
+
+        .display-toggle-label {
+            font-size: 1rem !important;
+        }
+
+        .manage-submit-btn {
+            width: 100% !important;
+        }
+    }
+</style>
+
+<div class="d-flex justify-content-center align-items-center w-100 py-4 manage-form-wrapper" style="min-height: 75vh;">
     <div style="width: 100%; max-width: 580px;">
         <h3 class="fw-medium mb-3" style="color:#1162a3;">@ViewData["Title"]</h3>
         <partial name="_StatusMessage" for="StatusMessage" />
@@ -24,7 +51,7 @@
                          src="@(string.IsNullOrEmpty(Model.CurrentProfilePicture) ? "/images/default-avatar.png" : Model.CurrentProfilePicture)"
                          onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
                          alt="Profile Picture"
-                         class="rounded-circle border shadow-sm object-fit-cover border-2 border-primary"
+                         class="rounded-circle border shadow-sm object-fit-cover border-2 border-primary manage-avatar-preview"
                          style="width: 180px; height: 180px;" />
                 </div>
                 <div>
@@ -53,14 +80,14 @@
             </div>
 
             <!-- Set Display Name | Switch Toggle -->
-            <div class="form-switch mb-4 d-flex justify-content-between align-items-center p-0">
-                <label class="form-check-label fw-medium text-primary mb-0 fs-5"
+            <div class="form-switch mb-4 d-flex justify-content-between align-items-center gap-3 p-0">
+                <label class="form-check-label fw-medium text-primary mb-0 fs-5 display-toggle-label"
                        for="setDisplayNameCheck"
                        style="cursor: pointer; user-select: none;">
                     Set this as the Display Name
                 </label>
                 <input asp-for="Input.SetAsDisplayName"
-                       class="form-check-input custom-toggle m-0 border-2 border-primary"
+                       class="form-check-input custom-toggle m-0 border-2 border-primary flex-shrink-0"
                        type="checkbox"
                        role="switch"
                        id="setDisplayNameCheck"
@@ -69,14 +96,13 @@
 
             <!-- Submit Button -->
             <div class="text-center mt-4">
-				<button id="update-display-button" type="submit" class="w-50 btn btn-lg btn-primary fw-semibold" style="font-size: 18px;">
-					Save Changes
-				</button>
+                <button id="update-display-button" type="submit" class="w-50 btn btn-lg btn-primary fw-semibold manage-submit-btn" style="font-size: 18px;">
+                    Save Changes
+                </button>
             </div>
         </form>
     </div>
 </div>
-
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -21,7 +21,7 @@
     }
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white pos-viewport-card"
      style="min-height: max(520px, calc(100dvh - 130px)); height: auto;">
 
     <!-- Top Card Header -->
@@ -45,11 +45,11 @@
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="text-primary fw-bold text-uppercase">Receivables</span>
-                            <div class="rounded-circle p-2 bg-primary-subtle text-primary">
+                            <div class="rounded-circle p-2 bg-primary-subtle text-primary flex-shrink-0">
                                 <i class="fa-solid fa-hand-holding-dollar"></i>
                             </div>
                         </div>
-                        <h3 class="fw-bold mb-1 text-dark">₱@Model.TotalOutstandingDebt.ToString("N2")</h3>
+                        <h3 class="fw-bold mb-1 text-dark text-break">₱@Model.TotalOutstandingDebt.ToString("N2")</h3>
                         <div class="d-flex align-items-center gap-1 small">
                             @if (Model.OverdueDebtAmount > 0)
                             {
@@ -69,11 +69,11 @@
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="text-primary fw-bold text-uppercase">Today's Sales</span>
-                            <div class="rounded-circle p-2 bg-primary-subtle text-primary">
+                            <div class="rounded-circle p-2 bg-primary-subtle text-primary flex-shrink-0">
                                 <i class="fa-solid fa-cash-register"></i>
                             </div>
                         </div>
-                        <h3 class="fw-bold mb-1 text-dark">₱@Model.TodaysSales.ToString("N2")</h3>
+                        <h3 class="fw-bold mb-1 text-dark text-break">₱@Model.TodaysSales.ToString("N2")</h3>
                         <span class="text-muted small">Settled transactions today</span>
                     </div>
                 </div>
@@ -84,7 +84,7 @@
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="text-primary fw-bold text-uppercase">Verified Shoppers</span>
-                            <div class="rounded-circle p-2 bg-primary-subtle text-primary">
+                            <div class="rounded-circle p-2 bg-primary-subtle text-primary flex-shrink-0">
                                 <i class="fa-solid fa-id-card-clip"></i>
                             </div>
                         </div>
@@ -101,7 +101,7 @@
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="text-primary fw-bold text-uppercase">Store Outlets</span>
-                            <div class="rounded-circle p-2 bg-primary-subtle text-secondary">
+                            <div class="rounded-circle p-2 bg-primary-subtle text-secondary flex-shrink-0">
                                 <i class="fa-solid fa-store"></i>
                             </div>
                         </div>
@@ -140,25 +140,25 @@
                             <div class="d-flex flex-column gap-2 pe-1 flex-grow-1 overflow-y-auto">
                                 @foreach (var debt in Model.OverdueAccounts)
                                 {
-                                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                                          style="background-color: #fee2e2; border-color: #fecaca !important;">
 
                                         <!-- Left: Customer Name, Phone & Due Date -->
-                                        <div class="d-flex flex-column lh-1">
-                                            <span class="fw-semibold text-dark text-truncate" style="max-width: 240px;">
+                                        <div class="d-flex flex-column lh-1" style="min-width: 0; flex: 1 1 180px;">
+                                            <span class="fw-semibold text-dark text-truncate">
                                                 @debt.FullName
                                             </span>
-                                            <span class="text-secondary small mt-1" style="font-size: 11px;">
-                                                <i class="fa-solid fa-phone me-1 text-muted"></i>@(string.IsNullOrWhiteSpace(debt.ContactNumber) ? "No phone" : debt.ContactNumber)
-                                                <span class="text-danger ms-2 fw-medium">
+                                            <span class="text-secondary small mt-1 d-flex flex-wrap align-items-center gap-2" style="font-size: 11px;">
+                                                <span><i class="fa-solid fa-phone me-1 text-muted"></i>@(string.IsNullOrWhiteSpace(debt.ContactNumber) ? "No phone" : debt.ContactNumber)</span>
+                                                <span class="text-danger fw-medium">
                                                     <i class="fa-regular fa-clock me-1"></i>Due @debt.DueDate.ToString("MMM dd") (@debt.DaysOverdue d ago)
                                                 </span>
                                             </span>
                                         </div>
 
                                         <!-- Right: Debt Amount Pill Badge -->
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="badge rounded-pill bg-white text-danger border border-danger-subtle fw-bold px-2 py-1 shadow-sm"
+                                        <div class="d-flex align-items-center gap-2 ms-auto">
+                                            <span class="badge rounded-pill bg-white text-danger border border-danger-subtle fw-bold px-2 py-1 shadow-sm text-nowrap"
                                                   style="font-size: 11px;">
                                                 <i class="fa-solid fa-hand-holding-dollar me-1"></i>₱@debt.AmountDue.ToString("N2")
                                             </span>
@@ -192,12 +192,12 @@
                             <div class="d-flex flex-column gap-2 pe-1 flex-grow-1 overflow-y-auto">
                                 @foreach (var audit in Model.RecentVerifications)
                                 {
-                                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
 
                                         <!-- Left: Customer Name & Timestamp -->
-                                        <div class="d-flex flex-column lh-1">
-                                            <span class="fw-semibold text-primary text-truncate" style="max-width: 240px;">
+                                        <div class="d-flex flex-column lh-1" style="min-width: 0; flex: 1 1 160px;">
+                                            <span class="fw-semibold text-primary text-truncate">
                                                 @audit.CustomerMaskedName
                                             </span>
                                             <span class="text-secondary small mt-1" style="font-size: 11px;">
@@ -206,8 +206,8 @@
                                         </div>
 
                                         <!-- Right: Status Badge -->
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm"
+                                        <div class="d-flex align-items-center gap-2 ms-auto">
+                                            <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-2 py-1 shadow-sm text-nowrap"
                                                   style="font-size: 11px;">
                                                 <i class="fa-solid fa-circle-check me-1"></i>Enrolled Profile
                                             </span>
@@ -226,7 +226,7 @@
         <!-- ========================================== -->
         <!-- SECTION 3: RETAIL OVERVIEW                 -->
         <!-- ========================================== -->
-        <div class="d-flex justify-content-between align-items-center gap-3 mb-3 pb-3 pt-2 border-bottom flex-shrink-0" id="retail-overview-section">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 pb-3 pt-2 border-bottom flex-shrink-0" id="retail-overview-section">
 
             <!-- Header Info -->
             <div class="px-1 pb-1">
@@ -266,7 +266,7 @@
                         <i class="fa-solid fa-store-slash fa-3x opacity-50"></i>
                     </div>
                     <h6 class="fw-bold text-secondary mb-1">No Retail Stores Found</h6>
-                    <p class="text-muted small mb-3">
+                    <p class="text-muted small mb-3 text-center">
                         @if (!string.IsNullOrEmpty(Model.CurrentFilter))
                         {
                             <span>No store matches "<strong>@Model.CurrentFilter</strong>".</span>
@@ -286,7 +286,7 @@
             }
             else
             {
-                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 pt-1 pb-3">
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 g-md-4 pt-1 pb-3">
                     @foreach (var item in Model.Retails)
                     {
                         Model.ProfileMap.TryGetValue(item.AdminOwner ?? string.Empty, out var rawPic);

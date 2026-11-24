@@ -8,15 +8,27 @@
 @section Styles {
     <style>
         html, body {
+            min-height: 100dvh;
             background: linear-gradient(346deg, #0052D4 0%, #65C7F7 50%, #9CECFB 100%) !important;
             background-repeat: no-repeat !important;
-            background-size: cover !important;    
+            background-size: cover !important;
+        }
+
+        /* Mobile Flow Fix (Desktop >= 768px stays untouched) */
+        @@media (max-width: 767.98px) {
+            .auth-card {
+                position: static !important;
+                transform: none !important;
+                width: calc(100% - 1.5rem) !important;
+                max-width: 440px;
+                margin: 1.5rem auto 2rem auto !important;
+            }
         }
     </style>
 }
 
-<div class="con bg-white col-md-5 position-absolute top-50 start-50 translate-middle mt-4 border border-0 rounded-4 shadow-lg">
-    <div class="p-4">
+<div class="con auth-card bg-white col-md-5 position-absolute top-50 start-50 translate-middle mt-4 border border-0 rounded-4 shadow-lg">
+    <div class="p-3 p-sm-4">
         <section>
             <form id="account" method="post">
                 <h2 class="text-center fw-bold" style="color:#387bd6;">Login</h2>
@@ -37,15 +49,15 @@
                     </div>
                     <span asp-validation-for="Input.Password" class="text-danger"></span>
                 </div>
-                <div class="row align-items-start">
-                    <div class="checkbox mb-2 col">
-                        <label asp-for="Input.RememberMe" class="form-label fw-medium text-secondary">
+                <div class="row align-items-center g-2">
+                    <div class="checkbox mb-2 col-12 col-sm-6">
+                        <label asp-for="Input.RememberMe" class="form-label fw-medium text-secondary mb-0">
                             <input class="form-check-input" asp-for="Input.RememberMe" />
                             @Html.DisplayNameFor(m => m.Input.RememberMe)
                         </label>
                     </div>
-                    <div class="col text-end">
-                        <p>
+                    <div class="col-12 col-sm-6 text-start text-sm-end">
+                        <p class="mb-2">
                             <a style="color: #387bd6;" class="fw-medium link-underline link-underline-opacity-0" id="forgot-password" asp-page="./ForgotPassword">Forgot password</a>
                         </p>
                     </div>
@@ -61,7 +73,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    
+
     <script type="text/javascript">
         document.addEventListener("DOMContentLoaded", function () {
             const passwordInput = document.getElementById("passwordInput");

@@ -27,33 +27,33 @@
 }
 
 <!-- Outer Card locked to viewport height -->
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 520px;">
 
-    <!-- Top Card Header  -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+    <!-- Top Card Header -->
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
          style="background-color: #1162a3;">
         <h5 class="mb-0">
             <i class="fa-solid fa-user-plus me-2"></i>Assigning Staff
         </h5>
         @if (ViewBag.RetailName != null)
         {
-            <span class="badge bg-white text-primary rounded-pill px-3 py-1 fw-semibold">
+            <span class="badge bg-white text-primary rounded-pill px-3 py-1 fw-semibold text-nowrap">
                 <i class="fa-solid fa-shop me-1"></i>@ViewBag.RetailName
             </span>
         }
 
         <!-- Return Link -->
-		<a asp-action="Index"
-		   asp-route-retailId="@ViewBag.RetailId"
-           class="btn btn-sm btn-light text-primary fw-semibold rounded-pill px-3 shadow-sm"
+        <a asp-action="Index"
+           asp-route-retailId="@ViewBag.RetailId"
+           class="btn btn-sm btn-light text-primary fw-semibold rounded-pill px-3 shadow-sm text-nowrap"
            style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-			<i class="fa-solid fa-arrow-left me-1"></i>Return
-		</a>
+            <i class="fa-solid fa-arrow-left me-1"></i>Return
+        </a>
     </div>
 
     <!-- Interior Layout Body (Flex Container) -->
-    <div class="card-body p-4 flex-grow-1 overflow-hidden d-flex flex-column">
+    <div class="card-body p-3 p-md-4 flex-grow-1 overflow-hidden d-flex flex-column">
 
         <!-- Header, Search & Filter Controls (Fixed at Top of Body) -->
         <div class="flex-shrink-0">
@@ -76,16 +76,16 @@
             </div>
 
             <!-- Role Filter Buttons -->
-            <div class="d-flex gap-2 mb-3">
+            <div class="d-flex flex-wrap gap-2 mb-3">
                 <button type="button"
                         id="btnShowCashiers"
-                        class="btn role-tab-btn active fw-semibold rounded-pill px-4 shadow-sm"
+                        class="btn role-tab-btn active fw-semibold rounded-pill px-3 px-sm-4 shadow-sm text-nowrap"
                         onclick="switchRoleTab('cashier')">
                     <i class="fa-solid fa-cash-register me-1"></i> Cashiers (@cashierAccounts.Count)
                 </button>
                 <button type="button"
                         id="btnShowAdmins"
-                        class="btn role-tab-btn fw-semibold rounded-pill px-4 shadow-sm"
+                        class="btn role-tab-btn fw-semibold rounded-pill px-3 px-sm-4 shadow-sm text-nowrap"
                         onclick="switchRoleTab('admin')">
                     <i class="fa-solid fa-user-shield me-1"></i> Admins / Co-Admins (@adminAccounts.Count)
                 </button>
@@ -95,7 +95,7 @@
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show shadow-sm fw-medium d-flex align-items-center rounded-3 mb-3" role="alert">
-                    <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+                    <i class="fa-solid fa-circle-check fs-5 me-2 flex-shrink-0"></i>
                     <div>@TempData["SuccessMessage"]</div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -115,27 +115,27 @@
                             profileMap.TryGetValue(user.Id, out var customPic);
                             var avatarPath = string.IsNullOrWhiteSpace(customPic) ? "/images/default-pfp.jpg" : customPic;
 
-                            <div class="searchable-item d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                            <div class="searchable-item d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                                  style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
 
                                 <!-- Profile Info -->
-                                <div class="d-flex align-items-center gap-2 searchable-text">
+                                <div class="d-flex align-items-center gap-2 searchable-text" style="min-width: 0; flex: 1 1 160px;">
                                     <img src="@avatarPath"
                                          onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
                                          alt="@user.UserName"
                                          class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
                                          style="width: 36px; height: 36px; flex-shrink: 0;" />
-                                    <div>
-                                        <span class="fw-semibold text-primary">@user.UserName</span>
+                                    <div style="min-width: 0;">
+                                        <span class="fw-semibold text-primary text-truncate d-block">@user.UserName</span>
                                     </div>
                                 </div>
 
                                 <!-- Assign Action Form -->
-                                <form asp-action="Create" method="post" class="m-0">
+                                <form asp-action="Create" method="post" class="m-0 ms-auto flex-shrink-0">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" asp-for="StaffId" value="@user.Id" />
                                     <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
-                                    <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm">
+                                    <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm text-nowrap">
                                         <i class="fa-solid fa-plus me-1"></i> Assign
                                     </button>
                                 </form>
@@ -161,27 +161,27 @@
                             profileMap.TryGetValue(user.Id, out var customPic);
                             var avatarPath = string.IsNullOrWhiteSpace(customPic) ? "/images/default-pfp.jpg" : customPic;
 
-                            <div class="searchable-item d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                            <div class="searchable-item d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                                  style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
 
                                 <!-- Profile Info -->
-                                <div class="d-flex align-items-center gap-2 searchable-text">
+                                <div class="d-flex align-items-center gap-2 searchable-text" style="min-width: 0; flex: 1 1 160px;">
                                     <img src="@avatarPath"
                                          onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
                                          alt="@user.UserName"
                                          class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
                                          style="width: 36px; height: 36px; flex-shrink: 0;" />
-                                    <div>
-                                        <span class="fw-semibold text-primary">@user.UserName</span>
+                                    <div style="min-width: 0;">
+                                        <span class="fw-semibold text-primary text-truncate d-block">@user.UserName</span>
                                     </div>
                                 </div>
 
                                 <!-- Assign Action Form -->
-                                <form asp-action="Create" method="post" class="m-0">
+                                <form asp-action="Create" method="post" class="m-0 ms-auto flex-shrink-0">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" asp-for="StaffId" value="@user.Id" />
                                     <input type="hidden" asp-for="RetailId" value="@ViewBag.RetailId" />
-                                    <button type="submit" class="btn btn-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm">
+                                    <button type="submit" class="btn btn-primary btn-sm fw-semibold rounded-pill px-3 shadow-sm text-nowrap">
                                         <i class="fa-solid fa-user-shield me-1"></i> Assign as Co-Admin
                                     </button>
                                 </form>

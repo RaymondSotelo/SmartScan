@@ -5,48 +5,66 @@
     ViewData["ActivePage"] = ManageNavPages.Email;
 }
 
-<div class="d-flex justify-content-center align-items-center w-100 py-4" style="min-height: 75vh;"> 
+<style>
+    /* Mobile Adjustments (Desktop >= 768px stays untouched) */
+    @@media (max-width: 767.98px) {
+        .manage-form-wrapper {
+            min-height: auto !important;
+            align-items: flex-start !important;
+            padding-top: 0.75rem !important;
+            padding-bottom: 1rem !important;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .manage-submit-btn {
+            width: 100% !important;
+        }
+    }
+</style>
+
+<div class="d-flex justify-content-center align-items-center w-100 py-4 manage-form-wrapper" style="min-height: 75vh;">
     <div style="width: 100%; max-width: 580px;">
-		<h3 style="color:#1162a3">@ViewData["Title"]</h3>
-		<partial name="_StatusMessage" for="StatusMessage" />
+        <h3 style="color:#1162a3">@ViewData["Title"]</h3>
+        <partial name="_StatusMessage" for="StatusMessage" />
 
-		<form id="email-form" method="post">
-			<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+        <form id="email-form" method="post">
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
-			<hr class="mb-5" />
+            <hr class="mb-4 mb-md-5" />
 
-			<!-- Current Email -->
-			@if (Model.IsEmailConfirmed)
-			{
-				<div class="form-floating mb-4 input-group">
-					<input asp-for="Email" class="form-control" placeholder="Please enter your email." disabled />
-					<div class="input-group-append">
-						<span class="h-100 input-group-text text-success font-weight-bold">?</span>
-					</div>
-					<label asp-for="Email" class="form-label"></label>
-				</div>
-			}
-			else
-			{
-				<div class="form-floating mb-4">
-					<input asp-for="Email" class="form-control" placeholder="Please enter your email." disabled />
-					<label asp-for="Email" class="form-label"></label>
-					<button id="email-verification" type="submit" asp-page-handler="SendVerificationEmail" class="btn btn-link">Send verification email</button>
-				</div>
-			}
+            <!-- Current Email -->
+            @if (Model.IsEmailConfirmed)
+            {
+                <div class="form-floating mb-4 input-group">
+                    <input asp-for="Email" class="form-control" placeholder="Please enter your email." disabled />
+                    <div class="input-group-append">
+                        <span class="h-100 input-group-text text-success font-weight-bold">?</span>
+                    </div>
+                    <label asp-for="Email" class="form-label"></label>
+                </div>
+            }
+            else
+            {
+                <div class="form-floating mb-4">
+                    <input asp-for="Email" class="form-control" placeholder="Please enter your email." disabled />
+                    <label asp-for="Email" class="form-label"></label>
+                    <button id="email-verification" type="submit" asp-page-handler="SendVerificationEmail" class="btn btn-link">Send verification email</button>
+                </div>
+            }
 
-			<!-- New Email -->
-			<div class="form-floating mb-4">
-				<input asp-for="Input.NewEmail" class="form-control" autocomplete="email" aria-required="true" placeholder="Please enter new email." />
-				<label asp-for="Input.NewEmail" class="form-label"></label>
-				<span asp-validation-for="Input.NewEmail" class="text-danger"></span>
-			</div>
+            <!-- New Email -->
+            <div class="form-floating mb-4">
+                <input asp-for="Input.NewEmail" class="form-control" autocomplete="email" aria-required="true" placeholder="Please enter new email." />
+                <label asp-for="Input.NewEmail" class="form-label"></label>
+                <span asp-validation-for="Input.NewEmail" class="text-danger"></span>
+            </div>
 
-			<!-- Change Email Button -->
-			<div class="text-center mt-4">
-				<button id="change-email-button" type="submit" asp-page-handler="ChangeEmail" class="w-50 btn btn-lg btn-primary fw-medium" style="font-size: 18px;">Change Email</button>
-			</div>
-		</form>
+            <!-- Change Email Button -->
+            <div class="text-center mt-4">
+                <button id="change-email-button" type="submit" asp-page-handler="ChangeEmail" class="w-50 btn btn-lg btn-primary fw-medium manage-submit-btn" style="font-size: 18px;">Change Email</button>
+            </div>
+        </form>
     </div>
 </div>
 

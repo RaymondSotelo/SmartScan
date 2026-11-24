@@ -1,5 +1,5 @@
 ﻿/* ==========================================================================
-   1. BASE & ROOT STYLES
+1. BASE & ROOT STYLES
    ========================================================================== */
 html {
     font-size: 14px;
@@ -16,6 +16,7 @@ html, body {
     margin: 0;
     padding: 0;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background: linear-gradient(180deg, #95CCDD 0%, #eef6f9 100%);
     background-repeat: no-repeat;
@@ -35,7 +36,7 @@ html, body, .content-scroll-container, .no-scrollbar {
     }
 
 /* ==========================================================================
-   2. APP LAYOUT & SIDEBAR
+2. APP LAYOUT & SIDEBAR
    ========================================================================== */
 .action-btn {
     transition: all 0.25s ease-in-out;
@@ -44,7 +45,8 @@ html, body, .content-scroll-container, .no-scrollbar {
 #wrapper {
     overflow: hidden;
     height: 100vh;
-    width: 100vw;
+    height: 100dvh;
+    width: 100%;
     display: flex;
 }
 
@@ -52,6 +54,7 @@ html, body, .content-scroll-container, .no-scrollbar {
     min-width: 285px;
     max-width: 285px;
     height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -148,14 +151,18 @@ html, body, .content-scroll-container, .no-scrollbar {
 /* Page Content Frame */
 #page-content-wrapper {
     height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-width: 0;
 }
 
 .content-scroll-container {
     flex-grow: 1;
     overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     padding-bottom: 2rem;
 }
 
@@ -216,7 +223,7 @@ html, body, .content-scroll-container, .no-scrollbar {
 }
 
 /* ==========================================================================
-   3. FORM CONTROLS & SEARCH INPUTS
+3. FORM CONTROLS & SEARCH INPUTS
    ========================================================================== */
 /* Search Input Container Glow */
 .input-group.border:focus-within {
@@ -315,7 +322,7 @@ input[type="number"] {
     }
 
 /* ==========================================================================
-   4. BUTTONS & NAVIGATION LINKS
+4. BUTTONS & NAVIGATION LINKS
    ========================================================================== */
 .custom-button {
     background-color: #007bff;
@@ -625,7 +632,7 @@ input[type="number"] {
 }
 
 /* ==========================================================================
-   5. DROPDOWNS & CARDS
+5. DROPDOWNS & CARDS
    ========================================================================== */
 .card .dropdown-menu .dropdown-item,
 .navbar-nav .dropdown-menu .dropdown-item {
@@ -735,7 +742,7 @@ input[type="number"] {
         }
 
 /* ==========================================================================
-   6. ANIMATIONS
+6. ANIMATIONS
    ========================================================================== */
 @keyframes dropdownSlideDown {
     0% {
@@ -822,8 +829,8 @@ input[type="number"] {
         border: none !important;
         padding: 0 !important;
         margin: 0 !important;
-        zoom: 1 !important; 
-    } 
+        zoom: 1 !important;
+    }
 }
 
 /* Custom Hover Effect for Alerts */
@@ -831,40 +838,40 @@ input[type="number"] {
     transition: all 0.2s ease-in-out;
 }
 
-.alert-dropdown-item:hover {
-    background-color: #1162a3 !important;
-}
+    .alert-dropdown-item:hover {
+        background-color: #1162a3 !important;
+    }
 
-.alert-dropdown-item:hover * {
-    color: #ffffff !important;
-}
+        .alert-dropdown-item:hover * {
+            color: #ffffff !important;
+        }
 
-.alert-dropdown-item:hover .btn-read {
-    background-color: #ffffff !important;
-    color: #1162a3 !important;
-    border-color: #ffffff !important;
-}
+        .alert-dropdown-item:hover .btn-read {
+            background-color: #ffffff !important;
+            color: #1162a3 !important;
+            border-color: #ffffff !important;
+        }
 
-.alert-dropdown-item:hover .btn-read i {
-    color: #1162a3 !important;
-}
+            .alert-dropdown-item:hover .btn-read i {
+                color: #1162a3 !important;
+            }
 
 /* Base default colors */
 .alert-dropdown-item {
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.alert-dropdown-item .alert-item-title {
-    color: #1162a3;
-}
+    .alert-dropdown-item .alert-item-title {
+        color: #1162a3;
+    }
 
-.alert-dropdown-item .alert-item-desc {
-    color: #212529;
-}
+    .alert-dropdown-item .alert-item-desc {
+        color: #212529;
+    }
 
-.alert-dropdown-item .alert-item-time {
-    color: #6c757d;
-}
+    .alert-dropdown-item .alert-item-time {
+        color: #6c757d;
+    }
 
 /* ==========================================================================
                 HOME LANDING PAGE ANIMATIONS & ROLE HOVER
@@ -946,8 +953,134 @@ input[type="number"] {
     transition: background-color 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.role-workflow-card:hover {
-    background-color: #dbeafe !important;
-    border-color: #cfe2f3 !important;
-    transform: translateY(-2px);
+    .role-workflow-card:hover {
+        background-color: #dbeafe !important;
+        border-color: #cfe2f3 !important;
+        transform: translateY(-2px);
+    }
+
+/* ==========================================================================
+7. MOBILE & TABLET RESPONSIVE OVERRIDES
+   ========================================================================== */
+img, video, canvas {
+    max-width: 100%;
+}
+
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Tablet & Below (<= 991.98px) */
+@media (max-width: 991.98px) {
+    /* Unlock viewport-locked POS & Admin cards so stacked columns scroll cleanly */
+    .pos-viewport-card,
+    main .card[style*="100dvh"],
+    main .card[style*="100vh"] {
+        height: auto !important;
+        min-height: auto !important;
+        margin-bottom: 1rem;
+    }
+
+        .pos-viewport-card > .card-body,
+        main .card[style*="100dvh"] > .card-body,
+        main .card[style*="100vh"] > .card-body {
+            overflow: visible !important;
+        }
+
+        .pos-viewport-card .h-100,
+        main .card[style*="100dvh"] .h-100,
+        main .card[style*="100vh"] .h-100 {
+            height: auto !important;
+        }
+
+    /* Keep scanner preview compact on phones so the Digital Cart is easy to see */
+    .scanner-video-box {
+        max-height: 280px !important;
+    }
+}
+
+/* Mobile Phones (<= 767.98px) */
+@media (max-width: 767.98px) {
+    /* Turn Admin sidebar into a slim 54px rail that overlays cleanly when expanded */
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        height: 100dvh;
+        width: 260px;
+        min-width: 0;
+        max-width: 82vw;
+        z-index: 1055;
+        box-shadow: 6px 0 24px rgba(0, 0, 0, 0.28);
+    }
+
+        #sidebar.collapsed {
+            width: 54px;
+            min-width: 54px;
+            max-width: 54px;
+            box-shadow: none;
+        }
+
+        #sidebar ~ #page-content-wrapper {
+            margin-left: 54px;
+            width: calc(100% - 54px);
+        }
+
+    /* Prevent mobile browsers from zooming in when tapping inputs */
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* Keep navbar dropdowns (notifications/profile) inside phone viewport */
+    .navbar .dropdown-menu {
+        max-width: calc(100vw - 24px);
+    }
+
+    /* Fit SweetAlert2 and Bootstrap modals cleanly on phones */
+    .swal2-popup {
+        width: 92% !important;
+        font-size: 0.95rem !important;
+    }
+
+    .modal-dialog {
+        margin: 0.75rem auto;
+    }
+
+    .receipt-paper {
+        max-width: 100%;
+    }
+}
+
+/* Narrow Phones (<= 575.98px) */
+@media (max-width: 575.98px) {
+    /* Keep the 4 payment buttons in a clean 2x2 touch grid */
+    .pay-btn-grid {
+        gap: 0.75rem;
+    }
+
+    .pay-btn-modern {
+        height: 92px;
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
+
+        .pay-btn-modern i {
+            font-size: 1.6rem;
+        }
+
+    /* Slightly tighter card padding on small screens */
+    .modal-body {
+        padding: 1.25rem !important;
+    }
+
+    .cash-focus-group {
+        min-height: 46px;
+    }
+
+    #grandTotalDisplay {
+        font-size: 1.65rem !important;
+    }
 }
