@@ -1263,37 +1263,73 @@
             }
 
             // ================= COUNTER CAMERA SETUP =================
-            async function loadCameras() {
-                try {
-                    const tempStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
-                    tempStream.getTracks().forEach(t => t.stop());
+            function isCameraApiAvailable() {
+                return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && navigator.mediaDevices.enumerateDevices);
+            }
 
+            async function loadCameras(requestPermission = false) {
+                if (!cameraSelect) return;
+
+                if (!isCameraApiAvailable()) {
+                    cameraSelect.innerHTML = "<option value=''>Camera Blocked (HTTP)</option>";
+                    return;
+                }
+
+                try {
+                    if (requestPermission) {
+                        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                        tempStream.getTracks().forEach(t => t.stop());
+                    }
+                } catch (permErr) {
+                    console.warn("Initial camera permission deferred:", permErr);
+                }
+
+                try {
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const videoDevices = devices.filter(d => d.kind === "videoinput");
 
-                    if (!cameraSelect) return;
+                    const previousValue = cameraSelect.value;
                     cameraSelect.innerHTML = "";
+
+                    if (videoDevices.length === 0) {
+                        cameraSelect.innerHTML = "<option value=''>No camera detected</option>";
+                        return;
+                    }
+
+                    let hasSelectedPreferred = false;
                     videoDevices.forEach((device, index) => {
                         const option = document.createElement("option");
                         option.value = device.deviceId;
                         option.text = device.label || `Camera ${index + 1}`;
-                        const lowerLabel = (device.label || "").toLowerCase();
-                        if (lowerLabel.includes("back") || lowerLabel.includes("rear") || lowerLabel.includes("environment") || lowerLabel.includes("usb")) {
+
+                        if (previousValue && device.deviceId === previousValue) {
                             option.selected = true;
+                            hasSelectedPreferred = true;
+                        } else if (!hasSelectedPreferred) {
+                            const lowerLabel = (device.label || "").toLowerCase();
+                            if (lowerLabel.includes("back") || lowerLabel.includes("rear") || lowerLabel.includes("environment") || lowerLabel.includes("usb") || lowerLabel.includes("droidcam") || lowerLabel.includes("a4tech")) {
+                                option.selected = true;
+                                hasSelectedPreferred = true;
+                            }
                         }
                         cameraSelect.appendChild(option);
                     });
-
-                    if (videoDevices.length === 0) {
-                        cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
-                    }
                 } catch (err) {
-                    if (cameraSelect) cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
+                    console.error("Failed to enumerate cameras:", err);
+                    cameraSelect.innerHTML = "<option value=''>Default Camera</option>";
                 }
             }
-            loadCameras();
+            loadCameras(false);
+
+            if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === "function") {
+                navigator.mediaDevices.addEventListener("devicechange", () => loadCameras(false));
+            }
 
             async function startSelectedCamera() {
+                if (!isCameraApiAvailable()) {
+                    throw new Error("Browser blocked camera access on insecure HTTP. Launch Edge with the SmartScanPOS flag or use HTTPS.");
+                }
+
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(track => track.stop());
                 }
@@ -1324,6 +1360,14 @@
                 if (video) video.srcObject = mediaStream;
 
                 const track = mediaStream.getVideoTracks()[0];
+                const activeDeviceId = track && track.getSettings ? track.getSettings().deviceId : "";
+
+                // Refresh dropdown labels after camera permission is granted
+                await loadCameras(false);
+                if (cameraSelect && activeDeviceId) {
+                    cameraSelect.value = activeDeviceId;
+                }
+
                 const capabilities = track && track.getCapabilities ? track.getCapabilities() : {};
                 if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
                     try {
@@ -1796,6 +1840,18 @@
                         window.location.href = "/Home/Payment";
                     }
                 });
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <text>
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Notice',
+                    text: @Html.Raw(Json.Serialize(TempData["ErrorMessage"])),
+                    confirmButtonColor: '#1162a3'
+                });
+                </text>
             }
         });
 

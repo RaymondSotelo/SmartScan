@@ -199,8 +199,14 @@ namespace SmartScan.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public IActionResult DigitalReceipt()
+        public IActionResult DigitalReceipt(string? d)
         {
+            if (string.IsNullOrWhiteSpace(d))
+            {
+                TempData["ErrorMessage"] = "Direct access to Digital Receipt is not allowed. Please scan a valid receipt QR code.";
+                return RedirectToAction("Checkout", "Home");
+            }
+
             return View();
         }
 
