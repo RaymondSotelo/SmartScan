@@ -143,11 +143,20 @@
                                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                                          style="background-color: #fee2e2; border-color: #fecaca !important;">
 
-                                        <!-- Left: Customer Name, Phone & Due Date -->
-                                        <div class="d-flex flex-column lh-1" style="min-width: 0; flex: 1 1 180px;">
-                                            <span class="fw-semibold text-dark text-truncate">
-                                                @debt.FullName
-                                            </span>
+                                        <!-- Left: Customer Name, Store Badge, Phone & Due Date -->
+                                        <div class="d-flex flex-column lh-1" style="min-width: 0; flex: 1 1 200px;">
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <span class="fw-semibold text-dark text-truncate">
+                                                    @debt.FullName
+                                                </span>
+                                                @if (!string.IsNullOrWhiteSpace(debt.StoreName))
+                                                {
+                                                    <span class="badge rounded-pill bg-white text-secondary border fw-semibold px-2 py-1 shadow-sm text-nowrap"
+                                                          style="font-size: 10px;">
+                                                        <i class="fa-solid fa-store me-1 text-danger"></i>@debt.StoreName
+                                                    </span>
+                                                }
+                                            </div>
                                             <span class="text-secondary small mt-1 d-flex flex-wrap align-items-center gap-2" style="font-size: 11px;">
                                                 <span><i class="fa-solid fa-phone me-1 text-muted"></i>@(string.IsNullOrWhiteSpace(debt.ContactNumber) ? "No phone" : debt.ContactNumber)</span>
                                                 <span class="text-danger fw-medium">
@@ -195,11 +204,20 @@
                                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
 
-                                        <!-- Left: Customer Name & Timestamp -->
-                                        <div class="d-flex flex-column lh-1" style="min-width: 0; flex: 1 1 160px;">
-                                            <span class="fw-semibold text-primary text-truncate">
-                                                @audit.CustomerMaskedName
-                                            </span>
+                                        <!-- Left: Customer Name, Store Badge & Timestamp -->
+                                        <div class="d-flex flex-column lh-1" style="min-width: 0; flex: 1 1 200px;">
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <span class="fw-semibold text-primary text-truncate">
+                                                    @audit.CustomerMaskedName
+                                                </span>
+                                                @if (!string.IsNullOrWhiteSpace(audit.StoreName))
+                                                {
+                                                    <span class="badge rounded-pill bg-white text-secondary border fw-semibold px-2 py-1 shadow-sm text-nowrap"
+                                                          style="font-size: 10px;">
+                                                        <i class="fa-solid fa-store me-1 text-primary"></i>@audit.StoreName
+                                                    </span>
+                                                }
+                                            </div>
                                             <span class="text-secondary small mt-1" style="font-size: 11px;">
                                                 <i class="fa-regular fa-clock me-1 text-muted"></i>@audit.RegisteredAt.ToString("MMM dd, h:mm tt")
                                             </span>
@@ -293,16 +311,18 @@
                         var avatarPath = ResolveAvatar(rawPic);
 
                         <div class="col">
-                            <div class="card h-100 shadow-sm border retail-card position-relative overflow-hidden">
-                                <!-- Store Image Banner -->
-                                <div class="position-relative" style="height: 180px;">
+                            <div class="card h-100 shadow-sm border rounded-4 retail-card position-relative overflow-hidden">
+                                <!-- Fixed-Height Store Image Banner -->
+                                <div class="position-relative w-100 overflow-hidden bg-light flex-shrink-0"
+                                     style="height: 180px; min-height: 180px; max-height: 180px;">
                                     <img src="@(string.IsNullOrEmpty(item.ImagePath) ? "/images/default-retail-pic.png" : item.ImagePath)"
                                          onerror="this.onerror=null; this.src='/images/default-retail-pic.png';"
                                          alt="@item.RetailName"
-                                         class="card-img-top w-100 h-100 object-fit-cover" />
+                                         class="w-100 h-100 d-block"
+                                         style="height: 180px !important; max-height: 180px !important; object-fit: cover; object-position: center;" />
 
                                     <!-- Status Badge -->
-                                    <div class="position-absolute top-0 end-0 m-2">
+                                    <div class="position-absolute top-0 end-0 m-2" style="z-index: 2;">
                                         @if (item.Status?.StatusName == "Active")
                                         {
                                             <span class="badge bg-success rounded-pill px-3 shadow-sm">Active</span>
@@ -315,7 +335,7 @@
                                 </div>
 
                                 <!-- Card Body -->
-                                <div class="card-body d-flex flex-column p-3">
+                                <div class="card-body d-flex flex-column p-3 bg-white position-relative" style="z-index: 1;">
                                     <h5 class="card-title fw-bold mb-1 text-truncate" style="color: #1162a3;" title="@item.RetailName">
                                         <a asp-controller="Retails" asp-action="View" asp-route-retailid="@item.RetailId" class="stretched-link text-decoration-none text-reset">
                                             @item.RetailName
@@ -336,7 +356,7 @@
                                     }
 
                                     <!-- Footer Info -->
-                                    <div class="mt-auto d-flex align-items-center small text-muted pt-2">
+                                    <div class="mt-auto d-flex align-items-center small text-muted pt-2 border-top">
                                         <div class="d-flex align-items-center text-truncate me-2 position-relative" style="z-index: 2;" title="Store Owner">
                                             <img src="@avatarPath"
                                                  onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"

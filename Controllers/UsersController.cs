@@ -113,6 +113,7 @@ namespace SmartScan.Controllers
                     CustomerId = c.CustomerId,
                     FullName = c.FullName,
                     ContactNumber = c.ContactNumber,
+                    StoreName = c.Retail != null ? c.Retail.RetailName : "Unassigned Store",
                     AmountDue = c.CurrentDebt,
                     DueDate = c.Transactions
                         .Where(t =>
@@ -145,6 +146,7 @@ namespace SmartScan.Controllers
                 .Select(c => new ComplianceNoticeItem
                 {
                     CustomerMaskedName = c.FullName,
+                    StoreName = c.Retail != null ? c.Retail.RetailName : "Unassigned Store",
                     IsUnderage = false,
                     RegisteredAt = c.CreatedAt
                 })

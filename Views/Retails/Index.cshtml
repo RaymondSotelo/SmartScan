@@ -80,11 +80,10 @@
             setTimeout(function () {
                 var alertNode = document.getElementById('autoCloseAlert');
                 if (alertNode) {
-                    // Use Bootstrap's native Alert API to close it smoothly
                     var bsAlert = new bootstrap.Alert(alertNode);
                     bsAlert.close();
                 }
-            }, 2000); // 2000 milliseconds = 2 seconds
+            }, 2000);
         </script>
     }
 
@@ -98,26 +97,28 @@
     }
     else
     {
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 p-3 pt-0 overflow-y-auto no-scrollbar">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 g-md-4 p-3 pt-0 overflow-y-auto no-scrollbar">
             @foreach (var item in Model)
             {
                 // Resolve avatar path for the store owner
                 profileMap.TryGetValue(item.AdminOwner, out var customPic);
                 var avatarPath = string.IsNullOrWhiteSpace(customPic)
-                    ? "/images/default-pfp.jpg"
-                    : customPic;
+                ? "/images/default-pfp.jpg"
+                : customPic;
 
                 <div class="col">
-                    <div class="card h-100 shadow-sm border retail-card position-relative overflow-hidden">
-                        <!-- Store Image Banner -->
-                        <div class="position-relative" style="height: 180px;">
+                    <div class="card h-100 shadow-sm border rounded-4 retail-card position-relative overflow-hidden">
+                        <!-- Fixed-Height Store Image Banner -->
+                        <div class="position-relative w-100 overflow-hidden bg-light flex-shrink-0"
+                             style="height: 180px; min-height: 180px; max-height: 180px;">
                             <img src="@(string.IsNullOrEmpty(item.ImagePath) ? "/images/default-retail-pic.png" : item.ImagePath)"
                                  onerror="this.onerror=null; this.src='/images/default-retail-pic.png';"
                                  alt="@item.RetailName"
-                                 class="card-img-top w-100 h-100 object-fit-cover" />
+                                 class="w-100 h-100 d-block"
+                                 style="height: 180px !important; max-height: 180px !important; object-fit: cover; object-position: center;" />
 
                             <!-- Status Badge -->
-                            <div class="position-absolute top-0 end-0 m-2">
+                            <div class="position-absolute top-0 end-0 m-2" style="z-index: 2;">
                                 @if (item.Status?.StatusName == "Active")
                                 {
                                     <span class="badge bg-success rounded-pill px-3 shadow-sm">Active</span>
@@ -130,7 +131,7 @@
                         </div>
 
                         <!-- Card Body -->
-                        <div class="card-body d-flex flex-column p-3">
+                        <div class="card-body d-flex flex-column p-3 bg-white position-relative" style="z-index: 1;">
                             <h5 class="card-title fw-bold mb-1 text-truncate" style="color: #1162a3;" title="@item.RetailName">
                                 <!-- Stretched link triggers navigation to store details/view -->
                                 <a asp-action="View" asp-route-retailid="@item.RetailId" class="stretched-link text-decoration-none text-reset">
@@ -152,7 +153,7 @@
                             }
 
                             <!-- Footer Info -->
-                            <div class="mt-auto d-flex align-items-center small text-muted pt-2">
+                            <div class="mt-auto d-flex align-items-center small text-muted pt-2 border-top">
 
                                 <!-- Owner Section -->
                                 <div class="d-flex align-items-center text-truncate me-2 position-relative" style="z-index: 2;" title="Store Owner">
@@ -226,19 +227,19 @@
         document.addEventListener('DOMContentLoaded', function () {
             @if (TempData["NoEntryMessage"] != null)
             {
-                <text>
-                const noEntryMsg = @Html.Raw(Json.Serialize(TempData["NoEntryMessage"]));
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Access Denied',
-                        text: noEntryMsg,
-                        confirmButtonColor: '#1162a3'
-                    });
-                } else {
-                    alert(noEntryMsg);
-                }
-                </text>
+                    <text>
+                    const noEntryMsg = @Html.Raw(Json.Serialize(TempData["NoEntryMessage"]));
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Access Denied',
+                            text: noEntryMsg,
+                            confirmButtonColor: '#1162a3'
+                        });
+                    } else {
+                        alert(noEntryMsg);
+                    }
+                    </text>
             }
 
             // Handle retail delete clicks
@@ -257,7 +258,6 @@
                         return;
                     }
 
-                    // Check if SweetAlert2 is loaded
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             title: 'Delete Retail Store?',
@@ -274,7 +274,6 @@
                             }
                         });
                     } else {
-                        // Fallback to standard confirm if Swal fails to load
                         if (confirm(`Are you sure you want to delete "${retailName}"?`)) {
                             inputId.value = retailId;
                             form.submit();
