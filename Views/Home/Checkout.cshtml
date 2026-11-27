@@ -10,19 +10,43 @@
     <style>
         /* Mobile & Tablet Layout Adjustments (Desktop >= 992px stays untouched) */
         @@media (max-width: 991.98px) {
+            /* Unlock fixed viewport height on mobile/tablet so stacked columns don't collide */
+            .pos-viewport-card {
+                height: auto !important;
+                min-height: 0 !important;
+                margin-bottom: 1.5rem;
+            }
+
             .checkout-camera-card {
-                min-height: 270px !important;
-                height: 300px !important;
+                min-height: 250px !important;
+                height: 270px !important;
             }
 
             .pos-queue-table-container {
                 min-height: 180px;
-                max-height: 320px;
+                max-height: 300px;
             }
         }
 
+        /* iPhone SE (375px) & Narrow Phones */
         @@media (max-width: 575.98px) {
-            /* Keep Detected badge at top-right on narrow phones so it never overlaps Enable Scanner */
+            /* Top Header: prevent title and button collision on 375px */
+            .checkout-top-header {
+                padding: 0.75rem !important;
+                gap: 0.5rem !important;
+            }
+
+                .checkout-top-header h5 {
+                    font-size: 0.95rem !important;
+                    line-height: 1.2;
+                }
+
+                .checkout-top-header .btn {
+                    padding: 0.35rem 0.65rem !important;
+                    font-size: 0.75rem !important;
+                    white-space: nowrap;
+                }
+            /* Keep Detected badge neatly at top-right so it never overlaps Enable Scanner */
             .checkout-detected-badge {
                 top: 0 !important;
                 bottom: auto !important;
@@ -30,11 +54,39 @@
                 right: 0 !important;
                 margin: 0.75rem !important;
             }
-            /* Stack Total Amount on top and put the 4 action buttons in a clean 2x2 touch grid */
+            /* Digital Cart Table: prevent horizontal squishing on 375px */
+            .pos-queue-table-container table {
+                font-size: 0.76rem !important;
+            }
+
+            .pos-queue-table-container td:first-child {
+                max-width: 105px !important;
+                white-space: normal !important;
+                word-break: break-word;
+                line-height: 1.25;
+            }
+
+                .pos-queue-table-container td:first-child .badge {
+                    display: inline-block;
+                    margin-left: 0 !important;
+                    margin-top: 2px;
+                }
+            /* Manual Input Bar: tighten padding for 375px width */
+            #manualProductInput {
+                font-size: 0.8rem !important;
+                padding-left: 0.35rem !important;
+            }
+
+            #btnAddProduct {
+                padding-left: 0.65rem !important;
+                padding-right: 0.65rem !important;
+                font-size: 0.78rem !important;
+            }
+            /* Stack Total Amount on top and put the 4 action buttons in a clean 2x2 grid */
             .checkout-settlement-bar {
                 flex-direction: column !important;
                 align-items: stretch !important;
-                gap: 0.75rem !important;
+                gap: 0.65rem !important;
                 padding: 0.75rem !important;
             }
 
@@ -46,9 +98,17 @@
                 border-bottom: 1px solid #e9ecef;
             }
 
+                .checkout-total-row span:first-child {
+                    margin-bottom: 0 !important;
+                }
+
+            #totalDueDisplay {
+                font-size: 1.35rem !important;
+            }
+
             .checkout-settlement-actions {
                 display: grid !important;
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
                 gap: 0.5rem !important;
                 width: 100%;
             }
@@ -56,33 +116,49 @@
             .checkout-secondary-btns {
                 display: contents !important;
             }
-
+            /* Fix button text indentation & uneven wrapping inside 2x2 grid */
             .checkout-settlement-actions button {
                 width: 100%;
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
                 justify-content: center !important;
+                text-align: center !important;
+                white-space: normal !important;
+                line-height: 1.15 !important;
                 height: auto !important;
                 min-height: 46px;
-                padding: 0.5rem 0.6rem !important;
-                font-size: 0.8rem !important;
+                padding: 0.45rem 0.5rem !important;
+                font-size: 0.76rem !important;
+                gap: 0.4rem !important;
             }
 
-            .checkout-settlement-actions #btnPayDebt,
-            .checkout-settlement-actions #btnProceedToPayment {
-                flex-direction: row !important;
-                gap: 0.45rem;
-                padding-top: 0.65rem !important;
-                padding-bottom: 0.65rem !important;
-            }
-
-                .checkout-settlement-actions #btnPayDebt i,
-                .checkout-settlement-actions #btnProceedToPayment i {
-                    margin-bottom: 0 !important;
-                    font-size: 1.05rem !important;
+                .checkout-settlement-actions button i {
+                    margin: 0 !important;
+                    flex-shrink: 0;
+                    font-size: 0.95rem !important;
                 }
 
-                .checkout-settlement-actions #btnPayDebt br,
-                .checkout-settlement-actions #btnProceedToPayment br {
-                    display: none;
+            .checkout-settlement-actions #btnPayDebt span,
+            .checkout-settlement-actions #btnProceedToPayment span {
+                font-size: 0.76rem !important;
+                line-height: 1.15 !important;
+                text-align: center !important;
+            }
+
+            .checkout-settlement-actions #btnPayDebt br,
+            .checkout-settlement-actions #btnProceedToPayment br {
+                display: none;
+            }
+            /* Modal Receipt Footer Buttons on iPhone SE */
+            #txReceiptViewSection .d-flex.flex-wrap.justify-content-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+                #txReceiptViewSection .d-flex.flex-wrap.justify-content-between button {
+                    width: 100%;
+                    justify-content: center;
                 }
         }
     </style>
@@ -92,7 +168,7 @@
      style="height: calc(100dvh - 130px); min-height: 540px;">
 
     <!-- Top Header -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2 checkout-top-header"
          style="background-color: #1162a3;">
         <div class="d-flex align-items-center gap-2">
             <i class="fa-solid fa-cash-register fs-5"></i>
@@ -613,12 +689,6 @@
                 <div id="scannerStatus" class="alert alert-info py-2 small fw-semibold text-center mb-0">
                     <i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...
                 </div>
-            </div>
-
-            <div class="modal-footer bg-white border-top justify-content-center">
-                <button type="button" class="btn btn-outline-secondary fw-semibold rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">
-                    Close Scanner
-                </button>
             </div>
         </div>
     </div>

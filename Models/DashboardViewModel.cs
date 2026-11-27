@@ -29,18 +29,18 @@ namespace SmartScan.Models.ViewModels
         public int CustomerId { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string? ContactNumber { get; set; }
+        public string StoreName { get; set; } = string.Empty; // <-- Add this
         public decimal AmountDue { get; set; }
         public DateOnly DueDate { get; set; }
-
-        // Calculates elapsed days between two DateOnly instances
-        public int DaysOverdue => DateOnly.FromDateTime(DateTime.Today).DayNumber - DueDate.DayNumber;
+        public int DaysOverdue => Math.Max(0, DateOnly.FromDateTime(DateTime.Now).DayNumber - DueDate.DayNumber);
     }
 
     public class ComplianceNoticeItem
     {
         public string CustomerMaskedName { get; set; } = string.Empty;
-        public int Age { get; set; }
+        public string StoreName { get; set; } = string.Empty; // <-- Add this
         public bool IsUnderage { get; set; }
         public DateTime RegisteredAt { get; set; }
     }
+
 }
