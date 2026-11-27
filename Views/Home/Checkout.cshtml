@@ -874,6 +874,11 @@
                 if (video) video.srcObject = null;
                 if (overlayCtx && overlay) overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
                 recentDetections.length = 0;
+
+                if (!shouldResumeYoloAfterBarcode) {
+                    manualItems = manualItems.filter(item => item.isLocked);
+                    buildCartAndRender();
+                }
             }
 
             async function resumeYoloScanner() {
@@ -1360,6 +1365,13 @@
                 if (video) video.srcObject = mediaStream;
 
                 const track = mediaStream.getVideoTracks()[0];
+                if (track) {
+                    track.onended = () => {
+                        if (isScanningActive && stopBtn) {
+                            stopBtn.click();
+                        }
+                    };
+                }
                 const activeDeviceId = track && track.getSettings ? track.getSettings().deviceId : "";
 
                 // Refresh dropdown labels after camera permission is granted
@@ -1425,6 +1437,8 @@
                     if (overlayCtx && overlay) overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
                     recentDetections.length = 0;
 
+                    manualItems = manualItems.filter(item => item.isLocked);
+
                     if (videoContainer) videoContainer.style.display = "none";
                     if (placeholder) placeholder.style.display = "block";
                     stopBtn.classList.add("d-none");
@@ -1448,7 +1462,7 @@
             }
 
             async function captureAndDetect() {
-                if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
+                if (!isScanningActive || !video || video.videoWidth === 0 || video.videoHeight === 0) return;
 
                 if (captureCanvas && (captureCanvas.width !== video.videoWidth || captureCanvas.height !== video.videoHeight)) {
                     captureCanvas.width = video.videoWidth;
@@ -1501,7 +1515,11 @@
                         body: JSON.stringify({ image: frameBase64 })
                     });
 
+                    if (!isScanningActive) return;
+
                     const data = await response.json();
+                    if (!isScanningActive) return;
+
                     const detections = data.detections || [];
                     const now = Date.now();
                     const currentDetections = detections.filter(d => d.box);
@@ -1591,10 +1609,15 @@
                         }
                     }
 
+                    if (!isScanningActive) return;
+
                     await processLiveAutoAdd(yoloCounts);
+                    if (!isScanningActive) return;
+
                     await buildCartAndRender(lowConfidenceItems);
 
                 } catch (error) {
+                    if (!isScanningActive) return;
                     console.error("Cannot connect to Python Server:", error);
                     if (list) list.innerHTML = "<tr><td colspan='5' class='text-danger text-center py-3'>Lost connection to AI Scanner!</td></tr>";
                 }
@@ -1844,14 +1867,14 @@
 
             @if (TempData["ErrorMessage"] != null)
             {
-                <text>
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Notice',
-                    text: @Html.Raw(Json.Serialize(TempData["ErrorMessage"])),
-                    confirmButtonColor: '#1162a3'
-                });
-                </text>
+                    <text>
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Notice',
+                        text: @Html.Raw(Json.Serialize(TempData["ErrorMessage"])),
+                        confirmButtonColor: '#1162a3'
+                    });
+                    </text>
             }
         });
 

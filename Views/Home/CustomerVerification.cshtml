@@ -19,26 +19,59 @@
             }
 
             .verification-camera-card {
-                min-height: 310px !important;
-                height: 330px !important;
+                min-height: 320px !important;
+                height: 340px !important;
                 overflow: hidden !important;
             }
-            /* Scale face guide oval on phones so it sits cleanly between top badge and bottom button */
+            /* Scale face guide oval & QR box on phones so they sit cleanly between top badge and bottom button */
             .face-scan-guide {
-                width: 155px !important;
-                height: 195px !important;
+                width: 150px !important;
+                height: 185px !important;
+                top: 52% !important;
+            }
+
+            .qr-scan-guide {
+                width: 160px !important;
+                height: 160px !important;
+                top: 53% !important;
             }
         }
 
         @@media (max-width: 575.98px) {
             .verification-camera-card {
-                min-height: 290px !important;
-                height: 310px !important;
+                min-height: 310px !important;
+                height: 330px !important;
             }
 
             .verification-placeholder-icon {
                 padding: 1rem !important;
             }
+
+            .face-scan-guide {
+                width: 140px !important;
+                height: 175px !important;
+                top: 53% !important;
+            }
+
+            .qr-scan-guide {
+                width: 150px !important;
+                height: 150px !important;
+                top: 53% !important;
+            }
+        }
+
+        #qrVideoContainer,
+        #qrLiveStage {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #qrReader video,
+        #qrLiveVideo {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            display: block !important;
         }
     </style>
 }
@@ -1182,51 +1215,234 @@
 
         // ================= PHILSYS NATIONAL ID / QR SCANNER =================
         let html5QrScanner = null;
+        let qrStream = null;
         let isProcessingScan = false;
+        let qrNativeLoopActive = false;
 
-        function startRightQrScanner() {
+        async function enhanceQrVideoTrack(videoEl) {
+            try {
+                const track = videoEl?.srcObject?.getVideoTracks?.()[0];
+                if (!track || typeof track.getCapabilities !== "function") return;
+
+                const caps = track.getCapabilities();
+                const advanced = [];
+
+                if (Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
+                    advanced.push({ focusMode: "continuous" });
+                }
+                if (caps.exposureCompensation && typeof caps.exposureCompensation.min === "number") {
+                    const dimExposure = Math.max(caps.exposureCompensation.min, -1);
+                    if (dimExposure < 0) advanced.push({ exposureCompensation: dimExposure });
+                }
+
+                if (advanced.length > 0) {
+                    await track.applyConstraints({ advanced });
+                }
+            } catch (e) { }
+        }
+
+        async function runNativeHdQrLoop(videoEl) {
+            let detector = null;
+            if ("BarcodeDetector" in window) {
+                try {
+                    detector = new BarcodeDetector({ formats: ["qr_code"] });
+                } catch { }
+            }
+
+            const workCanvas = document.createElement("canvas");
+            const workCtx = workCanvas.getContext("2d", { willReadFrequently: true });
+            let tick = 0;
+
+            while (qrNativeLoopActive && qrStream) {
+                if (videoEl && videoEl.readyState >= 2 && videoEl.videoWidth > 0 && !isProcessingScan) {
+                    try {
+                        // Pass 1: Full native HD frame (1920x1080 / 1280x720)
+                        if (detector) {
+                            const rawHits = await detector.detect(videoEl);
+                            if (rawHits && rawHits.length > 0 && rawHits[0].rawValue) {
+                                await processPhilSysLiveScan(rawHits[0].rawValue);
+                                continue;
+                            }
+                        }
+
+                        // Pass 2: Center crop with anti-glare contrast enhancement
+                        const vw = videoEl.videoWidth;
+                        const vh = videoEl.videoHeight;
+                        const cropSize = Math.floor(Math.min(vw, vh) * 0.72);
+                        const sx = Math.floor((vw - cropSize) / 2);
+                        const sy = Math.floor((vh - cropSize) / 2);
+
+                        workCanvas.width = cropSize;
+                        workCanvas.height = cropSize;
+                        workCtx.filter = tick % 2 === 0
+                            ? "contrast(1.45) brightness(0.9)"
+                            : "grayscale(1) contrast(1.85) brightness(0.85)";
+                        workCtx.drawImage(videoEl, sx, sy, cropSize, cropSize, 0, 0, cropSize, cropSize);
+                        workCtx.filter = "none";
+
+                        if (detector) {
+                            const enhancedHits = await detector.detect(workCanvas);
+                            if (enhancedHits && enhancedHits.length > 0 && enhancedHits[0].rawValue) {
+                                await processPhilSysLiveScan(enhancedHits[0].rawValue);
+                                continue;
+                            }
+                        }
+
+                        // Pass 3: ZXing WASM fallback every 4th frame
+                        if (tick % 4 === 0) {
+                            const blob = await new Promise(res => workCanvas.toBlob(res, "image/png"));
+                            if (blob && qrNativeLoopActive && !isProcessingScan) {
+                                const frameFile = new File([blob], "frame.png", { type: "image/png" });
+                                const fallbackDecoder = new Html5Qrcode("qrReader");
+                                try {
+                                    const decoded = await fallbackDecoder.scanFile(frameFile, false);
+                                    if (decoded) {
+                                        await processPhilSysLiveScan(decoded);
+                                        continue;
+                                    }
+                                } catch {
+                                } finally {
+                                    try { fallbackDecoder.clear(); } catch { }
+                                }
+                            }
+                        }
+                    } catch (e) { }
+                    tick++;
+                }
+                await new Promise(r => setTimeout(r, 150));
+            }
+        }
+
+        async function startRightQrScanner() {
+            await stopRightQrScanner();
             showPlaceholder();
             placeholder.style.display = "none";
             regVideoContainer.style.display = "none";
             verifyVideoContainer.style.display = "none";
             qrContainer.style.display = "block";
+            qrContainer.classList.remove("bg-white");
+            qrContainer.classList.add("bg-dark");
 
             startBtn.classList.add("d-none");
             stopBtn.classList.remove("d-none");
             if (cameraDropdownWrapper) cameraDropdownWrapper.style.backgroundColor = "#dc3545";
 
-            const selectedDeviceId = cameraSelect.value;
-            const cameraConfig = selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : { facingMode: "environment" };
-            const qrSize = window.innerWidth >= 992 ? 260 : Math.min(200, Math.max(150, Math.floor(window.innerWidth * 0.52)));
+           let liveStage = document.getElementById("qrLiveStage");
+                    if (!liveStage) {
+                        liveStage = document.createElement("div");
+                        liveStage.id = "qrLiveStage";
+                        liveStage.className = "position-relative w-100 h-100";
+                        liveStage.innerHTML = `
+                            <video id="qrLiveVideo" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
+                            <div class="position-absolute top-50 start-50 translate-middle border border-2 border-white rounded-4 pointer-events-none qr-scan-guide"
+                                 style="width: 270px; height: 270px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);"></div>
+                        `;
+                        qrContainer.prepend(liveStage);
+                    }
+                    liveStage.style.display = "block";
 
-            html5QrScanner = new Html5Qrcode("qrReader");
-            html5QrScanner.start(
-                cameraConfig,
-                { fps: 15, qrbox: { width: qrSize, height: qrSize } },
-                async (decodedText) => { await processPhilSysLiveScan(decodedText); },
-                () => { }
-            ).then(() => {
-                updateOverlayStatus("fa-camera", "Hold PhilSys QR in view", "text-success");
-            }).catch(err => {
-                updateOverlayStatus("fa-triangle-exclamation", "Camera Error: " + err, "text-danger");
+            const qrReaderEl = document.getElementById("qrReader");
+            if (qrReaderEl) qrReaderEl.style.display = "none";
+
+            const selectedDeviceId = cameraSelect.value;
+            const hdConstraints = {
+                video: {
+                    ...(selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : { facingMode: { ideal: "environment" } }),
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                audio: false
+            };
+
+            try {
+                try {
+                    qrStream = await navigator.mediaDevices.getUserMedia(hdConstraints);
+                } catch {
+                    qrStream = await navigator.mediaDevices.getUserMedia({
+                        video: selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : true,
+                        audio: false
+                    });
+                }
+
+                html5QrScanner = qrStream;
+                const videoEl = document.getElementById("qrLiveVideo");
+                videoEl.srcObject = qrStream;
+                await videoEl.play();
+                await enhanceQrVideoTrack(videoEl);
+
+                const resLabel = videoEl.videoWidth && videoEl.videoHeight
+                    ? ` (${videoEl.videoWidth}×${videoEl.videoHeight})`
+                    : "";
+
+                qrNativeLoopActive = true;
+                runNativeHdQrLoop(videoEl);
+
+                updateOverlayStatus("fa-camera", `Hold QR 30–40cm away${resLabel}`, "text-success");
+            } catch (err) {
+                qrNativeLoopActive = false;
+                qrStream = null;
+                html5QrScanner = null;
+                updateOverlayStatus("fa-triangle-exclamation", "Camera Error: " + err.message, "text-danger");
                 showPlaceholder();
-            });
+            }
         }
 
         async function stopRightQrScanner() {
+            qrNativeLoopActive = false;
             isProcessingScan = false;
-            if (html5QrScanner) {
-                try {
-                    await html5QrScanner.stop();
-                    html5QrScanner.clear();
-                } catch (e) { }
-                html5QrScanner = null;
+
+            if (qrStream) {
+                qrStream.getTracks().forEach(t => t.stop());
+                qrStream = null;
             }
+            html5QrScanner = null;
+
+            const videoEl = document.getElementById("qrLiveVideo");
+            if (videoEl) videoEl.srcObject = null;
+
+            const liveStage = document.getElementById("qrLiveStage");
+            if (liveStage) liveStage.style.display = "none";
         }
 
         let scannedQrJwtToken = null;
         let scannedQrPayload = null;
         let scannedQrFormat = null; // "JWT" | "PSA_JSON"
+
+        function normalizePhilSysDobToIso(rawDob) {
+            const trimmed = String(rawDob || "").trim();
+            if (!trimmed) return null;
+
+            // 1. YYYY-MM-DD or YYYY/MM/DD
+            let m = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+            if (m) {
+                const yyyy = m[1];
+                const mm = m[2].padStart(2, '0');
+                const dd = m[3].padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+
+            // 2. MM-DD-YYYY or MM/DD/YYYY (PSA PhilSys QR format), with DD-MM-YYYY fallback if first number > 12
+            m = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+            if (m) {
+                const part1 = parseInt(m[1], 10);
+                const part2 = parseInt(m[2], 10);
+                const yyyy = m[3];
+                const mm = String(part1 > 12 ? part2 : part1).padStart(2, '0');
+                const dd = String(part1 > 12 ? part1 : part2).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+
+            // 3. Text month formats without UTC timezone shift
+            const localDate = new Date(trimmed);
+            if (!isNaN(localDate.getTime())) {
+                const yyyy = localDate.getFullYear();
+                const mm = String(localDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(localDate.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+
+            return null;
+        }
 
         async function processPhilSysLiveScan(decodedText) {
             if (isProcessingScan) return;
@@ -1281,12 +1497,10 @@
                     throw new Error("Missing required PhilSys identity claims (PCN, DOB, or Name).");
                 }
 
-                const dateObj = new Date(rawDob);
-                if (isNaN(dateObj)) {
+                const normalizedDob = normalizePhilSysDobToIso(rawDob);
+                if (!normalizedDob) {
                     throw new Error("Invalid birthdate inside PhilSys QR.");
                 }
-
-                const normalizedDob = dateObj.toISOString().split('T')[0];
 
                 document.getElementById('digitalIdInput').value = rawPcn;
                 document.getElementById('manualDobInput').value = normalizedDob;
@@ -1431,6 +1645,82 @@
             }
         }
 
+        async function decodePhilSysImageFile(file) {
+            const img = await new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const image = new Image();
+                image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+                image.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
+                image.src = url;
+            });
+
+            // 1. Native BarcodeDetector (handles full ID card photos & standalone QR images)
+            if ('BarcodeDetector' in window) {
+                try {
+                    const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                    const barcodes = await detector.detect(img);
+                    if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                        return barcodes[0].rawValue;
+                    }
+                } catch (e) { }
+            }
+
+            // 2. Direct Html5Qrcode scan (standalone QR images)
+            const tempScanner = new Html5Qrcode("qrReader");
+            try {
+                const directResult = await tempScanner.scanFile(file, false);
+                if (directResult) return directResult;
+            } catch (e) {
+            } finally {
+                try { tempScanner.clear(); } catch { }
+            }
+
+            // 3. Multi-region crop fallback (full physical ID photos in landscape or portrait)
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
+            const regions = [
+                { sx: 0, sy: 0, sw: w, sh: h },
+                { sx: Math.floor(w * 0.35), sy: 0, sw: Math.floor(w * 0.65), sh: h },
+                { sx: Math.floor(w * 0.35), sy: Math.floor(h * 0.25), sw: Math.floor(w * 0.65), sh: Math.floor(h * 0.75) },
+                { sx: 0, sy: 0, sw: Math.floor(w * 0.65), sh: h },
+                { sx: Math.floor(w * 0.15), sy: Math.floor(h * 0.15), sw: Math.floor(w * 0.7), sh: Math.floor(h * 0.7) }
+            ];
+
+            for (const r of regions) {
+                const scale = Math.min(1, 1400 / Math.max(r.sw, r.sh));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(r.sw * scale));
+                canvas.height = Math.max(1, Math.round(r.sh * scale));
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, r.sx, r.sy, r.sw, r.sh, 0, 0, canvas.width, canvas.height);
+
+                if ('BarcodeDetector' in window) {
+                    try {
+                        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                        const barcodes = await detector.detect(canvas);
+                        if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                            return barcodes[0].rawValue;
+                        }
+                    } catch (e) { }
+                }
+
+                const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+                if (blob) {
+                    const cropFile = new File([blob], "crop.png", { type: "image/png" });
+                    const cropScanner = new Html5Qrcode("qrReader");
+                    try {
+                        const cropResult = await cropScanner.scanFile(cropFile, false);
+                        if (cropResult) return cropResult;
+                    } catch (e) {
+                    } finally {
+                        try { cropScanner.clear(); } catch { }
+                    }
+                }
+            }
+
+            throw new Error("No QR code detected in image.");
+        }
+
         const qrImageUpload = document.getElementById("qrImageUpload");
         if (qrImageUpload) {
             qrImageUpload.addEventListener("change", async (e) => {
@@ -1441,9 +1731,8 @@
                 updateOverlayStatus("fa-image", "Parsing uploaded image...", "text-info");
 
                 const file = e.target.files[0];
-                const tempScanner = new Html5Qrcode("qrReader");
                 try {
-                    const decodedText = await tempScanner.scanFile(file, false);
+                    const decodedText = await decodePhilSysImageFile(file);
                     await processPhilSysLiveScan(decodedText);
                 } catch (err) {
                     isProcessingScan = false;
@@ -1455,7 +1744,6 @@
                     });
                     updateOverlayStatus("fa-image", "No QR found in image", "text-danger");
                 } finally {
-                    try { tempScanner.clear(); } catch { }
                     e.target.value = '';
                 }
             });

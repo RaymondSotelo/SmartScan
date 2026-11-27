@@ -504,7 +504,7 @@ namespace SmartScan.Controllers
             if (digitsOnly.Length != 16)
                 return Json(new { isValid = false, message = "PCN must be exactly 16 digits long." });
 
-            if (!DateTime.TryParse(req.ManualDob, out DateTime dob))
+            if (!TryParsePhilSysDate(req.ManualDob, out DateTime dob))
                 return Json(new { isValid = false, message = "Invalid Date of Birth format." });
 
             // If submitted via QR Scan (Camera or Image), enforce authentic PhilSys JWT structure & claims
@@ -561,7 +561,7 @@ namespace SmartScan.Controllers
                         return Json(new { isValid = false, message = "PCN mismatch or missing 16-digit PCN inside PhilSys QR." });
 
                     string tokenDobRaw = GetFirstStringProperty(subject, "bd", "DOB", "dob", "DateOfBirth", "birthDate");
-                    if (string.IsNullOrWhiteSpace(tokenDobRaw) || !DateTime.TryParse(tokenDobRaw, out DateTime tokenDob))
+                    if (string.IsNullOrWhiteSpace(tokenDobRaw) || !TryParsePhilSysDate(tokenDobRaw, out DateTime tokenDob))
                         return Json(new { isValid = false, message = "Missing or invalid Date of Birth inside PhilSys QR." });
 
                     if (tokenDob.Date != dob.Date)
@@ -618,6 +618,48 @@ namespace SmartScan.Controllers
                 }
             }
             return string.Empty;
+        }
+
+        private static bool TryParsePhilSysDate(string? rawDate, out DateTime parsedDate)
+        {
+            parsedDate = default;
+            if (string.IsNullOrWhiteSpace(rawDate))
+                return false;
+
+            string trimmed = rawDate.Trim();
+            string[] exactFormats =
+            {
+                "yyyy-MM-dd",
+                "yyyy/MM/dd",
+                "MM-dd-yyyy",
+                "MM/dd/yyyy",
+                "dd-MM-yyyy",
+                "dd/MM/yyyy",
+                "MMMM d, yyyy",
+                "MMMM dd, yyyy",
+                "MMM d, yyyy",
+                "MMM dd, yyyy",
+                "dd MMM yyyy",
+                "d MMM yyyy",
+                "dd MMMM yyyy",
+                "d MMMM yyyy"
+            };
+
+            if (DateTime.TryParseExact(
+                trimmed,
+                exactFormats,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out parsedDate))
+            {
+                return true;
+            }
+
+            return DateTime.TryParse(
+                trimmed,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out parsedDate);
         }
 
         // CreateXenditCheckout | Dynamic invoice generation for GCash & Credit Card
