@@ -108,26 +108,25 @@
             </nav>
         }
 
-        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column">
+        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column" style="min-width: 0;">
             <header>
-                <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-0 mb-0 @(showAuthenticatedShell ? "py-0" : "py-2")"
-                     style="@(showAuthenticatedShell ? "min-height: 60px; height: 60px; background-color: #1162a3;" : "min-height: 60px; background-color: transparent;")">
-                    <div class="container-fluid">
+                <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-0 mb-0 @(showAuthenticatedShell ? "navbar-dark py-1" : "navbar-light py-2")"
+                     style="@(showAuthenticatedShell ? "min-height: 60px; background-color: #1162a3;" : "min-height: 60px; background-color: transparent;")">
+                    <div class="container-fluid flex-wrap">
                         @if (!showAuthenticatedShell)
                         {
-                            <a class="navbar-brand d-inline-flex align-items-center gap-1 me-auto py-0"
+                            <a class="navbar-brand d-inline-flex align-items-center gap-2 me-auto py-0 text-wrap"
                                asp-area="" asp-controller="Home" asp-action="Index"
-                               style="font-family: 'Microsoft Sans Serif', sans-serif; text-decoration: none; color: #387bd6;">
+                               style="font-family: 'Microsoft Sans Serif', sans-serif; text-decoration: none; color: #387bd6; min-width: 0; max-width: calc(100% - 60px);">
 
                                 <img src="~/images/SmartScanLogo.png"
                                      alt="Smart Scan Logo"
-                                     width="75"
-                                     height="75"
-                                     class="object-fit-contain flex-shrink-0" />
+                                     class="object-fit-contain flex-shrink-0"
+                                     style="width: clamp(44px, 12vw, 75px); height: clamp(44px, 12vw, 75px);" />
 
-                                <div class="d-flex flex-column justify-content-center lh-1">
-                                    <span class="fw-bold" style="font-size: 32px; line-height: 1.1;">SmartScan</span>
-                                    <span class="fw-bold mt-1" style="font-size: 14px; letter-spacing: 0.3px;">
+                                <div class="d-flex flex-column justify-content-center lh-1" style="min-width: 0;">
+                                    <span class="fw-bold" style="font-size: clamp(20px, 6vw, 32px); line-height: 1.1;">SmartScan</span>
+                                    <span class="fw-bold mt-1 text-wrap" style="font-size: clamp(10px, 3vw, 14px); letter-spacing: 0.2px; line-height: 1.25;">
                                         A Vision-Based Automated Checkout For Retail Counters
                                     </span>
                                 </div>
@@ -136,37 +135,33 @@
                         else if (User.IsInRole("Cashier"))
                         {
                             <span class="navbar-brand fw-semibold project-name text-truncate text-white mb-0"
-                                  style="font-size: 22px; font-family: Tahoma;">
+                                  style="font-size: clamp(16px, 4.5vw, 22px); font-family: Tahoma; max-width: calc(100% - 65px);">
                                 SmartScan <span class="fw-normal">|</span> @(ViewData["HeaderTitle"] ?? ViewData["Title"] ?? "Cashier")
                             </span>
                         }
                         else if (User.IsInRole("Admin"))
                         {
                             <span class="navbar-brand fw-semibold project-name text-truncate text-white mb-0"
-                                  style="font-size: 22px; font-family: Tahoma;">
+                                  style="font-size: clamp(16px, 4.5vw, 22px); font-family: Tahoma; max-width: calc(100% - 65px);">
                                 @(ViewData["HeaderTitle"] ?? ViewData["Title"] ?? "Admin Portal")
                             </span>
                         }
 
-                        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbarCollapse" aria-controls="mainNavbarCollapse"
                                 aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
                         </button>
-                        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between @(showAuthenticatedShell ? "" : "pb-3")">
+                        <div id="mainNavbarCollapse" class="navbar-collapse collapse d-sm-inline-flex justify-content-between @(showAuthenticatedShell ? "py-2 py-sm-0" : "pb-3 pb-sm-0")">
                             <ul class="navbar-nav flex-grow-1">
                             </ul>
-                            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between @(showAuthenticatedShell ? "" : "pb-3")">
-                                <ul class="navbar-nav flex-grow-1">
-                                </ul>
-                                <partial name="_LoginPartial" />
-                            </div>
+                            <partial name="_LoginPartial" />
                         </div>
                     </div>
                 </nav>
             </header>
 
             <div class="content-scroll-container no-scrollbar">
-                <div class="container-fluid px-4">
+                <div class="container-fluid px-2 px-md-4">
                     <main role="main" class="pb-3">
                         @RenderBody()
                     </main>
@@ -220,19 +215,19 @@
                     .withAutomaticReconnect()
                     .build();
 
-            sessionConnection.on("ForceLogout", function (message) {
-                Swal.fire({
-                    title: "Session Terminated",
-                    text: message,
-                    icon: "warning",
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    confirmButtonColor: "#1162a3",
-                    confirmButtonText: "Log In Again"
-                }).then(() => {
-                    window.location.href = "/Identity/Account/Login";
+                sessionConnection.on("ForceLogout", function (message) {
+                    Swal.fire({
+                        title: "Session Terminated",
+                        text: message,
+                        icon: "warning",
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        confirmButtonColor: "#1162a3",
+                        confirmButtonText: "Log In Again"
+                    }).then(() => {
+                        window.location.href = "/Identity/Account/Login";
+                    });
                 });
-            });
 
                 sessionConnection.start().catch(err => console.error("SignalR Session error:", err));
             });

@@ -94,9 +94,39 @@
     }
 }
 
+<style>
+    /* Mobile Navbar Dropdown & User Menu Adjustments (Desktop >= 576px stays untouched) */
+    @@media (max-width: 575.98px) {
+        .login-partial-nav {
+            align-items: flex-start !important;
+            gap: 0.65rem;
+            padding-top: 0.5rem;
+            width: 100%;
+        }
+
+        .login-partial-nav .nav-item.dropdown {
+            width: 100%;
+            margin-right: 0 !important;
+        }
+
+        .login-partial-username {
+            font-size: 15px !important;
+            max-width: 185px;
+        }
+
+        .login-partial-nav .dropdown-menu {
+            position: static !important;
+            transform: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-top: 0.5rem !important;
+        }
+    }
+</style>
+
 @if (!isCustomerDisplay)
 {
-    <ul class="navbar-nav align-items-center">
+    <ul class="navbar-nav align-items-center login-partial-nav">
         @if (isSignedIn)
         {
             var currentUser = await UserManager.GetUserAsync(User);
@@ -120,8 +150,8 @@
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle d-flex align-items-center fw-semibold text-white text-decoration-none py-0"
                    href="#" id="userProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="me-2" style="padding-right: 8px; font-size: 18px;">@User.Identity?.Name</span>
-                    <img src="@profilePfpPath" onerror="this.onerror=null; this.src='@fallbackAvatar';" asp-append-version="true" alt="Profile" class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white" style="width: 42px; height: 42px;" />
+                    <span class="me-2 text-truncate login-partial-username" style="padding-right: 8px; font-size: 18px;">@User.Identity?.Name</span>
+                    <img src="@profilePfpPath" onerror="this.onerror=null; this.src='@fallbackAvatar';" asp-append-version="true" alt="Profile" class="rounded-circle border border-white border-1 object-fit-cover shadow-sm bg-white flex-shrink-0" style="width: 42px; height: 42px;" />
                 </a>
 
                 <ul class="dropdown-menu dropdown-menu-end shadow border-1 rounded-3 mt-1 p-0 overflow-hidden" aria-labelledby="userProfileDropdown" style="width: 190px; z-index: 1050;">
@@ -145,6 +175,7 @@
                 <a class="nav-link dropdown-toggle position-relative text-white py-0 d-flex align-items-center"
                    href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fa-solid fa-bell fs-5"></i>
+                    <span class="d-sm-none ms-2 fw-semibold">Notifications</span>
                     @if (topAlerts.Any())
                     {
                         <span id="alertBadge" class="position-absolute top-0 start-75 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.65rem; padding: 0.25em 0.45em;">
@@ -154,7 +185,7 @@
                     }
                 </a>
 
-                <ul class="dropdown-menu dropdown-menu-end shadow border-1 rounded-3 mt-4 p-0 overflow-hidden" aria-labelledby="alertsDropdown" style="width: 340px; z-index: 1050;">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-1 rounded-3 mt-4 p-0 overflow-hidden" aria-labelledby="alertsDropdown" style="width: min(340px, calc(100vw - 24px)); z-index: 1050;">
                     <li>
                         <div class="dropdown-header fw-bold text-primary bg-light border-bottom py-2 d-flex justify-content-between align-items-center">
                             <span>Notifications</span>
@@ -234,16 +265,16 @@
         }
         else
         {
-            <li class="nav-item d-flex align-items-center gap-2 pt-0 pe-2">
-                <a class="btn btn-sm rounded-pill px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2"
+            <li class="nav-item d-flex flex-wrap align-items-center gap-2 pt-0 pe-2">
+                <a class="btn btn-sm rounded-pill px-3 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2 text-nowrap"
                    style="background-color: #dbeafe; color: #1162a3; border: 1px solid #cfe2f3;"
                    asp-area="Identity" asp-page="/Account/Login">
                     <i class="fa-solid fa-right-to-bracket"></i>
                     <span>Login</span>
                 </a>
 
-                <a class="btn btn-sm rounded-pill px-3 py-2 fw-semibold text-white shadow-sm d-inline-flex align-items-center gap-2"
-                   style="background-color:#387bd6; border: 1px solid none;"
+                <a class="btn btn-sm rounded-pill px-3 py-2 fw-semibold text-white shadow-sm d-inline-flex align-items-center gap-2 text-nowrap"
+                   style="background-color:#387bd6; border: 1px solid transparent;"
                    asp-area="Identity" asp-page="/Account/Register">
                     <i class="fa-solid fa-user-plus"></i>
                     <span>Sign Up</span>

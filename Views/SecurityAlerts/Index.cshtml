@@ -33,11 +33,11 @@
     }
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 500px;">
 
     <!-- Top Card Header -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center" style="background-color: #1162a3;">
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background-color: #1162a3;">
         <h5 class="mb-0 fw-bold" style="letter-spacing: 0.5px;">
             <i class="fa-solid fa-clipboard-check me-2"></i>Security Logs
         </h5>
@@ -45,7 +45,7 @@
         @if (isCashierOnly)
         {
             <a asp-controller="Home" asp-action="Checkout"
-               class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary shadow-sm"
+               class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary shadow-sm text-nowrap"
                style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                 <i class="fa-solid fa-arrow-left me-1"></i>Return to Checkout
             </a>
@@ -55,164 +55,162 @@
     <!-- Scrollable Workspace -->
     <div class="flex-grow-1 overflow-auto position-relative d-flex flex-column rounded-bottom-4 bg-light">
 
+        <!-- Action Bar (Placed above table-responsive so Tabs & Search stay reachable on phones) -->
+        <div class="px-3 px-md-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3 bg-white border-bottom flex-shrink-0">
+
+            <!-- Tab Toggles -->
+            <div class="btn-group shadow-sm" role="group">
+                <input type="radio" class="btn-check" name="logTabs" id="tabUnread" autocomplete="off" checked onchange="switchTab('unread')">
+                <label class="btn btn-outline-primary fw-medium px-3 px-sm-4 text-nowrap" for="tabUnread">
+                    <i class="fa-solid fa-envelope me-1"></i>Unread (<span id="unreadCountBtn">@unreadAlerts.Count</span>)
+                </label>
+
+                <input type="radio" class="btn-check" name="logTabs" id="tabRead" autocomplete="off" onchange="switchTab('read')">
+                <label class="btn btn-outline-secondary fw-medium px-3 px-sm-4 text-nowrap" for="tabRead">
+                    <i class="fa-solid fa-envelope-open me-1"></i>Read (<span id="readCountBtn">@readAlerts.Count</span>)
+                </label>
+            </div>
+
+            <!-- Live Client-Side Search Bar -->
+            <div class="d-flex gap-2 flex-grow-1 flex-sm-grow-0" style="max-width: 320px; width: 100%;">
+                <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                    <span class="input-group-text bg-white border-0">
+                        <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                    </span>
+                    <input type="text"
+                           id="logSearchInput"
+                           onkeyup="filterLogs()"
+                           class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
+                           placeholder="Search logs..."
+                           aria-label="Search logs" />
+                </div>
+
+                <!-- Clear Search Button -->
+                <button type="button"
+                        id="clearLogSearchBtn"
+                        class="btn btn-outline-secondary rounded-3"
+                        onclick="clearSearch()"
+                        title="Clear Search"
+                        style="display: none;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Responsive Scrollable Table -->
         <div class="flex-grow-1 pb-3">
-            <table class="table table-hover align-middle mb-0 w-100 bg-white"
-                   style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 w-100 bg-white"
+                       style="min-width: 850px; border-collapse: separate; border-spacing: 0;">
 
-                <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+                    <thead class="sticky-top bg-white shadow-sm z-3" style="top: 0;">
+                        <!-- Column Headers -->
+                        <tr class="table-light border-bottom">
+                            <th class="ps-3 ps-md-4 py-3 text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 13px; letter-spacing: 0.5px; width: 18%;">Timestamp</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 13px; letter-spacing: 0.5px; width: 15%;">Location</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 13px; letter-spacing: 0.5px; width: 22%;">Event Type</th>
+                            <th class="py-3 text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 13px; letter-spacing: 0.5px; width: 35%;">Log Details</th>
+                            <th class="pe-3 pe-md-4 py-3 text-end text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 13px; letter-spacing: 0.5px; width: 10%;"></th>
+                        </tr>
+                    </thead>
 
-                    <!-- Action Bar (Search & Toggles) -->
-                    <tr class="bg-white">
-                        <th colspan="5" class="p-0 border-0 border-bottom">
-                            <div class="px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <!-- UNREAD ALERTS DIV/TBODY -->
+                    <tbody id="tbody-unread" class="searchable-tbody">
+                        @if (!unreadAlerts.Any())
+                        {
+                            <tr id="emptyUnreadRow">
+                                <td colspan="5" class="text-center py-5 bg-white">
+                                    <i class="fa-solid fa-envelope-circle-check fa-3x text-success opacity-50 mb-3"></i>
+                                    <h5 class="fw-bold text-secondary">All Caught Up!</h5>
+                                    <p class="text-muted small">You have no unread security logs.</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var alert in unreadAlerts)
+                            {
+                                var typeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
+                                var storeName = alert.Retail?.RetailName ?? "System";
+                                var safeDesc = alert.Description.Replace("'", "\\'");
+                                var safeStore = storeName.Replace("'", "\\'");
 
-                                <!-- Tab Toggles -->
-                                <div class="btn-group shadow-sm" role="group">
-                                    <input type="radio" class="btn-check" name="logTabs" id="tabUnread" autocomplete="off" checked onchange="switchTab('unread')">
-                                    <label class="btn btn-outline-primary fw-medium px-4" for="tabUnread">
-                                        <i class="fa-solid fa-envelope me-1"></i>Unread (<span id="unreadCountBtn">@unreadAlerts.Count</span>)
-                                    </label>
-
-                                    <input type="radio" class="btn-check" name="logTabs" id="tabRead" autocomplete="off" onchange="switchTab('read')">
-                                    <label class="btn btn-outline-secondary fw-medium px-4" for="tabRead">
-                                        <i class="fa-solid fa-envelope-open me-1"></i>Read (<span id="readCountBtn">@readAlerts.Count</span>)
-                                    </label>
-                                </div>
-
-                                <!-- Live Client-Side Search Bar -->
-                                <div class="d-flex gap-2" style="max-width: 320px; width: 100%;">
-                                    <div class="input-group shadow-sm rounded-3 overflow-hidden border">
-                                        <span class="input-group-text bg-white border-0">
-                                            <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                <tr id="alert-row-@alert.AlertId" class="bg-white border-start border-4 position-relative log-row" style="transition: all 0.3s ease;">
+                                    <td class="ps-3 ps-md-4 text-nowrap" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)" style="cursor: pointer;">
+                                        <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
+                                    </td>
+                                    <td class="fw-semibold text-secondary text-nowrap" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)">
+                                        @storeName
+                                    </td>
+                                    <td class="text-nowrap" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)" style="cursor: pointer;">
+                                        <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                            <i class="fa-solid fa-circle-exclamation me-1"></i>@typeName
                                         </span>
-                                        <input type="text"
-                                               id="logSearchInput"
-                                               onkeyup="filterLogs()"
-                                               class="form-control border-0 bg-white shadow-none ps-0 fw-semibold"
-                                               placeholder="Search logs..."
-                                               aria-label="Search logs" />
-                                    </div>
+                                    </td>
+                                    <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px; cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)">
+                                        @alert.Description
+                                    </td>
+                                    <td class="pe-3 pe-md-4 text-end text-nowrap">
+                                        <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
+                                                onclick="markLogAsRead(@alert.AlertId, event)"
+                                                title="Mark as Read">
+                                            <i class="fa-solid fa-check me-1"></i>Read
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
 
-                                    <!-- Clear Search Button -->
-                                    <button type="button"
-                                            id="clearLogSearchBtn"
-                                            class="btn btn-outline-secondary rounded-3"
-                                            onclick="clearSearch()"
-                                            title="Clear Search"
-                                            style="display: none;">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </th>
-                    </tr>
-
-                    <!-- Column Headers -->
-                    <tr class="table-light border-bottom">
-                        <th class="ps-4 py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 18%;">Timestamp</th>
-                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 15%;">Location</th>
-                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 22%;">Event Type</th>
-                        <th class="py-3 text-secondary text-uppercase fw-bold" style="font-size: 13px; letter-spacing: 0.5px; width: 35%;">Log Details</th>
-                        <th class="pe-4 py-3 text-end text-secondary text-uppercase fw-bold text-nowrap" style="font-size: 13px; letter-spacing: 0.5px; width: 10%;"></th>
-                    </tr>
-                </thead>
-
-                <!-- UNREAD ALERTS DIV/TBODY -->
-                <tbody id="tbody-unread" class="searchable-tbody">
-                    @if (!unreadAlerts.Any())
-                    {
-                        <tr id="emptyUnreadRow">
-                            <td colspan="5" class="text-center py-5 bg-white">
-                                <i class="fa-solid fa-envelope-circle-check fa-3x text-success opacity-50 mb-3"></i>
-                                <h5 class="fw-bold text-secondary">All Caught Up!</h5>
-                                <p class="text-muted small">You have no unread security logs.</p>
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        foreach (var alert in unreadAlerts)
+                    <!-- READ ALERTS DIV/TBODY -->
+                    <tbody id="tbody-read" class="searchable-tbody d-none">
+                        @if (!readAlerts.Any())
                         {
-                            var typeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
-                            var storeName = alert.Retail?.RetailName ?? "System";
-                            var safeDesc = alert.Description.Replace("'", "\\'");
-                            var safeStore = storeName.Replace("'", "\\'");
-
-                            <tr id="alert-row-@alert.AlertId" class="bg-white border-start border-4 position-relative log-row" style="transition: all 0.3s ease;">
-                                <td class="ps-4" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)" style="cursor: pointer;">
-                                    <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
-                                </td>
-                                <td class="fw-semibold text-secondary" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)">
-                                    @storeName
-                                </td>
-                                <td onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)" style="cursor: pointer;">
-                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
-                                        <i class="fa-solid fa-circle-exclamation me-1"></i>@typeName
-                                    </span>
-                                </td>
-                                <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px; cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', false)">
-                                    @alert.Description
-                                </td>
-                                <td class="pe-4 text-end text-nowrap">
-                                    <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
-                                            onclick="markLogAsRead(@alert.AlertId, event)"
-                                            title="Mark as Read">
-                                        <i class="fa-solid fa-check me-1"></i>Read
-                                    </button>
+                            <tr id="emptyReadRow">
+                                <td colspan="5" class="text-center py-5 bg-white">
+                                    <i class="fa-solid fa-box-open fa-3x text-secondary opacity-50 mb-3"></i>
+                                    <h5 class="fw-bold text-secondary">No Read Logs</h5>
+                                    <p class="text-muted small">Logs you mark as read will appear here for historical auditing.</p>
                                 </td>
                             </tr>
                         }
-                    }
-                </tbody>
-
-                <!-- READ ALERTS DIV/TBODY -->
-                <tbody id="tbody-read" class="searchable-tbody d-none">
-                    @if (!readAlerts.Any())
-                    {
-                        <tr id="emptyReadRow">
-                            <td colspan="5" class="text-center py-5 bg-white">
-                                <i class="fa-solid fa-box-open fa-3x text-secondary opacity-50 mb-3"></i>
-                                <h5 class="fw-bold text-secondary">No Read Logs</h5>
-                                <p class="text-muted small">Logs you mark as read will appear here for historical auditing.</p>
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        foreach (var alert in readAlerts)
+                        else
                         {
-                            var typeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
-                            var storeName = alert.Retail?.RetailName ?? "System";
-                            var safeDesc = alert.Description.Replace("'", "\\'");
-                            var safeStore = storeName.Replace("'", "\\'");
+                            foreach (var alert in readAlerts)
+                            {
+                                var typeName = alert.AlertType?.AlertTypeName ?? $"Type {alert.AlertTypeId}";
+                                var storeName = alert.Retail?.RetailName ?? "System";
+                                var safeDesc = alert.Description.Replace("'", "\\'");
+                                var safeStore = storeName.Replace("'", "\\'");
 
-                            <tr class="bg-light log-row" style="cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', true)">
-                                <td class="ps-4">
-                                    <span class="d-block font-monospace fw-semibold text-secondary" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
-                                </td>
-                                <td class="text-muted" style="font-size: 14px;">
-                                    @storeName
-                                </td>
-                                <td>
-                                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
-                                        @typeName
-                                    </span>
-                                </td>
-                                <td colspan="2" class="text-muted text-truncate pe-4" style="max-width: 350px; font-size: 14px;">
-                                    @alert.Description
-                                </td>
-                            </tr>
+                                <tr class="bg-light log-row" style="cursor: pointer;" onclick="openAlertModal('@alert.AlertId', '@Html.Raw(typeName)', '@Html.Raw(safeStore)', '@Html.Raw(safeDesc)', '@(isCashierOnly ? "" : alert.ActionUrl)', true)">
+                                    <td class="ps-3 ps-md-4 text-nowrap">
+                                        <span class="d-block font-monospace fw-semibold text-secondary" style="font-size: 13px;">@GetRelativeTime(alert.CreatedAt)</span>
+                                    </td>
+                                    <td class="text-muted text-nowrap" style="font-size: 14px;">
+                                        @storeName
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
+                                            @typeName
+                                        </span>
+                                    </td>
+                                    <td colspan="2" class="text-muted text-truncate pe-3 pe-md-4" style="max-width: 350px; font-size: 14px;">
+                                        @alert.Description
+                                    </td>
+                                </tr>
+                            }
                         }
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Security Log Modal -->
 <div class="modal fade" id="alertLogModal" tabindex="-1" aria-labelledby="alertLogModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 440px;">
         <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
 
             <!-- Top Header -->
@@ -223,12 +221,12 @@
                 <button type="button" data-bs-dismiss="modal" class="modal-custom-close rounded-2"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <div class="modal-body p-4">
+            <div class="modal-body p-3 p-sm-4">
                 <!-- Readonly Location -->
                 <div class="text-start mb-3">
                     <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Location</label>
                     <div class="form-control custom-input bg-light border-0 d-flex align-items-center" style="border-radius: 10px; padding: 10px 15px; height: auto;">
-                        <span id="modalLogStore" class="fw-semibold text-dark"></span>
+                        <span id="modalLogStore" class="fw-semibold text-dark text-break"></span>
                     </div>
                 </div>
 
@@ -236,7 +234,7 @@
                 <div class="text-start mb-3">
                     <label class="custom-input-label text-secondary fw-bold small text-uppercase mb-1" style="letter-spacing: 0.5px; font-size: 11px;">Alert Type</label>
                     <div class="form-control custom-input bg-light border-0 d-flex align-items-center" style="border-radius: 10px; padding: 10px 15px; height: auto;">
-                        <span id="modalLogType" class="fw-bold text-primary"></span>
+                        <span id="modalLogType" class="fw-bold text-primary text-break"></span>
                     </div>
                 </div>
 
@@ -247,7 +245,7 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="d-flex gap-3 mt-2">
+                <div class="d-flex flex-column flex-sm-row gap-2 gap-sm-3 mt-2">
                     <button type="button" id="btnReviewed" class="btn btn-outline-secondary rounded-pill fw-bold w-100 shadow-sm">
                         Mark as Read
                     </button>
@@ -524,13 +522,13 @@
                             tr.style.transition = "all 0.3s ease";
 
                             tr.innerHTML = `
-                                <td class="ps-4" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
+                                <td class="ps-3 ps-md-4 text-nowrap" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
                                     <span class="d-block font-monospace fw-bold text-dark" style="font-size: 13px;">${getRelativeTimeJS(alert.timeString)}</span>
                                 </td>
-                                <td class="fw-semibold text-secondary" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
+                                <td class="fw-semibold text-secondary text-nowrap" style="font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
                                     ${alert.storeName}
                                 </td>
-                                <td onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
+                                <td class="text-nowrap" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)" style="cursor: pointer;">
                                     <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
                                         <i class="fa-solid fa-circle-exclamation me-1"></i>${typeName}
                                     </span>
@@ -538,7 +536,7 @@
                                 <td class="text-dark fw-medium text-truncate" style="max-width: 350px; font-size: 14px; cursor: pointer;" onclick="openAlertModal('${alert.alertId}', '${typeName}', '${safeStore}', '${safeDesc}', '${safeUrl}', false)">
                                     ${alert.description}
                                 </td>
-                                <td class="pe-4 text-end text-nowrap">
+                                <td class="pe-3 pe-md-4 text-end text-nowrap">
                                     <button class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 shadow-sm"
                                             onclick="markLogAsRead(${alert.alertId}, event)"
                                             title="Mark as Read">
@@ -591,18 +589,18 @@
             readTr.setAttribute('onclick', readOnClick);
 
             readTr.innerHTML = `
-                <td class="ps-4">
+                <td class="ps-3 ps-md-4 text-nowrap">
                     <span class="d-block font-monospace fw-semibold text-secondary" style="font-size: 13px;">${timeText}</span>
                 </td>
-                <td class="text-muted" style="font-size: 14px;">
+                <td class="text-muted text-nowrap" style="font-size: 14px;">
                     ${storeText}
                 </td>
-                <td>
+                <td class="text-nowrap">
                     <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-3 py-2 shadow-sm" style="font-size: 12px;">
                         ${typeText}
                     </span>
                 </td>
-                <td colspan="2" class="text-muted text-truncate pe-4" style="max-width: 350px; font-size: 14px;">
+                <td colspan="2" class="text-muted text-truncate pe-3 pe-md-4" style="max-width: 350px; font-size: 14px;">
                     ${descText}
                 </td>
             `;

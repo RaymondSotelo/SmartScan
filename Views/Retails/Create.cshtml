@@ -5,7 +5,18 @@
     ViewData["HeaderTitle"] = "Retail Management";
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3"
+@section Styles {
+    <style>
+        /* Mobile Adjustments (Desktop >= 576px stays untouched) */
+        @@media (max-width: 575.98px) {
+            .retail-preview-box {
+                height: 200px !important;
+            }
+        }
+    </style>
+}
+
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 520px;">
 
     <!-- Top Card Header (Fixed) -->
@@ -14,14 +25,14 @@
     </div>
 
     <!-- Scrollable Form Container -->
-    <div class="card-body p-4 flex-grow-1 overflow-y-auto">
+    <div class="card-body p-3 p-md-4 flex-grow-1 overflow-y-auto">
         <form asp-action="Create" method="post" enctype="multipart/form-data" id="createRetailForm" class="h-100 d-flex flex-column justify-content-between">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-            <div class="row g-4">
+            <div class="row g-3 g-md-4">
                 <!-- Left Column: Retail Details -->
-                <div class="col-lg-6">
+                <div class="col-12 col-lg-6">
                     <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Store Details</h6>
 
                     <!-- Retail Name -->
@@ -66,7 +77,7 @@
                 </div>
 
                 <!-- Right Column: Store Media & Live Preview -->
-                <div class="col-lg-6">
+                <div class="col-12 col-lg-6">
                     <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Store Branding Image</h6>
 
                     <!-- File Upload Card -->
@@ -84,7 +95,7 @@
                     </div>
 
                     <!-- Live Image Preview Box -->
-                    <div class="image-preview-box shadow-sm" id="previewContainer" style="height: 250px;">
+                    <div class="image-preview-box shadow-sm retail-preview-box" id="previewContainer" style="height: 250px;">
                         <img id="retailPreview"
                              src="/images/default-retail-pic.png"
                              onerror="this.onerror=null; this.src='/images/default-retail-pic.png';"
@@ -94,7 +105,7 @@
             </div>
 
             <!-- Sticky Bottom Actions -->
-            <div class="d-flex justify-content-end align-items-center gap-2 pt-3 pb-3 mt-auto border-top">
+            <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 pt-3 pb-3 mt-3 mt-lg-auto border-top">
                 <a asp-action="Index" class="btn btn-outline-secondary fw-medium rounded-pill px-4 shadow-sm" style="font-size: 14px;">Cancel</a>
                 <button type="submit" class="btn btn-primary fw-medium rounded-pill px-4 shadow-sm" style="font-size: 14px; background-color: #1162a3; border-color: #1162a3;">
                     <i class="fa-solid fa-check me-1"></i>Register Retail

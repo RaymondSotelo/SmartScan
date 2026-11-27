@@ -5,7 +5,46 @@
     Layout = "_RetailLayout";
 }
 
-<div class="h-100 d-flex flex-column">
+@section Styles {
+    <style>
+        /* Mobile & Narrow Screen Adjustments (Desktop >= 768px stays untouched) */
+        @@media (max-width: 767.98px) {
+            .sales-analysis-root {
+                height: auto !important;
+            }
+
+            .sales-scroll-workspace {
+                overflow: visible !important;
+            }
+
+            .sales-toolbar-actions {
+                width: 100%;
+            }
+
+                .sales-toolbar-actions > form,
+                .sales-toolbar-actions > .dropdown {
+                    flex: 1 1 140px;
+                }
+
+                .sales-toolbar-actions .input-group,
+                .sales-toolbar-actions .dropdown > button {
+                    width: 100% !important;
+                }
+        }
+
+        @@media (max-width: 575.98px) {
+            .sales-kpi-card .card-body {
+                padding: 0.75rem !important;
+            }
+
+            .sales-chart-box {
+                height: 220px !important;
+            }
+        }
+    </style>
+}
+
+<div class="h-100 d-flex flex-column sales-analysis-root">
 
     <!-- Header & Action Toolbar -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 flex-shrink-0">
@@ -16,7 +55,7 @@
             <p class="text-secondary fw-medium mb-0">Track store performance, monitor revenue trends, and analyze top selling inventory.</p>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2 sales-toolbar-actions">
             <!-- Date Filter Dropdown -->
             <form id="filterForm" method="get" asp-action="SalesAnalysis" asp-controller="Retails" class="m-0">
                 <input type="hidden" name="retailId" value="@ViewBag.RetailId" />
@@ -25,14 +64,14 @@
                     <span class="input-group-text bg-white border-0 ps-3 pe-1 text-muted">
                         <i class="fa-regular fa-calendar-days"></i>
                     </span>
-					<select name="range" class="form-select fw-medium shadow-sm border-0" onchange="document.getElementById('filterForm').submit();">
-						<option value="7days" selected="@(Model.CurrentRange == "7days")">Last 7 Days</option>
-						<option value="1month" selected="@(Model.CurrentRange == "1month")">Last Month</option>
-						<option value="6months" selected="@(Model.CurrentRange == "6months")">Last 6 Months</option>
-						<option value="1year" selected="@(Model.CurrentRange == "1year")">Last Year</option>
-					</select>
+                    <select name="range" class="form-select fw-medium shadow-sm border-0" onchange="document.getElementById('filterForm').submit();">
+                        <option value="7days" selected="@(Model.CurrentRange == "7days")">Last 7 Days</option>
+                        <option value="1month" selected="@(Model.CurrentRange == "1month")">Last Month</option>
+                        <option value="6months" selected="@(Model.CurrentRange == "6months")">Last 6 Months</option>
+                        <option value="1year" selected="@(Model.CurrentRange == "1year")">Last Year</option>
+                    </select>
                 </div>
-                
+
             </form>
 
             <!-- Hidden Form for Export Payload -->
@@ -47,7 +86,7 @@
             <!-- Export Dropdown Button -->
             <div class="dropdown">
                 <button type="button"
-                        class="btn btn-outline-secondary dropdown-toggle fw-medium rounded-pill px-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
+                        class="btn btn-outline-secondary dropdown-toggle fw-medium rounded-pill px-3 shadow-sm d-flex align-items-center justify-content-center gap-2 text-nowrap"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                         style="width: 165px; height: 38px; font-size: 15px;">
@@ -70,20 +109,20 @@
     </div>
 
     <!-- Scrollable Body Workspace -->
-    <div class="flex-grow-1 overflow-y-auto overflow-x-hidden px-1">
+    <div class="flex-grow-1 overflow-y-auto overflow-x-hidden px-1 sales-scroll-workspace">
         <div class="d-flex flex-column gap-3 pb-3">
 
             <!-- KPI Cards -->
             <div class="row g-3 mx-0">
                 <!-- Total Revenue -->
                 <div class="col-md-6 col-12">
-                    <div class="card kpi-card shadow-sm rounded-4 h-100 p-2"
+                    <div class="card kpi-card sales-kpi-card shadow-sm rounded-4 h-100 p-2"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="card-body d-flex align-items-center gap-3">
-                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary">
+                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary flex-shrink-0">
                                 <i class="fa-solid fa-peso-sign fs-4"></i>
                             </div>
-                            <div class="overflow-hidden">
+                            <div class="overflow-hidden" style="min-width: 0; flex: 1;">
                                 <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 12px; letter-spacing: 0.5px;">Total Revenue</span>
                                 <h4 class="fw-bold mb-0 text-dark text-truncate">₱@Model.TotalRevenue.ToString("N2")</h4>
                                 <small class="text-muted" style="font-size: 12px;">@Model.RangeLabel</small>
@@ -94,13 +133,13 @@
 
                 <!-- Today's Orders -->
                 <div class="col-md-6 col-12">
-                    <div class="card kpi-card shadow-sm rounded-4 h-100 p-2"
+                    <div class="card kpi-card sales-kpi-card shadow-sm rounded-4 h-100 p-2"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="card-body d-flex align-items-center gap-3">
-                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary">
+                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary flex-shrink-0">
                                 <i class="fa-solid fa-receipt fs-4"></i>
                             </div>
-                            <div class="overflow-hidden">
+                            <div class="overflow-hidden" style="min-width: 0; flex: 1;">
                                 <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 12px; letter-spacing: 0.5px;">Today's Orders</span>
                                 <h4 class="fw-bold mb-0 text-dark">@Model.TodayTransactions</h4>
                                 <small class="text-primary fw-semibold" style="font-size: 12px;">
@@ -113,13 +152,13 @@
 
                 <!-- Units Sold -->
                 <div class="col-md-6 col-12">
-                    <div class="card kpi-card shadow-sm rounded-4 h-100 p-2"
+                    <div class="card kpi-card sales-kpi-card shadow-sm rounded-4 h-100 p-2"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="card-body d-flex align-items-center gap-3">
-                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary">
+                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary flex-shrink-0">
                                 <i class="fa-solid fa-boxes-stacked fs-4"></i>
                             </div>
-                            <div class="overflow-hidden">
+                            <div class="overflow-hidden" style="min-width: 0; flex: 1;">
                                 <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 12px; letter-spacing: 0.5px;">Units Sold</span>
                                 <h4 class="fw-bold mb-0 text-dark">@Model.TotalItemsSold</h4>
                                 <small class="text-muted" style="font-size: 12px;">Total units checked out</small>
@@ -130,13 +169,13 @@
 
                 <!-- Leading Product -->
                 <div class="col-md-6 col-12">
-                    <div class="card kpi-card shadow-sm rounded-4 h-100 p-2"
+                    <div class="card kpi-card sales-kpi-card shadow-sm rounded-4 h-100 p-2"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
                         <div class="card-body d-flex align-items-center gap-3">
-                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary">
+                            <div class="kpi-icon-bubble bg-primary bg-opacity-10 text-primary flex-shrink-0">
                                 <i class="fa-solid fa-crown fs-4"></i>
                             </div>
-                            <div class="overflow-hidden">
+                            <div class="overflow-hidden" style="min-width: 0; flex: 1;">
                                 <span class="text-uppercase text-secondary fw-bold d-block" style="font-size: 12px; letter-spacing: 0.5px;">Leading Product</span>
                                 <h5 class="fw-bold mb-0 text-dark text-truncate" title="@Model.TopSellingItemName">
                                     @(string.IsNullOrWhiteSpace(Model.TopSellingItemName) ? "None Yet" : Model.TopSellingItemName)
@@ -150,9 +189,9 @@
 
             <!-- Charts Row 1 -->
             <div class="row g-3 mx-0">
-                <div class="col-lg-8">
-                    <div class="card chart-card shadow-sm bg-white h-100 p-3">
-                        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+                <div class="col-12 col-lg-8">
+                    <div class="card chart-card shadow-sm bg-white h-100 p-2 p-sm-3">
+                        <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 pb-0">
                             <div>
                                 <h6 class="fw-bold mb-1" style="color: #1162a3;">
                                     <i class="fa-solid fa-chart-area me-1"></i>Revenue Inflow
@@ -163,24 +202,24 @@
                                 Trend
                             </span>
                         </div>
-                        <div class="card-body pt-2">
-                            <div style="height: 270px;">
+                        <div class="card-body pt-2 px-2 px-sm-3">
+                            <div class="sales-chart-box" style="height: 270px; position: relative; width: 100%;">
                                 <canvas id="revenueChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-lg-4">
-                    <div class="card chart-card shadow-sm bg-white h-100 p-3">
+                <div class="col-12 col-lg-4">
+                    <div class="card chart-card shadow-sm bg-white h-100 p-2 p-sm-3">
                         <div class="card-header bg-transparent border-0 pb-0">
                             <h6 class="fw-bold mb-1" style="color: #1162a3;">
                                 <i class="fa-solid fa-wallet me-1"></i>Payment Channels
                             </h6>
                             <p class="text-muted small mb-0">Distribution by tender</p>
                         </div>
-                        <div class="card-body pt-2 d-flex flex-column justify-content-center">
-                            <div style="height: 230px; position: relative;">
+                        <div class="card-body pt-2 px-2 px-sm-3 d-flex flex-column justify-content-center">
+                            <div class="sales-chart-box" style="height: 230px; position: relative; width: 100%;">
                                 <canvas id="paymentChart"></canvas>
                             </div>
                         </div>
@@ -189,8 +228,8 @@
             </div>
 
             <!-- Charts Row 2 -->
-            <div class="card chart-card shadow-sm bg-white p-3">
-                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+            <div class="card chart-card shadow-sm bg-white p-2 p-sm-3">
+                <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center gap-2 pb-0">
                     <div>
                         <h6 class="fw-bold mb-1" style="color: #1162a3;">
                             <i class="fa-solid fa-ranking-star me-1"></i>Top 5 Catalog Products
@@ -201,8 +240,8 @@
                         Volume
                     </span>
                 </div>
-                <div class="card-body pt-2">
-                    <div style="height: 250px;">
+                <div class="card-body pt-2 px-2 px-sm-3">
+                    <div class="sales-chart-box" style="height: 250px; position: relative; width: 100%;">
                         <canvas id="topProductsChart"></canvas>
                     </div>
                 </div>

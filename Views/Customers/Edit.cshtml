@@ -6,12 +6,42 @@
     bool hasFace = !string.IsNullOrEmpty(Model.FaceEmbedding);
 }
 
+@section Styles {
+    <style>
+        /* Mobile & Tablet Stacking Adjustments (Desktop >= 992px stays untouched) */
+        @@media (max-width: 991.98px) {
+            .customer-edit-form,
+            .customer-edit-row,
+            .customer-biometric-card {
+                height: auto !important;
+            }
+
+            .customer-form-col {
+                border-right: none !important;
+                border-bottom: 1px solid #dee2e6;
+                padding-bottom: 1.25rem;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .biometric-viewport-box {
+                height: 220px !important;
+            }
+
+            .biometric-scan-guide {
+                width: 135px !important;
+                height: 170px !important;
+            }
+        }
+    </style>
+}
+
 <!-- Viewport-Locked Outer Card -->
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 520px;">
 
     <!-- Card Header -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
          style="background-color: #1162a3;">
         <h5 class="mb-0 fw-bold">
             <i class="fa-solid fa-user-pen me-2"></i>Edit Customer Profile & Biometrics
@@ -19,17 +49,17 @@
     </div>
 
     <!-- Scrollable Workspace (Split Panel Layout) -->
-    <div class="card-body p-4 flex-grow-1 overflow-y-auto overflow-x-hidden no-scrollbar">
-        <form asp-action="Edit" method="post" id="editCustomerForm" class="h-100">
+    <div class="card-body p-3 p-md-4 flex-grow-1 overflow-y-auto overflow-x-hidden no-scrollbar">
+        <form asp-action="Edit" method="post" id="editCustomerForm" class="h-100 customer-edit-form">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="CustomerId" />
 
             <!-- Hidden Field for Biometric Vector Payload -->
             <input type="hidden" name="faceEmbeddingJson" id="faceEmbeddingJson" value="@Model.FaceEmbedding" />
 
-            <div class="row g-4 h-100">
+            <div class="row g-3 g-md-4 h-100 customer-edit-row">
                 <!-- ================= LEFT COLUMN: CUSTOMER FORM ================= -->
-                <div class="col-lg-5 d-flex flex-column justify-content-between border-end pe-lg-4">
+                <div class="col-12 col-lg-5 d-flex flex-column justify-content-between border-end pe-lg-4 customer-form-col">
                     <div>
                         <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Profile Information</h6>
                         <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
@@ -121,7 +151,7 @@
                         <!-- Policy Info -->
                         <div class="alert alert-light border shadow-sm rounded-3 small text-muted mb-0">
                             <div class="d-flex align-items-start gap-2">
-                                <i class="fa-solid fa-circle-info text-primary fs-5 mt-1"></i>
+                                <i class="fa-solid fa-circle-info text-primary fs-5 mt-1 flex-shrink-0"></i>
                                 <div>
                                     <strong class="text-primary">Biometric Registration Policy:</strong><br />
                                     Re-scanning facial biometrics will overwrite the customer's previous embedding vector. Facial enrollment enables customer authentication when charging to Store Credit.
@@ -131,24 +161,24 @@
                     </div>
 
                     <!-- Bottom Action Buttons -->
-                    <div class="d-flex justify-content-between align-items-center pt-4 border-top mt-4 mb-4 flex-shrink-0">
-                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-medium shadow-sm" style="font-size: 13px;">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-4 border-top mt-4 mb-2 mb-lg-4 flex-shrink-0">
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 fw-medium shadow-sm text-nowrap" style="font-size: 13px;">
                             <i class="fa-solid fa-arrow-left me-1"></i>Back to List
                         </a>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm" style="background-color: #1162a3; border-color: #1162a3; font-size: 13px;">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm text-nowrap" style="background-color: #1162a3; border-color: #1162a3; font-size: 13px;">
                             <i class="fa-solid fa-floppy-disk me-1"></i>Save Changes
                         </button>
                     </div>
                 </div>
 
                 <!-- ================= RIGHT COLUMN: FACIAL BIOMETRIC ENROLLMENT ================= -->
-                <div class="col-lg-7 d-flex flex-column justify-content-between">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-light h-100 d-flex flex-column justify-content-between">
+                <div class="col-12 col-lg-7 d-flex flex-column justify-content-between">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-light h-100 d-flex flex-column justify-content-between customer-biometric-card">
                         <!-- Top Header & Status -->
                         <div class="flex-shrink-0">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 flex-shrink-0">
                                         <i class="fa-solid fa-camera fs-5"></i>
                                     </div>
                                     <div>
@@ -156,7 +186,7 @@
                                         <small class="text-muted">Automated liveness & descriptor capture</small>
                                     </div>
                                 </div>
-                                <span id="facePaneBadge" class="badge @(hasFace ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border") rounded-pill px-3 py-1" style="font-size: 11px;">
+                                <span id="facePaneBadge" class="badge @(hasFace ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border") rounded-pill px-3 py-1 text-nowrap" style="font-size: 11px;">
                                     @(hasFace ? "Enrolled" : "Not Enrolled")
                                 </span>
                             </div>
@@ -167,14 +197,14 @@
                         </div>
 
                         <!-- Center Camera Viewport -->
-                        <div class="my-auto py-2 d-flex flex-column align-items-center justify-content-center">
-                            <div class="position-relative bg-dark rounded-4 overflow-hidden shadow-sm mx-auto"
+                        <div class="my-auto py-3 d-flex flex-column align-items-center justify-content-center">
+                            <div class="position-relative bg-dark rounded-4 overflow-hidden shadow-sm mx-auto biometric-viewport-box"
                                  style="width: 100%; max-width: 420px; height: 260px;">
                                 <video id="videoFeed" autoplay playsinline muted
                                        style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
                                 <canvas id="faceCanvas"
                                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;"></canvas>
-                                <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
+                                <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle biometric-scan-guide"
                                      style="width: 160px; height: 200px; pointer-events: none; opacity: 0.6; z-index: 5;">
                                 </div>
                             </div>
@@ -311,12 +341,12 @@
                                 if (stableFrames < REQUIRED_FRAMES) {
                                     statusDiv.className = 'small fw-semibold alert alert-primary py-2 border-0 w-100 mb-0 shadow-sm text-center';
                                     statusDiv.innerHTML = `<i class="fa-solid fa-crosshairs fa-spin me-1"></i> Hold still... ${progress}%`;
-                                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle pulse-border';
+                                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle pulse-border biometric-scan-guide';
                                 } else {
                                     isScanningActive = false;
                                     statusDiv.className = 'small fw-semibold alert alert-success py-2 border-0 w-100 mb-0 shadow-sm text-center';
                                     statusDiv.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Face profile captured successfully!';
-                                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-3 border-success rounded-circle';
+                                    scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-3 border-success rounded-circle biometric-scan-guide';
 
                                     const vectorJson = JSON.stringify(Array.from(detection.descriptor));
                                     document.getElementById('faceEmbeddingJson').value = vectorJson;
@@ -394,7 +424,9 @@
                 if (!isModelReady) return;
 
                 try {
-                    currentStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                    currentStream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
+                    });
                     video.srcObject = currentStream;
 
                     isScanningActive = true;

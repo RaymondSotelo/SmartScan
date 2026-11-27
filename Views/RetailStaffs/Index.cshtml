@@ -55,22 +55,37 @@
     bool hasAnyMatches = matchesHeadAdmin || coAdmins.Any() || cashiers.Any();
 }
 
-<div class="d-flex flex-column h-100">
+@section Styles {
+    <style>
+        /* Mobile Scroll Unlock (Desktop & Tablet >= 768px stay untouched) */
+        @@media (max-width: 767.98px) {
+            .retail-staff-root {
+                height: auto !important;
+            }
+
+            .retail-staff-scroll {
+                overflow: visible !important;
+            }
+        }
+    </style>
+}
+
+<div class="d-flex flex-column h-100 retail-staff-root">
 
     <!-- Header & Badge Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 flex-shrink-0">
         <div>
             <h4 class="fw-bold mb-0" style="color: #1162a3;">Store Staff Members</h4>
             <p class="text-secondary fw-medium mb-0">Manage authorized users, role assignments, and permissions for this branch.</p>
         </div>
-        <span class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm text-white flex-shrink-0" style="background-color: #1162a3; font-size: 13px;">
+        <span class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm text-white flex-shrink-0 text-nowrap" style="background-color: #1162a3; font-size: 13px;">
             <i class="fa-solid fa-users-gear me-1"></i>Total Staff: @totalCount
         </span>
     </div>
 
     <!-- Action Bar & Search -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-3 flex-shrink-0">
-        <a class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1"
+        <a class="btn btn-primary fw-medium rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap"
            asp-action="Create"
            asp-route-retailId="@ViewBag.RetailId"
            style="background-color: #1162a3; border-color: #1162a3; font-size: 14px;">
@@ -125,7 +140,7 @@
     }
 
     <!-- Scrollable Unified List Area -->
-    <div class="flex-grow-1 overflow-y-auto pe-1">
+    <div class="flex-grow-1 overflow-y-auto pe-1 retail-staff-scroll">
         @if (!hasAnyMatches)
         {
             @if (!string.IsNullOrEmpty(currentFilter))
@@ -155,29 +170,29 @@
                     profileMap.TryGetValue(headAdminUser.Id, out var headPic);
                     var headAvatar = string.IsNullOrWhiteSpace(headPic) ? "/images/default-pfp.jpg" : headPic;
 
-                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-2 gap-sm-3" style="min-width: 0; flex: 1 1 180px;">
                             <img src="@headAvatar"
                                  onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
                                  alt="@headAdminUser.UserName"
                                  class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
                                  style="width: 44px; height: 44px; flex-shrink: 0;" />
-                            <div>
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span class="fw-semibold" style="color: #1162a3;">@headAdminUser.UserName</span>
-                                    <span class="badge rounded-pill fw-semibold px-2 py-1 text-white shadow-sm" style="background-color: #f59e0b; font-size: 11px;">
+                            <div style="min-width: 0;">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                    <span class="fw-semibold text-truncate" style="color: #1162a3; max-width: 100%;">@headAdminUser.UserName</span>
+                                    <span class="badge rounded-pill fw-semibold px-2 py-1 text-white shadow-sm text-nowrap" style="background-color: #f59e0b; font-size: 11px;">
                                         <i class="fa-solid fa-crown me-1"></i>Head Admin
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                        <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3 ms-auto flex-shrink-0">
+                            <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 11px;">
                                 <i class="fa-solid fa-circle-check me-1"></i>Active
                             </span>
-                            <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small">
+                            <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small text-nowrap">
                                 <i class="fa-solid fa-lock me-1"></i>Owner
                             </span>
                         </div>
@@ -190,34 +205,34 @@
                     profileMap.TryGetValue(item.StaffId ?? "", out var pic);
                     var avatar = string.IsNullOrWhiteSpace(pic) ? "/images/default-pfp.jpg" : pic;
 
-                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-2 gap-sm-3" style="min-width: 0; flex: 1 1 180px;">
                             <img src="@avatar"
                                  onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
                                  alt="@item.Staff?.UserName"
                                  class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
                                  style="width: 44px; height: 44px; flex-shrink: 0;" />
-                            <div>
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span class="fw-semibold" style="color: #1162a3;">@(item.Staff?.UserName ?? "Unknown User")</span>
-                                    <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                            <div style="min-width: 0;">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                    <span class="fw-semibold text-truncate" style="color: #1162a3; max-width: 100%;">@(item.Staff?.UserName ?? "Unknown User")</span>
+                                    <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2 py-1 shadow-sm text-nowrap" style="font-size: 11px;">
                                         <i class="fa-solid fa-user-shield me-1"></i>Co-Admin
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3 ms-auto flex-shrink-0">
                             @if (item.Status?.StatusName == "Active")
                             {
-                                <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 11px;">
                                     <i class="fa-solid fa-circle-check me-1"></i>Active
                                 </span>
                             }
                             else
                             {
-                                <span class="badge rounded-pill bg-white text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                <span class="badge rounded-pill bg-white text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 11px;">
                                     <i class="fa-solid fa-circle-xmark me-1"></i>@(item.Status?.StatusName ?? "Inactive")
                                 </span>
                             }
@@ -232,7 +247,7 @@
                                       class="m-0">
                                     @Html.AntiForgeryToken()
                                     <button type="button"
-                                            class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3 shadow-sm"
+                                            class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3 shadow-sm text-nowrap"
                                             onclick="confirmStaffRemoval('@item.RetailStaffId', '@Html.Raw(item.Staff?.UserName?.Replace("'", "\\'") ?? "this Co-Admin")')">
                                         <i class="fa-solid fa-xmark me-1"></i>Remove
                                     </button>
@@ -240,7 +255,7 @@
                             }
                             else
                             {
-                                <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small">
+                                <span class="badge bg-light text-muted border rounded-pill px-3 py-2 small text-nowrap">
                                     <i class="fa-solid fa-lock me-1"></i>Protected
                                 </span>
                             }
@@ -254,34 +269,34 @@
                     profileMap.TryGetValue(item.StaffId ?? "", out var pic);
                     var avatar = string.IsNullOrWhiteSpace(pic) ? "/images/default-pfp.jpg" : pic;
 
-                    <div class="d-flex align-items-center justify-content-between py-2 px-3 rounded-3 shadow-sm border"
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-3 rounded-3 shadow-sm border"
                          style="background-color: #dbeafe; border-color: #cfe2f3 !important;">
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-2 gap-sm-3" style="min-width: 0; flex: 1 1 180px;">
                             <img src="@avatar"
                                  onerror="this.onerror=null; this.src='/images/default-pfp.jpg';"
                                  alt="@item.Staff?.UserName"
                                  class="rounded-circle border border-2 border-white object-fit-cover shadow-sm bg-white"
                                  style="width: 44px; height: 44px; flex-shrink: 0;" />
-                            <div>
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <span class="fw-semibold" style="color: #1162a3;">@(item.Staff?.UserName ?? "Unknown User")</span>
-                                    <span class="badge rounded-pill bg-light text-secondary border fw-semibold px-2 py-1 shadow-sm" style="font-size: 11px;">
+                            <div style="min-width: 0;">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                    <span class="fw-semibold text-truncate" style="color: #1162a3; max-width: 100%;">@(item.Staff?.UserName ?? "Unknown User")</span>
+                                    <span class="badge rounded-pill bg-light text-secondary border fw-semibold px-2 py-1 shadow-sm text-nowrap" style="font-size: 11px;">
                                         <i class="fa-solid fa-cash-register me-1"></i>Cashier
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex flex-wrap align-items-center gap-2 gap-sm-3 ms-auto flex-shrink-0">
                             @if (item.Status?.StatusName == "Active")
                             {
-                                <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                <span class="badge rounded-pill bg-white text-success border border-success-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 11px;">
                                     <i class="fa-solid fa-circle-check me-1"></i>Active
                                 </span>
                             }
                             else
                             {
-                                <span class="badge rounded-pill bg-white text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm" style="font-size: 11px;">
+                                <span class="badge rounded-pill bg-white text-secondary border border-secondary-subtle fw-semibold px-3 py-2 shadow-sm text-nowrap" style="font-size: 11px;">
                                     <i class="fa-solid fa-circle-xmark me-1"></i>@(item.Status?.StatusName ?? "Inactive")
                                 </span>
                             }
@@ -296,7 +311,7 @@
                                       class="m-0">
                                     @Html.AntiForgeryToken()
                                     <button type="button"
-                                            class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3 shadow-sm"
+                                            class="btn btn-outline-danger btn-sm fw-medium rounded-pill px-3 shadow-sm text-nowrap"
                                             onclick="confirmStaffRemoval('@item.RetailStaffId', '@Html.Raw(item.Staff?.UserName?.Replace("'", "\\'") ?? "this Cashier")')">
                                         <i class="fa-solid fa-xmark me-1"></i>Remove
                                     </button>

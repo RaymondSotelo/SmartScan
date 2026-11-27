@@ -34,6 +34,15 @@ namespace SmartScan.Areas.Identity.Pages.Account
         private readonly IEmailSender _emailSender;
         private readonly ApplicationDbContext _context;
 
+        private static readonly HashSet<string> BlockedPlaceholderDomains = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "sample.com",
+            "test.com",
+            "example.com",
+            "example.org",
+            "example.net"
+        };
+
         public RegisterModel(
             UserManager<IdentityUser> userManager,
             IUserStore<IdentityUser> userStore,
@@ -51,76 +60,35 @@ namespace SmartScan.Areas.Identity.Pages.Account
             _context = context;
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [BindProperty]
         public InputModel Input { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public string ReturnUrl { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public class InputModel
         {
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [Required]
             [EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [Required]
             [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
             [DataType(DataType.Password)]
             [Display(Name = "Password")]
             public string Password { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [DataType(DataType.Password)]
             [Display(Name = "Confirm password")]
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string ConfirmPassword { get; set; }
 
-            //Enable if you want to add FirstName and LastName <<--
-            /*
-            [Required]
-            [StringLength(100)]
-            [Display(Name = "First Name")]
-            public string FirstName { get; set; }
-
-            [Required]
-            [StringLength(100)]
-            [Display(Name = "Last Name")]
-            public string LastName { get; set; }
-            */
             [Required]
             [Display(Name = "Register As")]
             public string Role { get; set; }
         }
-
 
         public async Task OnGetAsync(string returnUrl = null)
         {
@@ -132,6 +100,16 @@ namespace SmartScan.Areas.Identity.Pages.Account
         {
             returnUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+            if (!string.IsNullOrWhiteSpace(Input?.Email) && Input.Email.Contains('@'))
+            {
+                var domain = Input.Email.Split('@').Last().Trim();
+                if (BlockedPlaceholderDomains.Contains(domain))
+                {
+                    ModelState.AddModelError("Input.Email", "Please use a valid email address (such as @gmail.com) instead of @sample.com.");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
@@ -145,11 +123,6 @@ namespace SmartScan.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    /* Enable if you want FirstName and LastName for the accounts <<--
-                    await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FirstName", Input.FirstName));
-                    await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("LastName", Input.LastName));
-                    */
-                    //Role Condition <<-
                     if (Input.Role == "Admin")
                     {
                         user.EmailConfirmed = false;
@@ -159,7 +132,7 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
                         TempData["Message"] = "Success! Wait for an Admin to accept your admin application.";
 
-                        return Page();
+                        return RedirectToPage("/Account/Login", new { area = "Identity" });
                     }
                     else
                     {
@@ -168,7 +141,7 @@ namespace SmartScan.Areas.Identity.Pages.Account
 
                         await _userManager.AddToRoleAsync(user, "Cashier");
 
-                        return RedirectToPage("/Account/Login", new { area = "Identity"});
+                        return RedirectToPage("/Account/Login", new { area = "Identity" });
                     }
                 }
                 foreach (var error in result.Errors)
@@ -177,7 +150,6 @@ namespace SmartScan.Areas.Identity.Pages.Account
                 }
             }
 
-            // If we got this far, something failed, redisplay form
             return Page();
         }
 

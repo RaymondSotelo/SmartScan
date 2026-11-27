@@ -48,6 +48,112 @@
         .countdown-badge {
             background-color: #f1f5f9;
             color: #1162a3;
+            @{
+                ViewData["Title"] = "Payment Successful";
+                Layout = null; // Standalone window without the main navbar/sidebar
+            }
+ < !DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <title>Payment Successful - SmartScan</title> <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" /> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" /> <style> body
+
+        {
+            background: radial-gradient(circle at center, #f0f7ff 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+
+        .success-card {
+            max-width: 420px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 36px 28px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background-color: #dcfce7;
+            color: #16a34a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .countdown-badge {
+            background-color: #f1f5f9;
+            color: #1162a3;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 6px 16px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-top: 15px;
+        }
+
+        @@media (max-width: 400px) {
+            .success-card {
+                padding: 28px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="icon-circle">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <h4 class="fw-bold text-dark mb-1">Payment Successful</h4>
+        <p class="text-secondary small mb-3">Your transaction has been verified by Xendit.</p>
+
+        <div class="countdown-badge">
+            Closing tab in <span id="timer">3</span>s...
+        </div>
+
+        <div class="mt-4">
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4" onclick="closeWindow()">
+                Close Window Now
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 3;
+        const timerEl = document.getElementById("timer");
+
+        function closeWindow() {
+            window.close();
+            // Fallback if browser security blocks window.close() on redirected tabs
+            setTimeout(() => {
+                if (window.opener && !window.opener.closed) {
+                    window.close();
+                } else {
+                    window.location.replace("/Home/Checkout");
+                }
+            }, 3000);
+        }
+
+        const countdown = setInterval(() => {
+            timeLeft--;
+            if (timerEl) timerEl.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                closeWindow();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
             font-weight: 700;
             font-size: 1.1rem;
             padding: 6px 16px;

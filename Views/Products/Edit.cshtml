@@ -7,7 +7,7 @@
     bool isLocalUpload = !string.IsNullOrWhiteSpace(Model?.ProductImage) && Model.ProductImage.StartsWith("/");
 }
 
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 mb-3"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 mb-3 pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 520px;">
 
     <!-- Top Card Header -->
@@ -16,7 +16,7 @@
     </div>
 
     <!-- Scrollable Form Container -->
-    <div class="card-body p-4 flex-grow-1 overflow-y-auto">
+    <div class="card-body p-3 p-md-4 flex-grow-1 overflow-y-auto">
         <form asp-action="Edit" asp-route-productid="@Model.ProductId" method="post" enctype="multipart/form-data" id="editProductForm" class="h-100 d-flex flex-column justify-content-between">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
@@ -25,12 +25,12 @@
 
             <div class="row g-4">
                 <!-- Left Column: Primary Details & Status -->
-                <div class="col-lg-6">
+                <div class="col-12 col-lg-6">
                     <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">General Information</h6>
 
                     <!-- Product Name (Disabled if CanScan == 1) -->
                     <div class="form-group mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1">
                             <label asp-for="ProductName" class="control-label fw-semibold mb-0" style="color: #1162a3;">Product Name</label>
                             @if (isCanScan)
                             {
@@ -120,6 +120,7 @@
                                    id="Price"
                                    class="form-control border-0 shadow-none fw-semibold no-spin pe-5"
                                    type="number"
+                                   inputmode="decimal"
                                    step="0.01"
                                    min="0.01"
                                    onwheel="this.blur()"
@@ -180,7 +181,7 @@
                         <label class="control-label fw-semibold mb-2 d-block" style="color: #1162a3;">Product Status</label>
                         <input type="hidden" asp-for="StatusId" id="statusIdInput" />
 
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 border shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center gap-3 p-3 bg-light rounded-3 border shadow-sm">
                             <div>
                                 <span id="statusBadge"
                                       class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm @(Model?.StatusId == 1 ? "bg-success text-white" : "bg-secondary text-white")">
@@ -192,7 +193,7 @@
                                 </small>
                             </div>
 
-                            <div class="form-check form-switch m-0 d-flex align-items-center">
+                            <div class="form-check form-switch m-0 d-flex align-items-center flex-shrink-0">
                                 <input class="form-check-input custom-toggle"
                                        type="checkbox"
                                        role="switch"
@@ -209,7 +210,7 @@
                         <label class="control-label fw-semibold mb-2 d-block" style="color: #1162a3;">Age Restriction</label>
                         <input type="hidden" asp-for="IsAgeRestricted" id="ageRestrictedInput" value="@(Model?.IsAgeRestricted == true ? "true" : "false")" />
 
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 border shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center gap-3 p-3 bg-light rounded-3 border shadow-sm">
                             <div>
                                 <span id="ageBadge"
                                       class="badge rounded-pill fw-semibold px-3 py-2 shadow-sm @(Model?.IsAgeRestricted == true ? "bg-danger text-white" : "bg-success text-white")">
@@ -221,7 +222,7 @@
                                 </small>
                             </div>
 
-                            <div class="form-check form-switch m-0 d-flex align-items-center">
+                            <div class="form-check form-switch m-0 d-flex align-items-center flex-shrink-0">
                                 <input class="form-check-input custom-toggle"
                                        type="checkbox"
                                        role="switch"
@@ -235,15 +236,15 @@
                 </div>
 
                 <!-- Right Column: Image, Media, and Scanner -->
-                <div class="col-lg-6">
+                <div class="col-12 col-lg-6">
                     <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 14px; letter-spacing: 0.5px;">Product Media</h6>
 
                     <!-- Default Media Section -->
                     <div id="productMediaSection">
                         <!-- Tab Switcher -->
-                        <ul class="nav nav-pills mb-2" id="imageTabs" role="tablist">
+                        <ul class="nav nav-pills flex-wrap gap-2 mb-2" id="imageTabs" role="tablist">
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link @(!isLocalUpload ? "active" : "") py-1 px-3 rounded-pill border shadow-sm me-2"
+                                <button class="nav-link @(!isLocalUpload ? "active" : "") py-1 px-3 rounded-pill border shadow-sm"
                                         id="url-tab" data-bs-toggle="pill" data-bs-target="#url-pane" type="button" role="tab">
                                     Link URL
                                 </button>
@@ -290,7 +291,7 @@
                             <div class="tab-pane fade @(isLocalUpload ? "show active" : "")" id="upload-pane" role="tabpanel">
                                 @if (isLocalUpload)
                                 {
-                                    <div class="d-flex align-items-center justify-content-between bg-white border rounded-3 px-3 py-2 mb-2">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 bg-white border rounded-3 px-3 py-2 mb-2">
                                         <span class="small text-success fw-semibold">
                                             <i class="fa-solid fa-file-image me-1"></i>Using system-uploaded image
                                         </span>
@@ -314,7 +315,7 @@
 
                     <!-- Hidden Barcode Camera Scanner Section -->
                     <div id="hiddenScannerSection" class="border rounded-3 p-3 bg-light shadow-sm mb-3" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                             <h6 class="fw-bold text-secondary mb-0" style="font-size: 14px;">
                                 <i class="fa-solid fa-camera me-1"></i>Live Barcode Scanner
                             </h6>
@@ -335,7 +336,7 @@
             </div>
 
             <!-- Sticky Bottom Actions -->
-            <div class="d-flex justify-content-end align-items-center gap-2 pt-3 pb-3 mt-auto border-top">
+            <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 pt-3 pb-3 mt-auto border-top">
                 <a asp-action="Index" class="btn btn-outline-secondary fw-medium rounded-pill px-4 shadow-sm" style="font-size: 14px;">Cancel</a>
                 <button type="submit" class="btn btn-primary fw-medium rounded-pill px-4 shadow-sm" style="font-size: 14px; background-color: #1162a3; border-color: #1162a3;">
                     <i class="fa-solid fa-check me-1"></i>Save Changes
@@ -612,10 +613,13 @@
                 status.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Initializing camera...';
                 status.className = "alert alert-info py-2 small fw-semibold text-center mb-0";
 
+                const qrBoxWidth = Math.min(280, Math.max(160, Math.floor(window.innerWidth * 0.52)));
+                const qrBoxHeight = Math.round(qrBoxWidth * 0.45);
+
                 html5QrScanner = new Html5Qrcode("qrReader");
                 html5QrScanner.start(
                     { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 280, height: 120 } },
+                    { fps: 10, qrbox: { width: qrBoxWidth, height: qrBoxHeight } },
                     (decodedText) => { processLiveScan(decodedText); },
                     (errorMessage) => { /* ignore frame miss */ }
                 ).then(() => {

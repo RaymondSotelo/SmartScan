@@ -8,12 +8,47 @@
 
 @Html.AntiForgeryToken()
 
+@section Styles {
+    <style>
+        /* Mobile & Tablet Layout Adjustments (Desktop >= 992px stays untouched) */
+        @@media (max-width: 991.98px) {
+            .verification-workspace,
+            .verification-workspace .verification-scroll-unlock {
+                overflow: visible !important;
+                height: auto !important;
+            }
+
+            .verification-camera-card {
+                min-height: 310px !important;
+                height: 330px !important;
+                overflow: hidden !important;
+            }
+            /* Scale face guide oval on phones so it sits cleanly between top badge and bottom button */
+            .face-scan-guide {
+                width: 155px !important;
+                height: 195px !important;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .verification-camera-card {
+                min-height: 290px !important;
+                height: 310px !important;
+            }
+
+            .verification-placeholder-icon {
+                padding: 1rem !important;
+            }
+        }
+    </style>
+}
+
 <!-- Viewport-Locked Outer Container -->
-<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white"
+<div class="card shadow border-0 rounded-4 d-flex flex-column mt-3 bg-white pos-viewport-card"
      style="height: calc(100dvh - 130px); min-height: 540px;">
 
     <!-- Top Navigation Header -->
-    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex justify-content-between align-items-center"
+    <div class="card-header rounded-top-4 text-white p-3 flex-shrink-0 d-flex flex-wrap justify-content-between align-items-center gap-2"
          style="background-color: #1162a3;">
         <div class="d-flex align-items-center gap-2">
             <h5 class="mb-0 fw-bold" id="pageHeaderTitle">
@@ -21,7 +56,7 @@
             </h5>
         </div>
         <!-- Dynamic Return Button -->
-        <button type="button" id="btnCancelVerification" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary"
+        <button type="button" id="btnCancelVerification" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-primary text-nowrap"
                 style="background-color: #dbeafe; border-color: #cfe2f3 !important;"
                 onclick="cancelVerification()">
             <i class="fa-solid fa-arrow-left me-1"></i><span id="btnCancelText">Return to Checkout</span>
@@ -29,11 +64,11 @@
     </div>
 
     <!-- Interior Workspace Split -->
-    <div class="card-body p-3 p-lg-4 flex-grow-1 d-flex flex-column overflow-hidden" style="min-height: 0;">
-        <div class="row g-3 flex-grow-1 m-0 overflow-hidden" style="min-height: 0;">
+    <div class="card-body p-2 p-sm-3 p-lg-4 flex-grow-1 d-flex flex-column overflow-hidden verification-workspace" style="min-height: 0;">
+        <div class="row g-3 flex-grow-1 m-0 overflow-hidden verification-scroll-unlock" style="min-height: 0;">
 
             <!-- ================= LEFT COLUMN: WORKSPACE PANES ================= -->
-            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-3 pb-3 overflow-hidden" style="min-height: 0;">
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 pe-lg-3 pb-2 pb-lg-3 overflow-hidden verification-scroll-unlock" style="min-height: 0;">
 
                 <!-- TOP SWITCHER: Toggle between Verification / Pay Debt & Register Customer -->
                 <div id="verificationSwitcherGroup" class="mb-3 flex-shrink-0" style="display: none;">
@@ -55,8 +90,8 @@
                 </div>
 
                 <!-- PANE 1: FACIAL RECOGNITION (VERIFICATION / PAY DEBT) -->
-                <div id="facial-recognition-pane" class="h-100 flex-column justify-content-between overflow-hidden" style="display: none;">
-                    <div class="overflow-y-auto no-scrollbar pe-1">
+                <div id="facial-recognition-pane" class="h-100 flex-column justify-content-between overflow-hidden verification-scroll-unlock" style="display: none;">
+                    <div class="overflow-y-auto no-scrollbar pe-1 verification-scroll-unlock">
 
                         <!-- Header Info -->
                         <div class="px-2 pt-2 pb-3 flex-shrink-0">
@@ -64,11 +99,11 @@
                             <p class="fw-medium text-secondary mb-0" id="faceRecognitionHeaderSub">Authenticate customer identity against the biometric registry.</p>
                         </div>
 
-                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light mb-3">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 p-sm-4 bg-light mb-3">
 
                             <!-- Mobile Contact Number (Manual Lookup) -->
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center">
+                            <div class="mb-2 mb-sm-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-1">
                                     <label class="control-label fw-semibold mb-1" style="color: #1162a3;">
                                         Mobile Contact Number
                                     </label>
@@ -85,7 +120,7 @@
                                            onkeydown="handlePhoneBackspace(this, event); if(event.key === 'Enter') lookupCustomerByPhone();"
                                            placeholder="09XX XXX XXXX" />
                                     <button type="button"
-                                            class="btn btn-primary fw-semibold px-3 z-3 border-0"
+                                            class="btn btn-primary fw-semibold px-3 z-3 border-0 text-nowrap"
                                             style="background-color: #1162a3;"
                                             onclick="lookupCustomerByPhone()">
                                         <i class="fa-solid fa-magnifying-glass me-1"></i>Search
@@ -95,13 +130,11 @@
                             </div>
                         </div>
 
-
-
                         <!-- Recognition Status & Result Display Card -->
                         <div class="card border rounded-4 p-3 bg-white shadow-sm mb-3">
-                            <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div id="recognitionIconBox" class="rounded-circle bg-light text-secondary p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <div id="recognitionIconBox" class="rounded-circle bg-light text-secondary p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
                                         <i class="fa-solid fa-user-clock fa-lg"></i>
                                     </div>
                                     <div class="text-start">
@@ -109,7 +142,7 @@
                                         <small class="text-muted d-block" id="recognitionSubDisplay">Enable scanner or lookup by contact number.</small>
                                     </div>
                                 </div>
-                                <div class="text-end" id="recognitionBadgeContainer" style="display: none;">
+                                <div class="text-end ms-auto" id="recognitionBadgeContainer" style="display: none;">
                                     <span class="badge rounded-pill bg-success text-white px-3 py-1 fw-bold" id="recognitionStatusBadge">Matched</span>
                                 </div>
                             </div>
@@ -122,16 +155,16 @@
                 </div>
 
                 <!-- PANE 2: CUSTOMER REGISTRATION -->
-                <div id="register-left-pane" class="h-100 flex-column justify-content-between overflow-hidden" style="display: none;">
-                    <div class="overflow-y-auto no-scrollbar pe-1">
+                <div id="register-left-pane" class="h-100 flex-column justify-content-between overflow-hidden verification-scroll-unlock" style="display: none;">
+                    <div class="overflow-y-auto no-scrollbar pe-1 verification-scroll-unlock">
 
                         <!-- Header Info -->
                         <div class="px-2 pt-2 pb-1 flex-shrink-0">
-                            <h4 class="mb-1 fw-bold" style="color: #1162a3;" id="faceRecognitionHeaderTitle">Register Customer</h4>
-                            <p class="fw-medium text-secondary mb-0" id="faceRecognitionHeaderSub">Enroll customer profile for store credit verification.</p>
+                            <h4 class="mb-1 fw-bold" style="color: #1162a3;">Register Customer</h4>
+                            <p class="fw-medium text-secondary mb-0">Enroll customer profile for store credit verification.</p>
                         </div>
 
-                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light mb-3">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 p-sm-4 bg-light mb-3">
 
                             <!-- Full Name -->
                             <div class="form-group mb-3">
@@ -184,16 +217,16 @@
                 </div>
 
                 <!-- PANE 3: PHILSYS NATIONAL ID (AGE RESTRICTION) -->
-                <div id="nationalid-left-pane" class="h-100 flex-column justify-content-between overflow-hidden" style="display: none;">
-                    <div class="overflow-hidden d-flex flex-column h-100">
+                <div id="nationalid-left-pane" class="h-100 flex-column justify-content-between overflow-hidden verification-scroll-unlock" style="display: none;">
+                    <div class="overflow-hidden d-flex flex-column h-100 verification-scroll-unlock">
 
                         <!-- Header Info -->
                         <div class="px-2 pt-2 flex-shrink-0">
-                            <h4 class="mb-1 fw-bold" style="color: #1162a3;" id="faceRecognitionHeaderTitle">PhilSys Age Verification</h4>
-                            <p class="fw-medium text-secondary mb-0" id="faceRecognitionHeaderSub">Required for purchase of 18+ restricted merchandise.</p>
+                            <h4 class="mb-1 fw-bold" style="color: #1162a3;">PhilSys Age Verification</h4>
+                            <p class="fw-medium text-secondary mb-0">Required for purchase of 18+ restricted merchandise.</p>
                         </div>
 
-                        <div class="card border-0 shadow-sm rounded-4 p-4 bg-light mb-3 flex-shrink-0">
+                        <div class="card border-0 shadow-sm rounded-4 p-3 p-sm-4 bg-light mb-3 flex-shrink-0">
 
                             <!-- Manual PCN & DOB Inputs -->
                             <div class="mb-3">
@@ -203,6 +236,7 @@
                                 <div class="input-group shadow-sm rounded-3 overflow-hidden border bg-white">
                                     <input type="text"
                                            id="digitalIdInput"
+                                           inputmode="numeric"
                                            class="form-control rounded-3 border-0 shadow-none ps-3 font-monospace fw-semibold"
                                            placeholder="e.g. 1234567891234567" />
                                 </div>
@@ -234,10 +268,10 @@
                         </div>
 
                         <!-- Result Card -->
-                        <div class="card border rounded-3 p-3 bg-white shadow-sm flex-shrink-0" id="idVerificationCard">
-                            <div class="d-flex align-items-center justify-content-between">
+                        <div class="card border rounded-3 p-3 bg-white shadow-sm flex-shrink-0 mb-3 mb-lg-0" id="idVerificationCard">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div id="idResultIcon" class="rounded-circle bg-light text-secondary p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <div id="idResultIcon" class="rounded-circle bg-light text-secondary p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
                                         <i class="fa-solid fa-id-card fa-lg"></i>
                                     </div>
                                     <div class="text-start">
@@ -245,7 +279,7 @@
                                         <small class="text-muted d-block" id="idDisplaySub">Scan QR or enter PCN and DOB manually.</small>
                                     </div>
                                 </div>
-                                <div class="text-end" id="ageResultContainer" style="display: none;">
+                                <div class="text-end ms-auto" id="ageResultContainer" style="display: none;">
                                     <span class="badge rounded-pill px-3 py-1 fw-bold" id="ageClassificationBadge" style="font-size: 12px;">--</span>
                                     <small class="text-muted d-block mt-1" id="dobDisplayText" style="font-size: 11px;"></small>
                                 </div>
@@ -260,17 +294,17 @@
             </div>
 
             <!-- ================= RIGHT COLUMN: DEDICATED SEPARATE VIEWPORTS ================= -->
-            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-3 overflow-hidden" style="min-height: 0;">
-                <div class="card border-0 bg-dark text-white rounded-4 flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden shadow-sm"
+            <div class="col-12 col-lg-6 d-flex flex-column h-100 p-0 ps-lg-2 pb-2 pb-lg-3 overflow-hidden verification-scroll-unlock" style="min-height: 0;">
+                <div class="card border-0 bg-dark text-white rounded-4 flex-grow-1 position-relative d-flex align-items-center justify-content-center overflow-hidden shadow-sm verification-camera-card"
                      style="background: radial-gradient(circle at center, #1b2838 0%, #0d131a 100%); isolation: isolate; height: 100%;">
 
                     <!-- Idle / Placeholder (Default State on load) -->
-                    <div id="cameraPlaceholder" class="text-center p-4 z-2">
-                        <div class="border-2 rounded-circle bg-black bg-opacity-25 p-4 d-inline-flex mb-3 border border-secondary border-opacity-25">
-                            <i class="fa-solid fa-video-slash fa-3x text-secondary"></i>
+                    <div id="cameraPlaceholder" class="text-center p-3 p-sm-4 pb-5 z-2">
+                        <div class="border-2 rounded-circle bg-black bg-opacity-25 p-4 d-inline-flex mb-2 mb-sm-3 border border-secondary border-opacity-25 verification-placeholder-icon">
+                            <i class="fa-solid fa-video-slash fa-2x fa-sm-3x text-secondary"></i>
                         </div>
                         <h5 class="fw-bold text-secondary mb-1">Webcam Disabled</h5>
-                        <p class="text-muted small mb-0" style="max-width: 320px;">
+                        <p class="text-muted small mb-0 mx-auto" style="max-width: 320px;">
                             Select your video source and enable the camera to authenticate customer verification.
                         </p>
                     </div>
@@ -279,7 +313,7 @@
                     <div id="regVideoContainer" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; z-index: 1;">
                         <video id="regVideoFeed" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
                         <canvas id="regFaceCanvas" class="position-absolute top-0 start-0 pointer-events-none"></canvas>
-                        <div class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
+                        <div class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle face-scan-guide"
                              style="width: 220px; height: 280px; opacity: 0.5; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);">
                         </div>
                     </div>
@@ -288,7 +322,7 @@
                     <div id="verifyVideoContainer" class="position-absolute top-0 start-0 w-100 h-100" style="display: none; z-index: 1;">
                         <video id="verifyVideoFeed" autoplay playsinline muted class="w-100 h-100 object-fit-cover"></video>
                         <canvas id="verifyFaceCanvas" class="position-absolute top-0 start-0 pointer-events-none"></canvas>
-                        <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle"
+                        <div id="scanGuide" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle face-scan-guide"
                              style="width: 220px; height: 280px; opacity: 0.5; transition: border-color 0.3s; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);">
                         </div>
                     </div>
@@ -308,11 +342,11 @@
                     </div>
 
                     <!-- ================= ENABLE/DISABLE BUTTON & CAMERA SELECTOR (CHECKOUT DESIGN) ================= -->
-                    <div class="position-absolute start-50 translate-middle-x z-3 shadow-lg" style="bottom: 24px;">
+                    <div class="position-absolute start-50 translate-middle-x z-3 shadow-lg" style="bottom: 18px;">
                         <div class="btn-group rounded-pill overflow-hidden border border-white border-opacity-25 shadow" role="group">
                             <button id="startCamBtn"
                                     type="button"
-                                    class="btn btn-sm text-white fw-semibold px-3 py-2 d-flex align-items-center gap-2 border-0"
+                                    class="btn btn-sm text-white fw-semibold px-3 py-2 d-flex align-items-center gap-2 border-0 text-nowrap"
                                     style="background-color: #1162a3;">
                                 <i class="fa-solid fa-play small"></i>
                                 <span>Enable Scanner</span>
@@ -320,7 +354,7 @@
 
                             <button id="stopCamBtn"
                                     type="button"
-                                    class="btn btn-sm btn-danger fw-semibold px-3 py-2 d-none d-flex align-items-center gap-2 border-0">
+                                    class="btn btn-sm btn-danger fw-semibold px-3 py-2 d-none d-flex align-items-center gap-2 border-0 text-nowrap">
                                 <i class="fa-solid fa-stop small"></i>
                                 <span>Stop Feed</span>
                             </button>
@@ -441,7 +475,11 @@
                     option.value = device.deviceId;
                     option.text = device.label || `Camera ${index + 1}`;
                     const lowerLabel = (device.label || "").toLowerCase();
-                    if (lowerLabel.includes("user") || lowerLabel.includes("front") || lowerLabel.includes("integrated")) {
+                    if (verificationReason === "AgeGated") {
+                        if (lowerLabel.includes("back") || lowerLabel.includes("rear") || lowerLabel.includes("environment")) {
+                            option.selected = true;
+                        }
+                    } else if (lowerLabel.includes("user") || lowerLabel.includes("front") || lowerLabel.includes("integrated")) {
                         option.selected = true;
                     }
                     cameraSelect.appendChild(option);
@@ -715,7 +753,7 @@
             if (verifyCv && verifyCv.width > 0) verifyCv.getContext('2d').clearRect(0, 0, verifyCv.width, verifyCv.height);
 
             if (scanGuide) {
-                scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
+                scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle face-scan-guide';
             }
 
             stopBtn.classList.add("d-none");
@@ -745,13 +783,19 @@
                 const constraints = {
                     video: {
                         deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
-                        facingMode: selectedDeviceId ? undefined : "user",
+                        facingMode: selectedDeviceId ? undefined : { ideal: "user" },
                         width: { ideal: 640 },
                         height: { ideal: 480 }
-                    }
+                    },
+                    audio: false
                 };
 
-                activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+                try {
+                    activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (primaryErr) {
+                    activeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "user" } }, audio: false });
+                }
+
                 video.srcObject = activeStream;
 
                 isDetectionActive = true;
@@ -827,13 +871,13 @@
                 if (result.success && result.customerId) {
                     await handleSuccessfulVerification(result.customerId, result.customerName, result.redirectUrl);
                 } else {
-                    if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-danger rounded-circle';
+                    if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-danger rounded-circle face-scan-guide';
                     updateOverlayStatus('fa-user-xmark', 'Face: Unregistered', 'text-danger');
 
                     setTimeout(() => {
                         isAuthenticating = false;
                         updateOverlayStatus('fa-eye fa-fade', 'Face: Scanning...', 'text-info');
-                        if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle';
+                        if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle face-scan-guide';
                     }, 1200);
                 }
             } catch (err) {
@@ -873,7 +917,7 @@
                     if (customerDisplay) customerDisplay.textContent = result.customerName;
                     if (subDisplay) subDisplay.textContent = `Mobile: ${result.contactNumber} | Debt: ₱${parseFloat(result.currentDebt || 0).toFixed(2)}`;
                     if (iconBox) {
-                        iconBox.className = "rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center";
+                        iconBox.className = "rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center flex-shrink-0";
                         iconBox.innerHTML = '<i class="fa-solid fa-user-check fa-lg"></i>';
                     }
                     if (badgeContainer) badgeContainer.style.display = "block";
@@ -904,7 +948,7 @@
         async function handleSuccessfulVerification(customerId, customerName, defaultRedirect) {
             isDetectionActive = false;
             if (scanSessionTimeout) clearTimeout(scanSessionTimeout);
-            if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-3 border-success rounded-circle';
+            if (scanGuide) scanGuide.className = 'position-absolute top-50 start-50 translate-middle border border-3 border-success rounded-circle face-scan-guide';
             updateOverlayStatus('fa-user-check', `User: ${customerName}`, 'text-success');
 
             stopActiveCamera();
@@ -1014,13 +1058,19 @@
                 const constraints = {
                     video: {
                         deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
-                        facingMode: selectedDeviceId ? undefined : "user",
+                        facingMode: selectedDeviceId ? undefined : { ideal: "user" },
                         width: { ideal: 640 },
                         height: { ideal: 480 }
-                    }
+                    },
+                    audio: false
                 };
 
-                activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+                try {
+                    activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (primaryErr) {
+                    activeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "user" } }, audio: false });
+                }
+
                 video.srcObject = activeStream;
 
                 isDetectionActive = true;
@@ -1147,11 +1197,12 @@
 
             const selectedDeviceId = cameraSelect.value;
             const cameraConfig = selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : { facingMode: "environment" };
+            const qrSize = window.innerWidth >= 992 ? 260 : Math.min(200, Math.max(150, Math.floor(window.innerWidth * 0.52)));
 
             html5QrScanner = new Html5Qrcode("qrReader");
             html5QrScanner.start(
                 cameraConfig,
-                { fps: 15, qrbox: { width: 260, height: 260 } },
+                { fps: 15, qrbox: { width: qrSize, height: qrSize } },
                 async (decodedText) => { await processPhilSysLiveScan(decodedText); },
                 () => { }
             ).then(() => {
@@ -1305,7 +1356,7 @@
 
                 if (res.isValid) {
                     if (res.isUnderage) {
-                        iconBox.className = 'rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center';
+                        iconBox.className = 'rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center flex-shrink-0';
                         iconBox.innerHTML = '<i class="fa-solid fa-ban fa-lg"></i>';
 
                         displayTitle.textContent = 'Sale Prohibited: Minor';
@@ -1327,7 +1378,7 @@
                         return;
                     }
 
-                    iconBox.className = 'rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center';
+                    iconBox.className = 'rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center flex-shrink-0';
                     iconBox.innerHTML = '<i class="fa-solid fa-shield-halved fa-lg"></i>';
 
                     const maskedPcn = res.idNumber.length === 16 ? `****-****-****-${res.idNumber.slice(-4)}` : res.idNumber;
@@ -1357,7 +1408,7 @@
                         window.location.replace('/Home/Payment');
                     });
                 } else {
-                    iconBox.className = 'rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center';
+                    iconBox.className = 'rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center flex-shrink-0';
                     iconBox.innerHTML = '<i class="fa-solid fa-circle-exclamation fa-lg"></i>';
 
                     displayTitle.textContent = 'Verification Failed';
@@ -1433,7 +1484,7 @@
             if (digits.length <= 4) {
                 formatted = digits;
             } else if (digits.length <= 7) {
-                formatted = digits.slice(0, 4) + ' ' + digits.slice(4); 
+                formatted = digits.slice(0, 4) + ' ' + digits.slice(4);
             } else {
                 formatted = digits.slice(0, 4) + ' ' + digits.slice(4, 7) + ' ' + digits.slice(7, 11);
             }

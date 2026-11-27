@@ -5,42 +5,60 @@
     ViewData["ActivePage"] = ManageNavPages.Index;
 }
 
-<div class="d-flex justify-content-center align-items-center w-100 py-4" style="min-height: 75vh;">
+<style>
+    /* Mobile Adjustments (Desktop >= 768px stays untouched) */
+    @@media (max-width: 767.98px) {
+        .manage-form-wrapper {
+            min-height: auto !important;
+            align-items: flex-start !important;
+            padding-top: 0.75rem !important;
+            padding-bottom: 1rem !important;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .manage-submit-btn {
+            width: 100% !important;
+        }
+    }
+</style>
+
+<div class="d-flex justify-content-center align-items-center w-100 py-4 manage-form-wrapper" style="min-height: 75vh;">
     <div style="width: 100%; max-width: 580px;">
-		<h3 style="color:#1162a3">@ViewData["Title"]</h3>
-		<partial name="_StatusMessage" for="StatusMessage" />
-		
-		<form id="profile-form" method="post">
-			<div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+        <h3 style="color:#1162a3">@ViewData["Title"]</h3>
+        <partial name="_StatusMessage" for="StatusMessage" />
 
-			<hr class="mb-5" />
+        <form id="profile-form" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
 
-			<!-- Username -->
-			<div class="form-floating mb-4">
-				<input asp-for="Username" class="form-control" placeholder="Please choose your username." disabled />
-				<label asp-for="Username" class="form-label"></label>
-			</div>
+            <hr class="mb-4 mb-md-5" />
 
-			<!-- Phone Number -->
-			<div class="form-floating mb-4">
-				<input asp-for="Input.PhoneNumber"
-					   type="tel"
-					   class="form-control"
-					   maxlength="11"
-					   minlength="11"
-					   pattern="[0-9]{11}"
-					   inputmode="numeric"
-					   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
-					   placeholder="Please enter your phone number." />
-				<label asp-for="Input.PhoneNumber" class="form-label"></label>
-				<span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
-			</div>
+            <!-- Username -->
+            <div class="form-floating mb-4">
+                <input asp-for="Username" class="form-control" placeholder="Please choose your username." disabled />
+                <label asp-for="Username" class="form-label"></label>
+            </div>
 
-			<!-- Update Button -->
-			<div class="text-center mt-3">
-				<button id="update-profile-button" type="submit" class="w-50 btn btn-lg btn-primary fw-medium" style="font-size: 18px;">Save Changes</button>
-			</div>
-		</form>
+            <!-- Phone Number -->
+            <div class="form-floating mb-4">
+                <input asp-for="Input.PhoneNumber"
+                       type="tel"
+                       class="form-control"
+                       maxlength="11"
+                       minlength="11"
+                       pattern="[0-9]{11}"
+                       inputmode="numeric"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);"
+                       placeholder="Please enter your phone number." />
+                <label asp-for="Input.PhoneNumber" class="form-label"></label>
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            </div>
+
+            <!-- Update Button -->
+            <div class="text-center mt-3">
+                <button id="update-profile-button" type="submit" class="w-50 btn btn-lg btn-primary fw-medium manage-submit-btn" style="font-size: 18px;">Save Changes</button>
+            </div>
+        </form>
     </div>
 </div>
 

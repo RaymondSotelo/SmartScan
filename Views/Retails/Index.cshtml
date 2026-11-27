@@ -224,6 +224,23 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            @if (TempData["NoEntryMessage"] != null)
+            {
+                <text>
+                const noEntryMsg = @Html.Raw(Json.Serialize(TempData["NoEntryMessage"]));
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Access Denied',
+                        text: noEntryMsg,
+                        confirmButtonColor: '#1162a3'
+                    });
+                } else {
+                    alert(noEntryMsg);
+                }
+                </text>
+            }
+
             // Handle retail delete clicks
             document.querySelectorAll('.btn-delete-retail').forEach(button => {
                 button.addEventListener('click', function (e) {
